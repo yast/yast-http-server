@@ -90,7 +90,7 @@ sub GetHostsList {
 BEGIN { $TYPEINFO{GetHost} = ["function", ["list", [ "map", "string", "any" ] ], "string"]; }
 sub GetHost {
     my $hostid = shift;
-    return @{$hosts{$hostid}};
+    return exists($hosts{$hostid})?(@{$hosts{$hostid}}):();
 }
 
 #boolean ModifyHost( string hostid, list hostdata );
@@ -377,6 +377,13 @@ sub GetServicePackages {
 # list<string> GetModulePackages
 BEGIN { $TYPEINFO{GetModulePackages} = ["function", ["list", "string"] ]; }
 sub GetModulePackages {
+    my @ret;
+    foreach my $mod ( GetModuleList() ) {
+        if( exists($HTTPDModules::modules{$mod}) ) {
+            push( @ret, @{$HTTPDModules::modules{$mod}->{packages}} );
+        }
+    }
+    return @ret;
 }
 
 #######################################################
@@ -501,7 +508,7 @@ sub run {
 
 
     print "-------------- activate apache2\n";
-    #ModifyService(1);
+    ModifyService(1);
 
     print "-------------- get listen\n";
     foreach my $l ( GetCurrentListen() ) {
@@ -539,13 +546,13 @@ sub run {
     #}
 
     print "--------------trigger error\n";
-    #my @host = GetHost( 'will.not.be.found' );
-    #if( @host and not(defined($host[0])) ) {
-    #    my %error = Error();
-    #    while( my ($k,$v) = each(%error) ) {
-    #        print "ERROR: $k = $v\n";
-    #    }
-    #}
+    my @host = GetHost( 'will.not.be.found' );
+    if( @host and not(defined($host[0])) ) {
+        my %error = Error();
+        while( my ($k,$v) = each(%error) ) {
+            print "ERROR: $k = $v\n";
+        }
+    }
     print "\n";
 }
 1;
