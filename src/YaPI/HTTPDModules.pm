@@ -38,7 +38,13 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 50
+                    position  => 50,
+                    module    => {
+                                    AuthDBMAuthoritative => 'mod_auth_dbm',
+                                    AuthDBMGroupFile => 'mod_auth_dbm',
+                                    AuthDBMType => 'mod_auth_dbm',
+                                    AuthDBMUserFile => 'mod_auth_dbm'
+                    }
     },
     'autoindex' => {
                     summary   => 'Generates directory indices, automatically, similar to the Unix ls command',
@@ -78,7 +84,12 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 100
+                    position  => 100,
+                    module    => {
+                                    ExpiresActive  => 'mod_expires',
+                                    ExpiresByType  => 'mod_expires',
+                                    ExpiresDefault => 'mod_expires'
+                    }
     },
     'include' => {
                     summary   => 'Server-parsed HTML documents (Server Side Includes)',
@@ -134,7 +145,10 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 0
+                    position  => 0,
+                    module    => {
+                                    SuexecUserGroup => 'mod_suexec',
+                    }
     },
     'userdir' => {
                     summary   => 'User-specific directories',
@@ -158,7 +172,15 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 200
+                    position  => 200,
+                    module    => { 
+                                    Anonymous => 'mod_auth_anon',
+                                    Anonymous_Authoritative => 'mod_auth_anon',
+                                    Anonymous_LogEmail => 'mod_auth_anon',
+                                    Anonymous_MustGiveEmail => 'mod_auth_anon',
+                                    Anonymous_NoUserID => 'mod_auth_anon',
+                                    Anonymous_VerifyEmail => 'mod_auth_anon'
+                    }
     },
     'auth_digest' => {
                     summary   => 'User authentication using MD5 Digest Authentication',
@@ -198,7 +220,12 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 250
+                    position  => 250,
+                    module    => {
+                                  Dav => 'mod_dav',
+                                  DavDepthInfinity => 'mod_dav',
+                                  DavMinTimeout => 'mod_dav'
+                    }
     },
     'dav_fs' => {
                     summary   => 'File system provider for mod_dav',
@@ -206,7 +233,10 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 260
+                    position  => 260,
+                    module    => {
+                                  DavLockDB => 'mod_dav_fs'
+                    }
     },
     'deflate' => {
                     summary   => 'Compress content before it is delivered to the client',
@@ -214,7 +244,14 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 270
+                    position  => 270,
+                    module    => {
+                                  DeflateBufferSize => 'mod_deflate',
+                                  DeflateCompressionLevel => 'mod_deflate',
+                                  DeflateFilterNote => 'mod_deflate',
+                                  DeflateMemLevel => 'mod_deflate',
+                                  DeflateWindowSize => 'mod_deflate'
+                    }
     },
     'disk_cache' => {
                     summary   => 'Content cache storage manager keyed to URIs',
@@ -238,7 +275,11 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 300
+                    position  => 300,
+                    module    => {
+                                    ExtFilterDefine  => 'mod_ext_filter',
+                                    ExtFilterOptions => 'mod_ext_filter',
+                    }
     },
     'file_cache' => {
                     summary   => 'Caches a static list of files in memory',
@@ -254,7 +295,11 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 320
+                    position  => 320,
+                    module    => {
+                                    Header => 'mod_headers',
+                                    RequestHeader => 'mod_headers'
+                    }
     },
     'imap' => {
                     summary   => 'Server-side image map processing',
@@ -270,7 +315,8 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 340
+                    position  => 340,
+                    module    => { AddModuleInfo => 'mod_info' }
     },
     'ldap' => {
                     summary   => 'LDAP connection pooling and result caching services for use by other LDAP modules',
@@ -302,7 +348,8 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 380
+                    position  => 380,
+                    module    => { MimeMagicFile => 'mod_mime_magic' }
     },
     'proxy' => {
                     summary   => 'HTTP/1.1 proxy/gateway server',
@@ -310,7 +357,25 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 390
+                    position  => 390,
+                    module    => { 
+                                    NoProxy => 'mod_proxy',
+                                    ProxyBadHeader => 'mod_proxy',
+                                    ProxyBlock => 'mod_proxy',
+                                    ProxyDomain => 'mod_proxy',
+                                    ProxyErrorOverride => 'mod_proxy',
+                                    ProxyIOBufferSize => 'mod_proxy',
+                                    ProxyMaxForwards => 'mod_proxy',
+                                    ProxyPass => 'mod_proxy',
+                                    ProxyPassReverse => 'mod_proxy',
+                                    ProxyPreserveHost => 'mod_proxy',
+                                    ProxyReceiveBufferSize => 'mod_proxy',
+                                    ProxyRemote => 'mod_proxy',
+                                    ProxyRemoteMatch => 'mod_proxy',
+                                    ProxyRequests => 'mod_proxy',
+                                    ProxyTimeout => 'mod_proxy',
+                                    ProxyVia => 'mod_proxy'
+                    }
     },
     'proxy_connect' => {
                     summary   => 'mod_proxy extension for CONNECT request handling',
@@ -318,7 +383,8 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 400
+                    position  => 400,
+                    module    => { AllowCONNECT => 'mod_proxy_connect' }
     },
     'proxy_ftp' => {
                     summary   => 'FTP support module for mod_proxy',
@@ -342,7 +408,18 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 430
+                    position  => 430,
+                    module    => {
+                                    RewriteBase => 'mod_rewrite',
+                                    RewriteCond => 'mod_rewrite',
+                                    RewriteEngine => 'mod_rewrite',
+                                    RewriteLock => 'mod_rewrite',
+                                    RewriteLog => 'mod_rewrite',
+                                    RewriteLogLevel => 'mod_rewrite',
+                                    RewriteMap => 'mod_rewrite',
+                                    RewriteOptions => 'mod_rewrite',
+                                    RewriteRule => 'mod_rewrite'
+                    }
     },
     'speling' => {
                     summary   => 'Attempts to correct mistaken URLs that users might have entered',
@@ -350,7 +427,8 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 440
+                    position  => 440,
+                    module    => { CheckSpelling => 'mod_speling' }
     },
     'ssl' => {
                     summary   => 'Strong cryptography using the Secure Sockets Layer (SSL) and Transport Layer Security (TLS) protocols',
@@ -359,7 +437,39 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 450,
-                    defines   => { SSLEngine => 'SSL' }
+                    defines   => {
+                                  SSLEngine => 'SSL',
+                                  SSLCACertificateFile => 'SSL',
+                                  SSLCACertificatePath => 'SSL',
+                                  SSLCARevocationFile => 'SSL',
+                                  SSLCARevocationPath => 'SSL',
+                                  SSLCertificateChainFile => 'SSL',
+                                  SSLCertificateFile => 'SSL',
+                                  SSLCertificateKeyFile => 'SSL',
+                                  SSLCipherSuite => 'SSL',
+                                  SSLMutex => 'SSL',
+                                  SSLOptions => 'SSL',
+                                  SSLPassPhraseDialog => 'SSL',
+                                  SSLProtocol => 'SSL',
+                                  SSLProxyCACertificateFile => 'SSL',
+                                  SSLProxyCACertificatePath => 'SSL',
+                                  SSLProxyCARevocationFile => 'SSL',
+                                  SSLProxyCARevocationPath => 'SSL',
+                                  SSLProxyCipherSuite => 'SSL',
+                                  SSLProxyEngine => 'SSL',
+                                  SSLProxyMachineCertificateFile => 'SSL',
+                                  SSLProxyMachineCertificatePath => 'SSL',
+                                  SSLProxyProtocol => 'SSL',
+                                  SSLProxyVerify => 'SSL',
+                                  SSLProxyVerifyDepth => 'SSL',
+                                  SSLRandomSeed => 'SSL',
+                                  SSLRequire => 'SSL',
+                                  SSLRequireSSL => 'SSL',
+                                  SSLSessionCache => 'SSL',
+                                  SSLSessionCacheTimeout => 'SSL',
+                                  SSLVerifyClient => 'SSL',
+                                  SSLVerifyDepth => 'SSL'
+                    }
     },
     'unique_id' => {
                     summary   => 'Provides an environment variable with a unique identifier for each request',
@@ -375,7 +485,14 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 470
+                    position  => 470,
+                    module    => {
+                                  CookieDomain => 'mod_usertrack',
+                                  CookieExpires => 'mod_usertrack',
+                                  CookieName => 'mod_usertrack',
+                                  CookieStyle => 'mod_usertrack',
+                                  CookieTracking => 'mod_usertrack'
+                    }
     },
     'vhost_alias' => {
                     summary   => 'Provides support for dynamically configured mass virtual hosting',
@@ -383,7 +500,13 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 480
+                    position  => 480,
+                    module    => {
+                                    VirtualDocumentRoot => 'mod_vhost_alias',
+                                    VirtualDocumentRootIP => 'mod_vhost_alias',
+                                    VirtualScriptAlias => 'mod_vhost_alias',
+                                    VirtualScriptAliasIP => 'mod_vhost_alias'
+                    }
     },
     'php4' => {
                     summary   => 'Provides support for PHP4 dynamically generated pages',
