@@ -21,8 +21,11 @@ ydata_DATA =                     \
 config_DATA =			\
 	http-server.y2cc
 
+desktop_DATA =			\
+	http-server.desktop
+
 module_DATA =			\
 	HttpServer.ycp		\
 	HttpServerWidgets.ycp
 
-EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA) $(ydata_DATA)
+EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA) $(ydata_DATA) $(desktop_DATA)
