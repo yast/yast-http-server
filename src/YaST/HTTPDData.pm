@@ -588,24 +588,16 @@ sub WriteListen {
 # apache2 packages
 #######################################################
 
-# list<string> GetServicePackages();
-BEGIN { $TYPEINFO{GetServicePackages} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
-sub GetServicePackages {
+# list<string> GetPackagesForModule(string)
+BEGIN { $TYPEINFO{GetPackagesForModule} = ["function", ["list", "string"], "string" ]; }
+sub GetPackagesForModule {
     my $self = shift;
-    return \@{HTTP::GetServicePackages()}; # no state here anyway
-}
+    my $mod = shift;
+    my %uniq;
 
-# list<string> GetModulePackages
-BEGIN { $TYPEINFO{GetModulePackages} = ["function", ["list", "string"] ]; }
-sub GetModulePackages {
-    my $self = shift;
-    my @ret;
-    foreach my $mod ( $self->GetModuleList() ) {
-        if( exists($HTTPDModules::modules{$mod}) ) {
-            push( @ret, @{$HTTPDModules::modules{$mod}->{packages}} );
-        }
-    }
-    return \@ret;
+    @uniq{@{$YaPI::HTTPDModules::modules{$mod}->{packages}}} = ();
+
+    return [ keys(%uniq) ];
 }
 
 #######################################################
