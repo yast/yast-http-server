@@ -41,16 +41,17 @@ global map popups = $[
 		    "widget" : `textentry,
 		],
 	    ],
-	    "DocumentRoot" : $[
+/*	    "DocumentRoot" : $[
 		"table" : $[
 		    // table cell
 		    "label" : _("Document Root"),
 		    "optional" : false,
+		    "immutable" : true,
 		],
 		"popup" : $[
 		    "widget" : `textentry,
 		],
-            ],
+            ],*/
 	    "ServerAdmin" : $[
 		"table" : $[
 		    // table cell
@@ -81,6 +82,8 @@ global map defaulthostwidget = CWM::CreateTableDescr (
 	    "init" : ``(CWM::TableInit (
 		HttpServerWidgets::widgets["global_table"]:$[])),
 	    "handle" : ``(HttpServerWidgets::handleDefaultHostTable()),
+	    "validate_type" : `function,
+	    "validate_function" : ``(HttpServerWidgets::validateDefaultHostTable ()),
 	    "options" : popups,
 	    "ids" : ``(HttpServerWidgets::DefaultHostTableContents ()),
 	    "fallback" : $[
@@ -89,7 +92,7 @@ global map defaulthostwidget = CWM::CreateTableDescr (
 		"summary" : ``(HttpServerWidgets::DefaultHostTableEntrySummary ()),
 	    ],
 	    "option_delete" : ``(HttpServerWidgets::DefaultHostTableEntryDelete ()),
-	    "add_items" : [ "ServerName", "DocumentRoot", "ServerAdmin",],
+	    "add_items" : [ "ServerName", "ServerAdmin",],
 	    "help" : HELPS["global_table"]:"",
 	]);
 
@@ -310,7 +313,7 @@ global map widgets = $[
     global define list DefaultHostTableContents (map descr) ``{
 	list ret = maplist (`k, `v, HttpServer::settings[currenthost]:$[], ``(k));
 	// required entries
-	ret = union (["ServerName", "ServerAdmin", "DocumentRoot", "Listen" ], ret);
+	ret = union (["ServerName", "ServerAdmin", "Listen" ], ret);
 	return ret;
     }
     
@@ -355,6 +358,26 @@ global map widgets = $[
 	UI::ChangeWidget (`id (opt_key), `Value,
 	    HttpServer::settings[currenthost, opt_key]:"not found");
 	UI::SetFocus (`id (opt_key));
+    }
+
+    /**
+      * Validation of the default host 
+      * @param key any option key
+      * @param event any event happened
+      */
+    global define boolean validateDefaultHostTable (any key, any event) ``{
+	if( event["ID"]:nil != `next ) return true;
+	// Listen list cannot be empty
+	boolean validate = size( HttpServer::settings[currenthost, "Listen"]:[] ) != 0;
+
+	y2debug( "Validation result: %1", validate );
+	
+	if( !validate ) {
+	    Popup::Error(_("List of the ports where the server should
+listen cannot be empty.") );
+	}
+	
+	return validate;
     }
 
     /**
