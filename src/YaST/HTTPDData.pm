@@ -41,8 +41,9 @@ my %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
 #bool ReadHosts();
 BEGIN { $TYPEINFO{ReadHosts} = ["function", "boolean" ]; }
 sub ReadHosts {
-    foreach my $hostid ( @{YaPI::HTTPD::GetHostsList()} ) {
-    	$hosts{$hostid} = YaPI::HTTPD::GetHost($hostid) if( $hostid );
+    my $self = shift;
+    foreach my $hostid ( @{YaPI::HTTPD->GetHostsList()} ) {
+    	$hosts{$hostid} = YaPI::HTTPD->GetHost($hostid) if( $hostid );
     }
     return 1;
 }
@@ -54,7 +55,8 @@ my %delListen = ();
 #bool ReadListen();
 BEGIN { $TYPEINFO{ReadListen} = ["function", "boolean" ]; }
 sub ReadListen {
-    @oldListen = @{YaPI::HTTPD::GetCurrentListen()};
+    my $self = shift;
+    @oldListen = @{YaPI::HTTPD->GetCurrentListen()};
     return 1;
 }
 
@@ -70,9 +72,10 @@ my %delModules = ();
 #bool ReadModules();
 BEGIN { $TYPEINFO{ReadModules} = ["function", "boolean" ]; }
 sub ReadModules {
-    @oldModuleSelections = @{YaPI::HTTPD::GetModuleSelectionsList()};
-    @oldModules = @{YaPI::HTTPD::GetModuleList()};
-    foreach my $mod ( YaPI::HTTPD::selections2modules([@oldModuleSelections]) ) {
+    my $self = shift;
+    @oldModuleSelections = @{YaPI::HTTPD->GetModuleSelectionsList()};
+    @oldModules = @{YaPI::HTTPD->GetModuleList()};
+    foreach my $mod ( YaPI::HTTPD->selections2modules([@oldModuleSelections]) ) {
 	push(@oldModules, $mod) unless( grep/^$mod$/, @oldModules );
     }
     return 1;
@@ -81,19 +84,22 @@ sub ReadModules {
 my $serviceState;   # 1 = enable, 0=disable
 BEGIN { $TYPEINFO{ReadService} = ["function", "boolean" ]; }
 sub ReadService {
-    $serviceState = YaPI::HTTPD::ReadService();
+    my $self = shift;
+    $serviceState = YaPI::HTTPD->ReadService();
 }
 
 
 #list<string> GetHostList();
 BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
+    my $self = shift;
     return [keys(%hosts)];
 }
 
 #map GetHost( string hostid );
 BEGIN { $TYPEINFO{GetHost} = ["function", ["list", [ "map", "string", "any" ] ], "string"]; }
 sub GetHost {
+    my $self = shift;
     my $hostid = shift;
     return exists($hosts{$hostid})?($hosts{$hostid}):[];
 }
@@ -101,6 +107,7 @@ sub GetHost {
 #boolean ModifyHost( string hostid, list hostdata );
 BEGIN { $TYPEINFO{ModifyHost} = ["function", "boolean", "string", ["list", [ "map", "string", "any" ] ] ]; }
 sub ModifyHost {
+    my $self = shift;
     my $hostid = shift;
     my $hostdata = shift;
 
@@ -112,6 +119,7 @@ sub ModifyHost {
 #bool CreateHost( string hostid, list hostdata );
 BEGIN { $TYPEINFO{CreateHost} = ["function", "boolean", "string", [ "list", [ "map", "string", "any" ] ] ]; }
 sub CreateHost {
+    my $self = shift;
     my $hostid = shift;
     my $hostdata = shift;
 
@@ -125,6 +133,7 @@ sub CreateHost {
 #bool DeleteHost( string hostid );
 BEGIN { $TYPEINFO{DeleteHost} = ["function", "boolean", "string"]; }
 sub DeleteHost {
+    my $self = shift;
     my $hostid = shift;
     delete( $hosts{$hostid} );
     $dirty{DEL}->{$hostid} = 1 unless( exists( $dirty{NEW}->{$hostid} ) );
@@ -134,14 +143,15 @@ sub DeleteHost {
 }
 
 sub WriteHosts {
+    my $self = shift;
     foreach my $hostid( keys( %{$dirty{DEL}} ) ) {
-        YaPI::HTTPD::DeleteHost( $hostid );
+        YaPI::HTTPD->DeleteHost( $hostid );
     }
     foreach my $hostid( keys( %{$dirty{NEW}} ) ) {
-        YaPI::HTTPD::CreateHost( $hostid, $hosts{$hostid} );
+        YaPI::HTTPD->CreateHost( $hostid, $hosts{$hostid} );
     }
     foreach my $hostid( keys( %{$dirty{MODIFIED}} ) ) {
-        YaPI::HTTPD::ModifyHost( $hostid, $hosts{$hostid} );
+        YaPI::HTTPD->ModifyHost( $hostid, $hosts{$hostid} );
     }
     %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
     return 1;
@@ -159,6 +169,7 @@ sub WriteHosts {
 # list<string> GetModuleList()
 BEGIN { $TYPEINFO{GetModuleList} = ["function", [ "list", "string" ] ]; }
 sub GetModuleList {
+    my $self = shift;
     my @ret;
     foreach my $mod ( sort( @oldModules, keys(%newModules) ) ) {
         push( @ret, $mod ) unless( exists( $delModules{$mod} ) );
@@ -169,13 +180,15 @@ sub GetModuleList {
 # list<map> GetKnownModules()
 BEGIN { $TYPEINFO{GetKnownModules} = ["function", [ "list", ["map","string","any"] ] ]; }
 sub GetKnownModules {
+    my $self = shift;
     # no state anyway, so we call the stateless API directly
-    return \@{YaPI::HTTPD::GetKnownModules()}; 
+    return \@{YaPI::HTTPD->GetKnownModules()}; 
 }
 
 # bool ModifyModuleList( list<string>, bool )
 BEGIN { $TYPEINFO{ModifyModuleList} = ["function", "boolean", [ "list","string" ], "boolean" ]; }
 sub ModifyModuleList {
+    my $self = shift;
     my $newModules = shift;
     my $enable = shift;
 
@@ -193,23 +206,26 @@ sub ModifyModuleList {
 }
 BEGIN { $TYPEINFO{WriteModuleList} = ["function", "boolean"]; }
 sub WriteModuleList {
-    YaPI::HTTPD::ModifyModuleList( [ keys(%delModules) ], 0 ) if(keys(%delModules));
-    YaPI::HTTPD::ModifyModuleList( [ keys(%newModules) ], 1 ) if(keys(%newModules));
+    my $self = shift;
+    YaPI::HTTPD->ModifyModuleList( [ keys(%delModules) ], 0 ) if(keys(%delModules));
+    YaPI::HTTPD->ModifyModuleList( [ keys(%newModules) ], 1 ) if(keys(%newModules));
     %delModules = ();
     %newModules = ();
-    @oldModules = @{YaPI::HTTPD::GetModuleList()};
+    @oldModules = @{YaPI::HTTPD->GetModuleList()};
     return 1;
 }
 
 # map GetKnownModulSelections()
 BEGIN { $TYPEINFO{GetKnownModulSelections} = ["function", [ "map","string","any" ] ]; }
 sub GetKnownModulSelections {
-    return @{YaPI::HTTPD::GetKnownModulSelections()};
+    my $self = shift;
+    return @{YaPI::HTTPD->GetKnownModulSelections()};
 }
 
 # list<string> GetModuleSelectionsList()
 BEGIN { $TYPEINFO{GetModuleSelectionsList} = ["function", ["list","string"] ]; }
 sub GetModuleSelectionsList {
+    my $self = shift;
     my @ret;
     foreach my $mod ( sort( @oldModuleSelections, keys(%newModuleSelections) ) ) {
         push( @ret, $mod ) unless( exists( $delModuleSelections{$mod} ) );
@@ -220,10 +236,11 @@ sub GetModuleSelectionsList {
 # bool ModifyModuleSelectionList( list<string>, bool )
 BEGIN { $TYPEINFO{ModifyModuleSelectionList} = ["function", "boolean", ["list","string"], "boolean" ]; }
 sub ModifyModuleSelectionList {
+    my $self = shift;
     my $newModules = shift;
     my $enable = shift;
 
-    my @mods2sel = YaPI::HTTPD::selections2modules($newModules);
+    my @mods2sel = YaPI::HTTPD->selections2modules($newModules);
     if( not $enable ) {
         delete(@newModules{@mods2sel});
         @delModules{@mods2sel} = ();
@@ -245,11 +262,12 @@ sub ModifyModuleSelectionList {
 }
 
 sub WriteModuleSelectionList {
-    YaPI::HTTPD::ModifyModuleSelectionList( [ keys(%delModuleSelections) ], 0 );
-    YaPI::HTTPD::ModifyModuleSelectionList( [ keys(%newModuleSelections) ], 1 );
+    my $self = shift;
+    YaPI::HTTPD->ModifyModuleSelectionList( [ keys(%delModuleSelections) ], 0 );
+    YaPI::HTTPD->ModifyModuleSelectionList( [ keys(%newModuleSelections) ], 1 );
     %newModuleSelections = ();
     %delModuleSelections = ();
-    @oldModuleSelections = @{YaPI::HTTPD::GetModuleSelectionsList()};
+    @oldModuleSelections = @{YaPI::HTTPD->GetModuleSelectionsList()};
     return 1;
 }
 
@@ -265,19 +283,22 @@ sub WriteModuleSelectionList {
 
 BEGIN { $TYPEINFO{GetService} = ["function", "boolean" ]; }
 sub GetService {
+    my $self = shift;
     return $serviceState;
 }
 
 # boolean ModifyService( boolean )
 BEGIN { $TYPEINFO{ModifyService} = ["function", "boolean", "boolean" ]; }
 sub ModifyService {
+    my $self = shift;
     $serviceState = shift;
     return 1;
 }
 
 BEGIN { $TYPEINFO{WriteService} = ["function", "boolean", "boolean" ]; }
 sub WriteService {
-    return YaPI::HTTPD::ModifyService( $serviceState );
+    my $self = shift;
+    return YaPI::HTTPD->ModifyService( $serviceState );
 }
 
 #######################################################
@@ -294,6 +315,7 @@ sub WriteService {
 # boolean CreateListen( int, int, list<string> )
 BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", "integer", "integer", "string" ] ; }
 sub CreateListen {
+    my $self = shift;
     my $fromPort = shift;
     my $toPort = shift;
     my $ip = shift || ''; #FIXME: this is a list
@@ -319,6 +341,7 @@ sub CreateListen {
 # boolean CreateListen( int, int, list<string> )
 BEGIN { $TYPEINFO{DeleteListen} = ["function", "boolean", "integer", "integer", "string" ] ; }
 sub DeleteListen {
+    my $self = shift;
     my $fromPort = shift;
     my $toPort = shift;
     my $ip = shift; #FIXME: this is a list
@@ -332,6 +355,7 @@ sub DeleteListen {
 # list<map> GetCurrentListen()
 BEGIN { $TYPEINFO{GetCurrentListen} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetCurrentListen {
+    my $self = shift;
     my @new;
     foreach my $new ( keys(%newListen) ) {
         my ( $ip, $fp, $tp ) = split(/:/, $new);
@@ -354,19 +378,20 @@ sub GetCurrentListen {
 
 BEGIN { $TYPEINFO{WriteListen} = ["function", "boolean", "boolean" ]; }
 sub WriteListen {
+    my $self = shift;
     my $doFirewall = shift;
 
     foreach my $toDel ( keys(%delListen) ) {
         my ($ip,$fp,$tp) = split(/:/, $toDel);
-        YaPI::HTTPD::DeleteListen( $fp, $tp, $ip, $doFirewall );
+        YaPI::HTTPD->DeleteListen( $fp, $tp, $ip, $doFirewall );
     }
     foreach my $toCreate ( keys(%newListen) ) {
         my ($ip,$fp,$tp) = split(/:/, $toCreate);
-        YaPI::HTTPD::CreateListen( $fp, $tp, $ip, $doFirewall );
+        YaPI::HTTPD->CreateListen( $fp, $tp, $ip, $doFirewall );
     }
     %delListen = ();
     %newListen = ();
-    @oldListen = @{YaPI::HTTPD::GetCurrentListen()};
+    @oldListen = @{YaPI::HTTPD->GetCurrentListen()};
 }
 
 #######################################################
@@ -382,14 +407,16 @@ sub WriteListen {
 # list<string> GetServicePackages();
 BEGIN { $TYPEINFO{GetServicePackages} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetServicePackages {
+    my $self = shift;
     return \@{HTTP::GetServicePackages()}; # no state here anyway
 }
 
 # list<string> GetModulePackages
 BEGIN { $TYPEINFO{GetModulePackages} = ["function", ["list", "string"] ]; }
 sub GetModulePackages {
+    my $self = shift;
     my @ret;
-    foreach my $mod ( GetModuleList() ) {
+    foreach my $mod ( $self->GetModuleList() ) {
         if( exists($HTTPDModules::modules{$mod}) ) {
             push( @ret, @{$HTTPDModules::modules{$mod}->{packages}} );
         }
@@ -410,18 +437,21 @@ sub GetModulePackages {
 # list<string> GetErrorLogFiles( list<string> );
 BEGIN { $TYPEINFO{GetErrorLogFiles} = ["function", ["list", "string" ], [ "list", "string" ] ]; }
 sub GetErrorLogFiles {
+    my $self = shift;
 
 }
 
 # list<string> GetAccessLogFiles( list<string> );
 BEGIN { $TYPEINFO{GetAccessLogFiles} = ["function", ["list", "string" ], [ "list", "string" ] ]; }
 sub GetAccessLogFiles {
+    my $self = shift;
 
 }
 
 # list<string> GetTransferLogFiles( list<string> );
 BEGIN { $TYPEINFO{GetTransferLogFiles} = ["function", ["list", "string"], [ "list", "string" ] ]; }
 sub GetTransferLogFiles {
+    my $self = shift;
 
 }
 
@@ -430,18 +460,19 @@ sub GetTransferLogFiles {
 #######################################################
 
 sub run {
+    my $self = __PACKAGE__;
     print "-------------- ReadHosts\n";
-    ReadHosts();
+    $self->ReadHosts();
 
     print "-------------- GetHostsList\n";
-    foreach my $h ( GetHostsList() ) {
+    foreach my $h ( $self->GetHostsList() ) {
         print "ID: $h\n";
     }
 
     print "-------------- ModifyHost Number 0\n";
     my $hostid = "default";
-    my @hostArr = GetHost( $hostid );
-    ModifyHost( $hostid, \@hostArr );
+    my @hostArr = $self->GetHost( $hostid );
+    $self->ModifyHost( $hostid, \@hostArr );
 
     print "-------------- CreateHost\n";
     my @temp = (
@@ -449,10 +480,10 @@ sub run {
                 { KEY => "VirtualByName", VALUE => 1 },
                 { KEY => "ServerAdmin",   VALUE => 'no@one.de' }
                 );
-    CreateHost( '192.168.1.2/createTest2.suse.de', \@temp );
+    $self->CreateHost( '192.168.1.2/createTest2.suse.de', \@temp );
 
     print "-------------- GetHost created host\n";
-    @hostArr = GetHost( '192.168.1.2/createTest2.suse.de' );
+    @hostArr = $self->GetHost( '192.168.1.2/createTest2.suse.de' );
     use Data::Dumper;
     print Data::Dumper->Dump( [ \@hostArr ] );
     WriteHosts();
@@ -460,106 +491,106 @@ sub run {
     system("cat /etc/apache2/vhosts.d/yast2_vhosts.conf");
 
     print "-------------- DeleteHost Number 0\n";
-    DeleteHost( '192.168.1.2/createTest2.suse.de' );
+    $self->DeleteHost( '192.168.1.2/createTest2.suse.de' );
 
-    WriteHosts();
+    $self->WriteHosts();
 
     print "-------------- show module list\n";
-    foreach my $mod ( GetModuleList() ) {
+    foreach my $mod ( $self->GetModuleList() ) {
         print "MOD: $mod\n";
     }
 
     print "-------------- show known modules\n";
-    foreach my $mod ( GetKnownModules() ) {
+    foreach my $mod ( $self->GetKnownModules() ) {
         print "KNOWN MOD: $mod->{name}\n";
     }
 
     print "-------------- modify module list\n";
-    ModifyModuleList( [ 'cgi' ], 0 );
-    ModifyModuleList( [ 'unknownModule' ], 1 );
+    $self->ModifyModuleList( [ 'cgi' ], 0 );
+    $self->ModifyModuleList( [ 'unknownModule' ], 1 );
 
     print "-------------- show module list\n";
-    foreach my $mod ( GetModuleList() ) {
+    foreach my $mod ( $self->GetModuleList() ) {
         print "MOD: $mod\n";
     }
 
 #    ModifyModuleList( [ 'cgi' ], 1 );
-    WriteModuleList();
+    $self->WriteModuleList();
 
     print "-------------- show known selections\n";
-    foreach my $mod ( GetKnownModulSelections() ) {
+    foreach my $mod ( $self->GetKnownModulSelections() ) {
         print "KNOWN SEL: $mod->{id}\n";
     }
 
     print "-------------- show active selections\n";
-    foreach my $sel ( GetModuleSelectionsList() ) {
+    foreach my $sel ( $self->GetModuleSelectionsList() ) {
         print "ACTIVE SEL: $sel\n";
     }
 
     print "-------------- show module list\n";
-    foreach my $mod ( GetModuleList() ) {
+    foreach my $mod ( $self->GetModuleList() ) {
         print "MOD: $mod\n";
     }
 
     print "-------------- modify active selections\n";
-    ModifyModuleSelectionList( [ 'TestSel' ], 0 );
+    $self->ModifyModuleSelectionList( [ 'TestSel' ], 0 );
 
     print "-------------- show active selections\n";
-    foreach my $sel ( GetModuleSelectionsList() ) {
+    foreach my $sel ( $self->GetModuleSelectionsList() ) {
         print "ACTIVE SEL: $sel\n";
     }
 
     print "-------------- show module list\n";
-    foreach my $mod ( GetModuleList() ) {
+    foreach my $mod ( $self->GetModuleList() ) {
         print "MOD: $mod\n";
     }
 
 
-    ModifyModuleSelectionList( [ 'TestSel' ], 1 );
+    $self->ModifyModuleSelectionList( [ 'TestSel' ], 1 );
 
 
     print "-------------- activate apache2\n";
-    ModifyService(1);
+    $self->ModifyService(1);
 
     print "-------------- get listen\n";
-    foreach my $l ( GetCurrentListen() ) {
+    foreach my $l ( $self->GetCurrentListen() ) {
         print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
         print $l->{PORT}."\n";
     }
 
     print "-------------- del listen\n";
-    DeleteListen( 443,443,'' );
-    DeleteListen( 80,80,"12.34.56.78" );
+    $self->DeleteListen( 443,443,'' );
+    $self->DeleteListen( 80,80,"12.34.56.78" );
     print "-------------- get listen\n";
-    foreach my $l ( GetCurrentListen() ) {
+    foreach my $l ( $self->GetCurrentListen() ) {
         print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
         print $l->{PORT}."\n";
     }
 
     print "-------------- create listen\n";
-    CreateListen( 443,443,'' );
-    CreateListen( 80,80,"12.34.56.78" );
+    $self->CreateListen( 443,443,'' );
+    $self->CreateListen( 80,80,"12.34.56.78" );
 
     print "-------------- get listen\n";
-    foreach my $l ( GetCurrentListen() ) {
+    foreach my $l ( $self->GetCurrentListen() ) {
         print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
         print $l->{PORT}."\n";
     }
 
 
     print "--------------set ModuleSelections\n";
-    #ModifyModuleSelectionList( [ 'mod_test1', 'mod_test2', 'mod_test3' ], 1 );
-    #ModifyModuleSelectionList( [ 'mod_test3' ], 0 );
+    #$self->ModifyModuleSelectionList( [ 'mod_test1', 'mod_test2', 'mod_test3' ], 1 );
+    #$self->ModifyModuleSelectionList( [ 'mod_test3' ], 0 );
 
     print "-------------- get ModuleSelections\n";
-    #foreach my $sel ( GetModuleSelectionsList() ) {
+    #foreach my $sel ( $self->GetModuleSelectionsList() ) {
     #    print "SEL: $sel\n";
     #}
 
     print "--------------trigger error\n";
-    my @host = GetHost( 'will.not.be.found' );
+    my @host = $self->GetHost( 'will.not.be.found' );
     if( @host and not(defined($host[0])) ) {
-        my %error = Error();
+        my %error = $self->Error();
         while( my ($k,$v) = each(%error) ) {
             print "ERROR: $k = $v\n";
         }
