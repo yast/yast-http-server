@@ -2,7 +2,9 @@
 package ag_http_server;
 use ycp;
 use YaST::SCRAgent;
+use YaST::YCP;
 our @ISA = ("YaST::SCRAgent");
+YaST::YCP::Import ("Directory");
 
 use strict;
 
@@ -110,6 +112,32 @@ sub parse_listen_conf {
         }
         close(FILE);
     }
+}
+
+sub parse_module_selection() {
+#    my $dir = Directory::vardir();
+    my $dir = "/var/lib/YaST2/"; # FIXME: calling Directory::vardir later
+    my @ret = ();
+
+    if( open(FILE, "< $dir/httpd_active_module_selections.conf") ) {
+        @ret = <FILE>;
+        chomp(@ret);
+        close(FILE);
+    }
+    return \@ret;
+}
+
+sub write_module_selection {
+    my $newSelection = shift;
+    my $dir = "/var/lib/YaST2/"; # FIXME: calling Directory::vardir later
+
+    if( open(FILE, "> $dir/httpd_active_module_selections.conf") ) {
+        print FILE join("\n",@$newSelection);
+        close(FILE);
+    } else {
+        # FIXME: Error handling
+    }
+    return 1;
 }
 
 # generic apache2 configfile format parser
@@ -255,11 +283,13 @@ sub Read {
     my ($path, @args) = @_;
 
     if( $path eq '.vhosts' ) {
-       parse_vhost_files();
-       return \%vhost_files;
+        parse_vhost_files();
+        return \%vhost_files;
     } elsif( $path eq '.listen' )  {
-       parse_listen_conf();
-       return [ keys(%listen) ];
+        parse_listen_conf();
+        return [ keys(%listen) ];
+    } elsif( $path eq '.moduleselection' ) {
+        return [ parse_module_selection() ];
     }
 }
 
@@ -295,6 +325,10 @@ sub Write {
                 $listen{$key} = 1;
             }
             write_listen_conf();
+        }
+    } elsif( $path eq '.moduleselection' ) {
+        if( ref($args[0]) eq 'ARRAY' ) {
+            write_module_selection( $args[0] );
         }
     } else {
         # not implemented
