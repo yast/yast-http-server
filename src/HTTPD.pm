@@ -69,7 +69,7 @@ sub checkHostmap {
 BEGIN { $TYPEINFO{GetHostList} = ["function", [ "list", "string"] ]; }
 sub GetHostList {
     my @ret = ();
-    my @data = SCR::Read('.httpd.vhosts');
+    my @data = SCR::Read('.http_server.vhosts');
 
     if( ref($data[0]) eq 'HASH' ) {
         foreach my $hostList ( values(%{$data[0]}) ) {
@@ -91,7 +91,7 @@ sub GetHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR::Read('.httpd.vhosts');
+    my @data = SCR::Read('.http_server.vhosts');
 
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
@@ -138,7 +138,7 @@ sub ModifyHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR::Read('.httpd.vhosts');
+    my @data = SCR::Read('.http_server.vhosts');
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
@@ -194,7 +194,7 @@ sub CreateHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR::Read('.httpd.vhosts');
+    my @data = SCR::Read('.http_server.vhosts');
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
@@ -219,7 +219,7 @@ sub DeleteHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR::Read('.httpd.vhosts');
+    my @data = SCR::Read('.http_server.vhosts');
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
@@ -243,7 +243,7 @@ sub DeleteHost {
 sub writeHost {
     my $filename = shift;
 
-    SCR::Write(".httpd.vhosts.setFile.$filename", $vhost_files->{$filename} );
+    SCR::Write(".http_server.vhosts.setFile.$filename", $vhost_files->{$filename} );
     return 1;
 }
 
@@ -342,6 +342,7 @@ sub ModifyModuleSelectionList {
 # apache2 modify service
 #######################################################
 
+# boolean ModiflyService( boolean )
 sub ModifyService {
     my $enable = shift;
 
@@ -352,12 +353,69 @@ sub ModifyService {
         Service::Adjust( "apache2", "disable" );
         Service::RunInitScript( "apache2", "stop" );
     }
+    return 1;
 }
 
 #######################################################
 # apache2 modify service end
 #######################################################
 
+
+
+#######################################################
+# apache2 listen ports
+#######################################################
+# boolean CreateListen( int, int, list<string> )
+sub CreateListen {
+    my $fromPort = shift;
+    my $toPort = shift;
+    my $ip = shift;
+
+    my $listenEntries = GetCurrentListen();
+    my %newEntry;
+    $newEntry{ADDRESS} = $ip if ($ip);
+    $newEntry{PORT} = ($fromPort eq $toPort)?($fromPort):($fromPort.'-'.$toPort);
+    SCR::Write( ".http_server.listen", [ @$listenEntries, \%newEntry ] );
+}
+
+# boolean CreateListen( int, int, list<string> )
+sub DeleteListen {
+    my $fromPort = shift;
+    my $toPort = shift;
+    my $ip = shift;
+
+    my $listenEntries = GetCurrentListen();
+    my @newListenEntries = ();
+    foreach my $listen ( @$listenEntries ) {
+        if( defined($ip) and (not exists($listen->{'ADDRESS'}) or $listen->{'ADDRESS'} ne $ip) ) {
+            push( @newListenEntries, $listen );
+            next;
+        }
+        next if( "$fromPort-$toPort" eq $listen->{'PORT'} );
+        next if( ($fromPort eq $toPort) and $listen->{'PORT'} eq $fromPort );
+        push( @newListenEntries, $listen );
+    }
+    SCR::Write( ".http_server.listen", \@newListenEntries );
+    return 1;
+}
+
+# list<map> GetCurrentListen()
+sub GetCurrentListen {
+    my @data = SCR::Read('.http_server.listen');
+    my @ret;
+    foreach my $listen ( @data ) {
+        if( $listen =~ /^([^:]+):([^:]+)/ ) {
+            push( @ret, { ADDRESS => $1, PORT => $2 } );
+        } elsif( $listen =~ /^\d+$/ ) {
+            push( @ret, { PORT => $listen } );
+        }
+    }
+    return \@ret;
+}
+
+#######################################################
+# apache2 listen ports end
+#######################################################
 
 sub run {
     print "-------------- GetHostList\n";
@@ -372,13 +430,13 @@ sub run {
 
     print "-------------- CreateHost\n";
     my @temp = (
-                { KEY => "ServerName",    VALUE => 'createTest.suse.de' },
+                { KEY => "ServerName",    VALUE => 'createTest2.suse.de' },
                 { KEY => "VirtualByName", VALUE => 1 },
                 { KEY => "ServerAdmin",   VALUE => 'no@one.de' }
                 );
     CreateHost( '192.168.1.2/createTest2.suse.de', \@temp );
 
-    print "-------------- GetHost created host \n";
+    print "-------------- GetHost created host\n";
     $hostArr = GetHost( '192.168.1.2/createTest2.suse.de' );
     use Data::Dumper;
     print Data::Dumper->Dump( [ $hostArr ] );
@@ -403,8 +461,29 @@ sub run {
         print "KNOWN SEL: $mod->{id}\n";
     }
 
-    print "-------------- activate apache2";
+    print "-------------- activate apache2\n";
     ModifyService(1);
+
+    print "-------------- get listen\n";
+    my $listen = GetCurrentListen();
+    foreach my $l ( @$listen ) {
+        print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
+        print $l->{PORT}."\n";
+    }
+
+    print "-------------- del listen\n";
+    DeleteListen( 443,443 );
+    DeleteListen( 80,80,"12.34.56.78" );
+    print "-------------- get listen\n";
+    my $listen = GetCurrentListen();
+        foreach my $l ( @$listen ) {
+        print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
+        print $l->{PORT}."\n";
+    }
+
+    print "-------------- create listen\n";
+    CreateListen( 443,443 );
+    CreateListen( 80,80,"12.34.56.78" );
 
     print "--------------trigger error\n";
     $hostid = GetHost( 'will.not.be.found' );
