@@ -58,7 +58,7 @@ sub checkHostmap {
     my $host = shift;
 
     my %checkMap = (
-        ServerAdmin  => qr/^[^@]$/,
+        ServerAdmin  => qr/^[^@]+@[^@]+$/,
         ServerName   => qr/^[a-zA-Z\d.-]+$/,
         SSL          => qr/^[012]$/,
         # more to go
@@ -67,7 +67,7 @@ sub checkHostmap {
     foreach my $entry ( @$host ) {
         next unless( exists($checkMap{$entry->{KEY}}) );
         my $re = $checkMap{$entry->{KEY}};
-        if( $entry->{VALUE} =~ /$re/ ) {
+        if( $entry->{VALUE} !~ /$re/ ) {
             return SetError( summary => "illegal '$entry->{KEY}' parameter" );
         }
     }
@@ -220,6 +220,7 @@ sub CreateHost {
     my $hostid = shift;
     my $data = shift;
 
+
     my $sslHash = { KEY => 'SSLEngine' , VALUE => 'off' };
     my @tmp = ( $sslHash );
     my $VirtualByName = 0;
@@ -289,7 +290,7 @@ sub DeleteHost {
     my $filename = getFileByHostid( $hostid );
     my @newList = ();
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
-        push( @newList, $hostHash ) if( $hostHash->{HOSTID} ne $hostid );
+        push( @newList, $hostHash ) if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} ne $hostid );
     }
     if( @newList ) {
         $vhost_files->{$filename} = \@newList;
