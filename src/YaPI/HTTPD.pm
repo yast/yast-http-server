@@ -312,7 +312,7 @@ BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
     my $self = shift;
     my @ret = ();
-    my @data = SCR::Read('.http_server.vhosts');
+    my @data = SCR->Read('.http_server.vhosts');
 
     if( ref($data[0]) eq 'HASH' ) {
         foreach my $hostList ( values(%{$data[0]}) ) {
@@ -357,7 +357,7 @@ sub GetHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR::Read('.http_server.vhosts');
+    my @data = SCR->Read('.http_server.vhosts');
 
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
@@ -456,7 +456,7 @@ sub ModifyHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR::Read('.http_server.vhosts');
+    my @data = SCR->Read('.http_server.vhosts');
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
@@ -497,23 +497,23 @@ sub ModifyHost {
             if( $hostid eq 'default' ) {
                 foreach my $tmp ( @tmp ) {
                     if( $tmp->{KEY} eq 'ServerAdmin' ) {
-                        SCR::Write('.sysconfig.apache2.APACHE_SERVERADMIN', $tmp->{'VALUE'});
+                        SCR->Write('.sysconfig.apache2.APACHE_SERVERADMIN', $tmp->{'VALUE'});
                     } elsif( $tmp->{KEY} eq 'ServerName' ) {
-                        SCR::Write('.sysconfig.apache2.APACHE_SERVERNAME', $tmp->{'VALUE'} );
+                        SCR->Write('.sysconfig.apache2.APACHE_SERVERNAME', $tmp->{'VALUE'} );
                     } elsif( $tmp->{KEY} eq 'DocumentRoot' ) {
-                        SCR::Write('.sysconfig.apache2.APACHE_DOCUMENT_ROOT', $tmp->{'VALUE'} );
+                        SCR->Write('.sysconfig.apache2.APACHE_DOCUMENT_ROOT', $tmp->{'VALUE'} );
                     } elsif( $tmp->{KEY} eq 'ServerSignature' ) {
-                        SCR::Write('.sysconfig.apache2.APACHE_SERVERSIGNATURE', $tmp->{'VALUE'} );
+                        SCR->Write('.sysconfig.apache2.APACHE_SERVERSIGNATURE', $tmp->{'VALUE'} );
                     } elsif( $tmp->{KEY} eq 'LogLevel' ) {
-                        SCR::Write('.sysconfig.apache2.APACHE_LOGLEVEL', $tmp->{'VALUE'} );
+                        SCR->Write('.sysconfig.apache2.APACHE_LOGLEVEL', $tmp->{'VALUE'} );
                     } elsif( $tmp->{KEY} eq 'UseCanonicalName' ) {
-                        SCR::Write('.sysconfig.apache2.APACHE_USE_CANONICAL_NAME', $tmp->{'VALUE'} );
+                        SCR->Write('.sysconfig.apache2.APACHE_USE_CANONICAL_NAME', $tmp->{'VALUE'} );
                     } elsif( $tmp->{KEY} eq 'ServerTokens' ) {
-                        SCR::Write('.sysconfig.apache2.APACHE_SERVERTOKENS', $tmp->{'VALUE'} );
+                        SCR->Write('.sysconfig.apache2.APACHE_SERVERTOKENS', $tmp->{'VALUE'} );
                     } elsif( $tmp->{KEY} eq 'ExtendedStatus' ) {
-                        SCR::Write('.sysconfig.apache2.APACHE_EXTENDED_STATUS', $tmp->{'VALUE'} );
+                        SCR->Write('.sysconfig.apache2.APACHE_EXTENDED_STATUS', $tmp->{'VALUE'} );
                     } elsif( $tmp->{KEY} eq 'TimeOut' ) {
-                        SCR::Write('.sysconfig.apache2.APACHE_TIMEOUT', $tmp->{'VALUE'} );
+                        SCR->Write('.sysconfig.apache2.APACHE_TIMEOUT', $tmp->{'VALUE'} );
                     }
                 }
             }
@@ -592,7 +592,7 @@ sub CreateHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR::Read('.http_server.vhosts');
+    my @data = SCR->Read('.http_server.vhosts');
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
@@ -631,7 +631,7 @@ sub DeleteHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR::Read('.http_server.vhosts');
+    my @data = SCR->Read('.http_server.vhosts');
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
@@ -656,7 +656,7 @@ sub writeHost {
     my $self = shift;
     my $filename = shift;
 
-    SCR::Write(".http_server.vhosts.setFile.$filename", $vhost_files->{$filename} );
+    SCR->Write(".http_server.vhosts.setFile.$filename", $vhost_files->{$filename} );
     return 1;
 }
 
@@ -689,7 +689,7 @@ EXAMPLE
 BEGIN { $TYPEINFO{GetModuleList} = ["function", [ "list", "string" ] ]; }
 sub GetModuleList {
     my $self = shift;
-    my $data = SCR::Read('.sysconfig.apache2.APACHE_MODULES'); # FIXME: Error handling
+    my $data = SCR->Read('.sysconfig.apache2.APACHE_MODULES'); # FIXME: Error handling
     $data =~ s/mod_//g;
 
     return [ split(/\s+/, $data) ];
@@ -780,8 +780,8 @@ sub ModifyModuleList {
                         } @oldList );
     }
 
-    SCR::Write('.sysconfig.apache2.APACHE_MODULES', join(' ',@newList));
-    SCR::Write('.sysconfig.apache2', undef);
+    SCR->Write('.sysconfig.apache2.APACHE_MODULES', join(' ',@newList));
+    SCR->Write('.sysconfig.apache2', undef);
     return 1;
 }
 
@@ -835,7 +835,7 @@ EXAMPLE
 BEGIN { $TYPEINFO{GetModuleSelectionsList} = ["function", ["list","string"] ]; }
 sub GetModuleSelectionsList {
     my $self = shift;
-    return (SCR::Read('.http_server.moduleselection'))[0];
+    return (SCR->Read('.http_server.moduleselection'))[0];
 }
 
 =item *
@@ -876,7 +876,7 @@ sub ModifyModuleSelectionList {
         }
     }
 
-    SCR::Write('.http_server.moduleselection', [keys(%uniq)]);
+    SCR->Write('.http_server.moduleselection', [keys(%uniq)]);
 }
 
 # internal only
@@ -922,11 +922,11 @@ sub ModifyService {
     my $enable = shift;
 
     if( $enable ) {
-        Service::Adjust( "apache2", "enable" );
-        Service::RunInitScript( "apache2", "restart");
+        Service->Adjust( "apache2", "enable" );
+        Service->RunInitScript( "apache2", "restart");
     } else {
-        Service::Adjust( "apache2", "disable" );
-        Service::RunInitScript( "apache2", "stop" );
+        Service->Adjust( "apache2", "disable" );
+        Service->RunInitScript( "apache2", "stop" );
     }
     return 1;
 }
@@ -945,7 +945,7 @@ EXAMPLE
 BEGIN { $TYPEINFO{ReadService} = ["function", "boolean"]; }
 sub ReadService {
     my $self = shift;
-    return Service::Enabled('apache2');
+    return Service->Enabled('apache2');
 }
 
 #######################################################
@@ -961,15 +961,15 @@ sub ReadService {
 sub ip2device {
     my $self = shift;
     my %ip2device;
-    Progress::off();
-    SuSEFirewall::Read();
-    NetworkDevices::Read();
-    my $devices = NetworkDevices::Locate("BOOTPROTO", "static");
+    Progress->off();
+    SuSEFirewall->Read();
+    NetworkDevices->Read();
+    my $devices = NetworkDevices->Locate("BOOTPROTO", "static");
     foreach my $dev ( @$devices ) {
-        my $ip = NetworkDevices::GetValue($dev, "IPADDR");
+        my $ip = NetworkDevices->GetValue($dev, "IPADDR");
         $ip2device{$ip} = $dev if( $ip );
     }
-    Progress::on();
+    Progress->on();
     return \%ip2device;
 }
 
@@ -1003,12 +1003,12 @@ sub CreateListen {
     my %newEntry;
     $newEntry{ADDRESS} = $ip if ($ip);
     $newEntry{PORT} = ($fromPort eq $toPort)?($fromPort):($fromPort.'-'.$toPort);
-    SCR::Write( ".http_server.listen", [ @listenEntries, \%newEntry ] );
+    SCR->Write( ".http_server.listen", [ @listenEntries, \%newEntry ] );
 
     if( $doFirewall ) {
         my $ip2device = $self->ip2device();
         my $if = exists($newEntry{ADDRESS})?$ip2device->{$newEntry{ADDRESS}}:'all';
-        SuSEFirewall::AddService( $newEntry{PORT}, "TCP", $if );
+        SuSEFirewall->AddService( $newEntry{PORT}, "TCP", $if );
     }
     return 1;
 }
@@ -1050,12 +1050,12 @@ sub DeleteListen {
         next if( ($fromPort eq $toPort) and $listen->{'PORT'} eq $fromPort );
         push( @newListenEntries, $listen );
     }
-    SCR::Write( ".http_server.listen", \@newListenEntries );
+    SCR->Write( ".http_server.listen", \@newListenEntries );
     if( $doFirewall ) {
         my $ip2device = $self->ip2device();
         my $if = $ip?$ip2device->{$ip}:'all';
         my $port = ($fromPort eq $toPort)?($fromPort):("$fromPort-$toPort");
-        SuSEFirewall::RemoveService( $port, "TCP", $if );
+        SuSEFirewall->RemoveService( $port, "TCP", $if );
     }
     return 1;
 }
@@ -1084,7 +1084,7 @@ EXAMPLE
 BEGIN { $TYPEINFO{GetCurrentListen} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetCurrentListen {
     my $self = shift;
-    my @data = SCR::Read('.http_server.listen');
+    my @data = SCR->Read('.http_server.listen');
     my @ret;
     if( not ref($data[0]) ) {
         return $self->SetError( summary => 'read listen in agent failed' );
@@ -1194,7 +1194,7 @@ EXAMPLE
 
 sub GetServerFlags {
     my $self = shift;
-    return SCR::Read('.sysconfig.apache2.APACHE_SERVER_FLAGS');
+    return SCR->Read('.sysconfig.apache2.APACHE_SERVER_FLAGS');
 }
 
 =item *
@@ -1214,7 +1214,7 @@ sub SetServerFlags {
     my $self = shift;
     my $param = shift;
 
-    SCR::Write('.sysconfig.apache2.APACHE_SERVER_FLAGS', $param);
+    SCR->Write('.sysconfig.apache2.APACHE_SERVER_FLAGS', $param);
 }
 
 #######################################################
@@ -1270,7 +1270,7 @@ sub WriteServerCert {
         last;
     }
     $file .= '-cert.pem';
-    SCR::Write( '.target.string', $file, $pemData );
+    SCR->Write( '.target.string', $file, $pemData );
 
     my $found = 0;
     foreach my $k ( @$host ) {
@@ -1329,7 +1329,7 @@ sub WriteServerKey {
         last;
     }
     $file .= '-key.pem';
-    SCR::Write( '.target.string', $file, $pemData );
+    SCR->Write( '.target.string', $file, $pemData );
 
     my $found = 0;
     foreach my $k ( @$host ) {
@@ -1381,7 +1381,7 @@ sub WriteServerCA {
         last;
     }
     $file .= '-cacert.pem';
-    my $cert = SCR::Write( '.target.string', $file, $pemData );
+    my $cert = SCR->Write( '.target.string', $file, $pemData );
 
     my $found = 0;
     foreach my $k ( @$host ) {
@@ -1431,7 +1431,7 @@ sub ReadServerCert {
     unless( $file ) {
         return $self->SetError( summary => "no certificate file configured for this hostid" );
     }
-    my $cert = SCR::Read( '.target.string', $file );
+    my $cert = SCR->Read( '.target.string', $file );
     unless( $cert ) {
         return $self->SetError( summary => "error reading certificate: $file" );
     }
@@ -1481,7 +1481,7 @@ sub ReadServerKey {
             return $self->SetError( summary => "no certificate key file configured for this hostid" );
         }
     }
-    my $cert = SCR::Read( '.target.string', $file );
+    my $cert = SCR->Read( '.target.string', $file );
     unless( $cert ) {
         return $self->SetError( summary => "error reading certificate: $file" );
     }
@@ -1526,7 +1526,7 @@ sub ReadServerCA {
     unless( $file ) {
         return $self->SetError( summary => "no ca certificate file configured for this hostid" );
     }
-    my $cert = SCR::Read( '.target.string', $file );
+    my $cert = SCR->Read( '.target.string', $file );
     unless( $cert ) {
         return $self->SetError( summary => "error reading ca certificate: $file" );
     }
