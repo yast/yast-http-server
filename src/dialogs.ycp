@@ -67,7 +67,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 
 	// dialog caption
 	string caption = sformat(_("Host '%1' Configuration"), HttpServerWidgets::currenthost);
-	string help = CWM::MergeHelps (w) + HELPS["additional_default"]:"";
+	string help = CWM::MergeHelps (w);
 
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());

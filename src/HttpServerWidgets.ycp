@@ -127,6 +127,7 @@ map<string, any> overview_widget = $[
 	),
     "init"		:  OverviewInit,
     "handle"		:  OverviewHandle,
+    "help"		:  HELPS["overview_widget"]:"",
 ];
 
 /******************************************************************************************/
@@ -731,8 +732,8 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
         if (event["ID"]:nil == `toggle)
         {
 	    integer ci = (integer) UI::QueryWidget( `id( `modules ), `CurrentItem );
-	    string status = (string) select( (list) UI::QueryWidget( `id(`modules), `Item(ci) ), 2, _("Enabled") );
-	    string name = (string) select( (list) UI::QueryWidget( `id(`modules), `Item(ci) ), 1, nil );
+	    string status = (string) select( (term) UI::QueryWidget( `id(`modules), `Item(ci) ), 2, _("Enabled") );
+	    string name = (string) select( (term) UI::QueryWidget( `id(`modules), `Item(ci) ), 1, nil );
 
 	    y2debug( "Status of module: %1", status );
 	    if( status == _("Enabled") ) status = _("Disabled");
