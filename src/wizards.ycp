@@ -47,7 +47,9 @@ global define symbol HttpServerSequence() ``{
 	]
     ];
 
-    string caption = _("HttpServer configuration");
+    // translators: initialization dialog caption
+    string caption = _("HTTP server configuration");
+    // translators: initialization dialog message
     term contents = `Label(_("Initializing ..."));
 
     Wizard::CreateDialog();
@@ -66,7 +68,9 @@ global define symbol HttpServerSequence() ``{
  * @return sequence result
  */
 global define symbol HttpServerAutoSequence() ``{
-    string caption = _("HttpServer configuration");
+    // translators: initialization dialog caption
+    string caption = _("HTTP server configuration");
+    // translators: initialization dialog message
     term contents = `Label(_("Initializing ..."));
 
     Wizard::CreateDialog();

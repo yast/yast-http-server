@@ -109,11 +109,16 @@ global define boolean Read() ``{
 
     // We do not set help text here, because it was set outside
     Progress::New( caption, " ", steps, [
+	    // translators: progress stage
 	    _("&Check the environment"),
+	    // translators: progress stage
 	    _("&Read Apache2 configuration")
 	], [
+	    // translators: progress step
 	    _("Checking the environment..."),
+	    // translators: progress step
 	    _("Reading Apache2 configuration..."),
+	    // translators: progress step
 	    _("Finished")
 	],
 	""
@@ -125,6 +130,7 @@ global define boolean Read() ``{
 
     // check httpd.conf
     if( SCR::Read( .target.lstat, "/etc/apache2/httpd.conf" ) == $[] ) {
+	// translators: error message, %1 is the file name of expected configuration file
 	Report::Error( sformat( _("The configuration file '%1' does not exist."), "/etc/apache2/httpd.conf" )  );
 	return false;
     }
@@ -133,6 +139,7 @@ global define boolean Read() ``{
     if( SCR::Read( .target.lstat, "/etc/sysconfig/apache2" ) == $[] ) {
 	if( SCR::Execute( .target.bash, "cp /var/adm/fillup-templates/sysconfig.apache2 /etc/sysconfig/apache2" )
 	    != 0 ) {
+	// translators:: error message
 	    Report::Error( sformat( _("Cannot create sysconfig file '%1'."), "/etc/sysconfig/apache2" ) );
 	    return false;
 	}
@@ -142,6 +149,7 @@ global define boolean Read() ``{
     all_modules = GetModules();
     
     if(all_modules == nil) {
+	// translators:: error message
 	Report::Error(_("Cannot read the Apache2 modules descriptions."));
 	all_modules = $[];
     }
@@ -167,9 +175,11 @@ global define boolean Read() ``{
     list modules = splitstring( SCR::Read( .sysconfig.apache2."APACHE_MODULES" ), " " );
     settings["modules"] = listmap( string mod, modules, ``{
 	if( !haskey( all_modules, mod ) ) {
+	    // translators: error message
 	    Report::Error( sformat( _("The configuration file appear to load module '%1', but YaST2 does not know the module."), mod ) );
 	    return nil;
 	}
+	// translators: default name for an Apache2 module
 	return [ mod, $[ "status" : true, "description": all_modules[mod,"description"]:_("Apache2 module") ] ];
     } );
     
@@ -178,9 +188,9 @@ global define boolean Read() ``{
     // check the service status
     settings["settings", "enabled" ] = Runlevel::ServiceEnabled( "apache2" );
     
-    if(false) Report::Error(_("Cannot read current settings!"));
-
     if(Abort()) return false;
+    
+    // translators: progress step
     ProgressNextStage(_("Finished"));
 
     if(Abort()) return false;
@@ -204,13 +214,26 @@ global define boolean Write() ``{
 
     // We do not set help text here, because it was set outside
     Progress::New(caption, " ", steps, [
+	    // translators: progress stage 1/3
 	    _("Write the Apache2 settings"),
+	    // translators: progress stage 2/3
 	    _("Run SuSEconfig"),
-	    settings["settings", "enabled"]:false ? _("Enable Apache2 service") : _("Disable Apache2 service")
+	    settings["settings", "enabled"]:false ? 
+		// translators: progress stage 3/3
+		_("Enable Apache2 service") 
+		// translators: progress stage 3/3
+		: _("Disable Apache2 service")
 	], [
+	    // translators: progress step 1/3
 	    _("Writing the settings..."),
+	    // translators: progress step 2/3
 	    _("Running SuSEconfig..."),
-	    settings["settings", "enabled"]:false ? _("Enabling Apache2 service") : _("Disabling Apache2 service"),
+	    settings["settings", "enabled"]:false ? 
+		// translators: progress step 3/3
+		_("Enabling Apache2 service") 
+		// translators: progress step 3/3
+		: _("Disabling Apache2 service"),
+	    // translators: progress finished
 	    _("Finished")
 	],
 	""
@@ -225,6 +248,7 @@ global define boolean Write() ``{
     });
     SCR::Write( .sysconfig.apache2."APACHE_MODULES", mergestring( modlist, " " ) );
     if( !SCR::Write( .sysconfig.apache2, nil ) ) {
+	// translators: error message
 	Report::Error( sformat(_("Cannot write '%1'."), "/etc/sysconfig/apache2" ) );
     }
     
@@ -248,8 +272,10 @@ global define boolean Write() ``{
     Progress::NextStage();
 
     // run SuSEconfig
-    if( SCR::Execute( .target.bash, "/sbin/SuSEconfig --module apache2" ) != 0 )
+    if( SCR::Execute( .target.bash, "/sbin/SuSEconfig --module apache2" ) != 0 ) {
+	// translators: error message
 	Report::Error(_("SuSEconfig script failed!") );
+    }
 
     Progress::NextStage();
     
@@ -262,8 +288,10 @@ global define boolean Write() ``{
 	res = res && Runlevel::ServiceAdjust( "apache2", "disable" );
 	res = res && (Runlevel::RunInitScript( "apache2", "stop" ) == 0);
     }
+    // translators: error message
     if( !res ) Report::Error( sformat( _( "Cannot adjust '%1' service."), "apache2" ) );
     
+    // translators: progress finished
     ProgressNextStage(_("Finished"));
 
     if(Abort()) return false;
@@ -331,10 +359,13 @@ global define list Summary() ``{
     if( configured ) {
         // summary item: an option is turned on
         if( settings["settings", "enabled"]:false ) 
+	    // translators: autoyast summary text, server status
             summary = Summary::AddLine(summary, _("Apache2 server is <i>enabled</i>") );
         else
+	    // translators: autoyast summary text, server status
             summary = Summary::AddLine(summary, _("Apache2 server is <i>disabled</i>") );
 	    
+	// translators: autoyast summary text, %1 is path for default host document root
 	summary = Summary::AddLine(summary, sformat( _("Default host stored in: %1"), settings["defaulthost", "DocumentRoot"]:
 	    "/srv/www/htdocs" ) );
 

@@ -35,13 +35,14 @@ Please wait for a while...<br></p>") +
 You can abort the saving by pressing the <b>Abort</b> button.
 An additional dialog will inform you whether it is safe to do so or not.</p>"),
 
-	// module dialog help 1/1
+	// module dialog help 1/2
 	"modules" : _("<p><b><big>Editing HTTP server modules</big></b><br>
 The table contains list of all available Apache2 modules.
 The first column contains the name of the module, 
 The second column shows the information if the module should be
 loaded by the server. Enabled modules will be loaded. The last column displays a short description
 of the module purpose.</p>") 
+	// module dialog help 2/2
 	+ _("<p>To change the status of a module, 
 choose the appropriate entry of the table and click <b>Toggle status</b>.</p>"),
 
