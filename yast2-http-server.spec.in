@@ -1,5 +1,5 @@
 @HEADER-COMMENT@
-# neededforbuild yast2-devel-packages yast2-network yast2-firewall yast2-country yast2-installation yast2-perl-bindings perl-gettext
+# neededforbuild yast2-devel-packages yast2-network yast2-country yast2-installation yast2-perl-bindings perl-gettext
 
 @HEADER@
 Requires:	yast2 yast2-network yast2-firewall yast2-perl-bindings
