@@ -475,6 +475,7 @@ global map widgets = $[
 		    HttpServerWidgets::initModules(nil);
 		}
 	    }
+	    else UI::CloseDialog();
         }
 
     }

@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Aug 29 14:51:03 CEST 2003 - visnov@suse.de
+
+- fix command line interface 
+- fix autoyast (provide module description after Import)
+- close "add user-define module" dialog on Cancel
+- 2.8.7
+
+-------------------------------------------------------------------
 Fri Aug 29 13:45:30 CEST 2003 - visnov@suse.de
 
 - Do not check availability of apache2 package, first try to install it (#29577)
