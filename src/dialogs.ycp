@@ -143,6 +143,64 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 
 	return CWM::Run (w, $[`abort : Abort]);
     }
+    
+    symbol AddHost () {
+	term contents = `HBox( `HSpacing(0.5), `VBox (
+	    `Frame(
+		_("Server identification"),
+		`VBox(
+		    `TextEntry( `id( `servername ), _("Server name:") ),
+		    `HBox(
+			`TextEntry( `id( `documentroot ), _("Server contents root:") ),
+			`PushButton( `id( `browse ), Label::BrowseButton () )
+		    ),
+		    `TextEntry( `id( `admin ), _("Administrator e-mail:") )
+		)),
+	    `VSpacing (1),
+	    `Frame(
+		_("Server resolution"),
+		`VBox(
+		`Left( `ComboBox( `id( `ipaddress ), _("IP address:"), maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) ) ),
+		`RadioButtonGroup(
+		    `id ( `resolution ),
+		    `VBox (
+			`Left(`RadioButton ( `id ( `name_based ), _("Determine request server by HTTP headers") ) ),
+			`Left(`RadioButton ( `id ( `ip_based ), _("Determine request server by server IP address") ) )
+		    )
+		)))), `HSpacing (0.5)
+	);
+	string caption = _("New Host Information");
+	
+	string help = HELPS ["add_host_general"]:"";
 
+	Wizard::SetContentsButtons (caption, contents, help,
+	    Label::BackButton (), Label::NextButton ());
+	    
+	symbol ret = nil;
+	
+	do {
+	    ret = (symbol)UI::UserInput ();
+	    
+	    if (ret == `browse)
+	    {
+		// Allow to choose a directory
+		string dir = UI::AskForExistingDirectory ("/srv", _("Choose Document Root") );
+		if (dir != nil)
+		{
+		    UI::ChangeWidget (`documentroot, `Value, dir );
+		}
+		
+		ret = nil;
+	    }
+	    
+	    if (ret == `next )
+	    {
+		// FIXME: Do checks about the IP address availability
+	    }
+	} while (ret == nil);
+	
+	return ret;
+    }
+    
 /* EOF */
 }

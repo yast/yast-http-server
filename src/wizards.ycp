@@ -32,6 +32,7 @@ symbol MainSequence() {
 	"host-default"	:   ``( HostDialog() ),			// different workflow
 	"listen"	:   ``( ListenDialog() ),
 	"modules"	:   ``( ModulesDialog() ),
+	"addhost"	:   ``( AddHost() ),
 #	"ssl"		:   ``( SSLDialog () ),
 #	"module_sel"	:   ``( ModuleSelectionsDialog ()),
     ];
@@ -65,8 +66,15 @@ symbol MainSequence() {
 	    `abort	: `abort,
 	    `next	: "overview",
 	    `back	: "overview",
+	    `add	: "addhost",
+	    `edit	: "host",
 	],
 	"host" : $[
+	    `abort	: `abort,
+	    `next	: "hosts",
+	    `back	: "hosts",
+	],
+	"addhost": $[
 	    `abort	: `abort,
 	    `next	: "hosts",
 	    `back	: "hosts",
