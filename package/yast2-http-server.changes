@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Thu Apr  1 18:58:50 CEST 2004 - visnov@suse.cz
+
+- fix CWM-related errors
+- show elipsis for more details (#37439)
+- hide log button for autoyast
+- don't crash autoyast
+- 2.9.18 
+
+-------------------------------------------------------------------
 Thu Apr  1 11:51:44 CEST 2004 - ug@suse.de
 
 - removed obsolete code from HTTPD.pm
