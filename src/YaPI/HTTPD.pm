@@ -761,7 +761,7 @@ sub writeHost {
             my $module = $self->define4keyword( $data->{KEY}, 'module' );
             if( $define || $module ) {
                 # either IfDefine or IfModule is possible. Not both at the same time
-                my $secName = ($define)?('IfDefined'):('IfModule');
+                my $secName = ($define)?('IfDefine'):('IfModule');
                 my $param   = ($define)?($define):($module);
                 my %h = %$data;
                 push( @newData, { 'OVERHEAD'     => "# YaST auto define section\n",
