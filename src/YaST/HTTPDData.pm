@@ -19,6 +19,7 @@ sub Error {
     return YaPI::HTTPD->Error();
 }
 
+BEGIN { $TYPEINFO{ParseDirOption} = ["function", "map", "string" ]; }
 sub ParseDirOption {
     my $self = shift;
     my $optionText = shift;
