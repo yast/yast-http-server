@@ -847,6 +847,7 @@ sub selections2modules {
     my $list = shift;
     my @ret;
     foreach my $sel ( @$list ) {
+	print STDERR "$sel \n";
         push( @ret, @{$HTTPDModules::selection{$sel}->{modules}} );
     }
     return @ret;
@@ -1025,7 +1026,7 @@ ADDRESS => the listen address like 127.0.0.1
 
 PORT    => the listen port like "80", "443", "80-81"
 
-it's not possible to get the firewall settings.
+it is not possible to get the firewall settings.
 
 EXAMPLE
 

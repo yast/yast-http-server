@@ -32,7 +32,8 @@ symbol MainSequence() {
 	"listen"	:   ``( ListenDialog() ),
 	"modules"	:   ``( ModulesDialog() ),
 	"addhost"	:   ``( AddHost() ),
-#	"ssl"		:   ``( SSLDialog () ),
+	"ssl"		:   ``( SSLDialog () ),
+	"ssl-default"	:   ``( SSLDialog () ),
 #	"module_sel"	:   ``( ModuleSelectionsDialog ()),
     ];
 
@@ -60,6 +61,12 @@ symbol MainSequence() {
 	    `abort	: `abort,
 	    `next	: "overview",
 	    `back	: "overview",
+	    `ssl	: "ssl-default",
+	],
+	"ssl-default" : $[
+	    `abort	: `abort,
+	    `next	: "host-default",
+	    `back	: "host-default",
 	],
 	"hosts" : $[
 	    `abort	: `abort,
@@ -72,11 +79,17 @@ symbol MainSequence() {
 	    `abort	: `abort,
 	    `next	: "hosts",
 	    `back	: "hosts",
+	    `ssl	: "ssl",
 	],
 	"addhost": $[
 	    `abort	: `abort,
 	    `next	: "hosts",
 	    `back	: "hosts",
+	],
+	"ssl": $[
+	    `abort	: `abort,
+	    `next	: "host",
+	    `back	: "host",
 	],
     ];
 
@@ -113,6 +126,7 @@ symbol HttpServerSequence() {
 	]
     ];
 
+    Wizard::SetDesktopIcon("http-server");
     Wizard::CreateDialog();
 
     symbol ret = Sequencer::Run(aliases, sequence);
@@ -132,6 +146,7 @@ symbol HttpServerAutoSequence() {
     // translators: initialization dialog message
     term contents = `Label(_("Initializing ..."));
 
+    Wizard::SetDesktopIcon("http-server");
     Wizard::CreateDialog();
     Wizard::SetContentsButtons(caption, contents, "",
 	    Label::BackButton(), Label::NextButton());

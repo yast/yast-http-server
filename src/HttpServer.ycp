@@ -20,7 +20,7 @@ import "NetworkDevices";
 import "Progress";
 import "Report";
 import "Require";
-import "Runlevel";
+import "Service";
 import "Summary";
 
 /**
@@ -87,36 +87,6 @@ global map<string,string> ip2device = $[];
  * Read, used in Write.
  */
 global list< map<string,string> > listen4firewall = [];
-
-global string document_root = "";
-
-/****************************** local data ************************************/
-
-/**
- * List of httpd.conf options to be stored in settings part, not in hosts
- */
-list<string> server_settings = [ "ErrorLog", "CustomLog" ];
-
-/**
- * List of options which allow multiple keys
- */
-list<string> multiple_settings = ["Include", "CustomLog"];
-
-map<string,string> sysconfig_values = $[
-    "apache_access_log"	: "APACHE_ACCESS_LOG",
-    "ServerAdmin"	: "APACHE_SERVERADMIN",
-    "ServerName"	: "APACHE_SERVERNAME",
-//    "DocumentRoot"	: "APACHE_DOCUMENT_ROOT",
-];
-
-/**
- * Hack to hide special PHP module handling
- * FIXME: remove for the next version
- */
-boolean php_hack = false;
-
-/************************** end of local data *********************************/
-
 
 /**
  * Read all http-server settings
@@ -206,7 +176,6 @@ global define boolean Read() ``{
 
     // read current settings for firewall and network
     Progress::off();
-#    SuSEFirewall::Read();
     NetworkDevices::Read();
 
     // generate the map: static IP -> device
@@ -229,9 +198,6 @@ global define boolean Read() ``{
 	    }
 	}
     });
-
-    settings["settings", "firewall_started"] = false;// FIXME:lookup( SuSEFirewall::Export(), "start_firewall", false );
-
     Progress::on();
 
     // translators: progress step
@@ -293,35 +259,7 @@ global define boolean Write() ``{
 
     // write Apache2 settings
 
-    // write sysconfig
-    list<string> modlist = [];
-    foreach( string mod, map status, settings["modules"]:$[], ``{
-	if( status["status"]: false ) {
-	    modlist = add( modlist, mod );
-	}
-    });
-
     list<string> rpms = HTTPDData::GetModulePackages();
-
-    if( php_hack ) {
-	settings[ "modules", "php4", "status" ] = true;
-    }
-
-/*
-    // install rpms only for changed modules
-    list rpms = [];
-    foreach( string mod, modules_modified, ``{
-	if( settings[ "modules", mod, "status"]: false ) {
-	    rpms = union( rpms, settings[ "modules", mod, "requires"]:[] );
-	}
-    });
-*/
-
-    SCR::Write( .sysconfig.apache2."APACHE_MODULES", mergestring( modlist, " " ) );
-    if( !SCR::Write( .sysconfig.apache2, nil ) ) {
-	// translators: error message
-	Report::Error( sformat(_("Cannot write '%1'."), "/etc/sysconfig/apache2" ) );
-    }
 
     // install required RPMs for modules
     // TODO: php4 does not work with thread-based apache2 config
@@ -335,19 +273,10 @@ Install them now?
 
     // write hosts
     HTTPDData::WriteHosts ();
-    
     HTTPDData::WriteListen ();
-    
     HTTPDData::WriteModuleList ();
     
 #	Report::Error( sformat(_("Cannot write '%1'."), "/etc/apache2/listen.conf" ) );
-
-    // global settings
-    foreach( string key, any value, settings["settings"]:$[], ``{
-	// filter internal and other options
-	if( !contains( ["enabled", "firewall", "firewall_started" ], key ) )
-	    SCR::Write( add(.etc.httpd, key), value );
-    });
 
     Progress::NextStage();
 

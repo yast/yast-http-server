@@ -18,13 +18,11 @@ Read	.etc.install_inf.UseSSH nil
 Read	.etc.install_inf.InstMode nil
 Read	.target.tmpdir nil
 Log	Failed to set temporary directory: nil
-Read	.sysconfig.personal-firewall.REJECT_ALL_INCOMING_CONNECTIONS "yes"
-Read	.target.ycp "/usr/share/YaST2/data/all-apache2-modules.ycp" nil
-Dump	$["Listen":[$["PORT":"80"]], "default":$["ServerAdmin":"webmaster@example.com", "ServerName":"www.example.com"], "modules":nil, "settings":$["enabled":false, "firewall":true, "firewall_started":false]]
+Dump	$[]
 Dump	false
 Dump	false
 Read	.target.ycp "/usr/share/YaST2/data/all-apache2-modules.ycp" nil
 Return	true
-Dump	$["Listen":[$["PORT":"80"]], "default":$["ServerAdmin":"webmaster@example.com", "ServerName":"www.example.com:80"], "modules":$["negotiation":$["description":"", "status":false], "ssl":$["description":"", "status":false]], "settings":$["enabled":true]]
+Dump	$["default":$["ServerAdmin":"webmaster@example.com", "ServerName":"www.example.com:80"], "modules":$["negotiation":$["description":"", "status":false], "ssl":$["description":"", "status":false]], "settings":$["enabled":true]]
 Dump	true
 Dump	false
