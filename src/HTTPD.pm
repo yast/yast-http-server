@@ -361,7 +361,7 @@ sub ModifyService {
 # apache2 listen ports
 #######################################################
 # boolean CreateListen( int, int, list<string> )
-BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", ["int", "int", [ "list", "string" ] ] ]; }
+BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", ["integer", "integer", [ "list", "string" ] ] ]; }
 sub CreateListen {
     my $fromPort = shift;
     my $toPort = shift;
