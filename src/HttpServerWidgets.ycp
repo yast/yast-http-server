@@ -191,7 +191,8 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	    {
 		// error message - the entered ip address is already 
 		// configured for another virtual host
-		string error_msg = _("The IP address is already configured on another virtual host (")+ (string) get_host_value ( "ServerName", desc, nil ) + ")";
+		string error_msg = sformat (_("The IP address is already configured on another virtual host (%1)")
+		    , get_host_value ( "ServerName", desc, nil ));
 		Report::Error (error_msg);
 		res = false;
 		break;
