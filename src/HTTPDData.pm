@@ -67,8 +67,6 @@ my @oldModules = ();
 my %newModules = ();
 my %delModules = ();
 
-ReadModules();
-
 #bool ReadModules();
 BEGIN { $TYPEINFO{ReadModules} = ["function", "boolean" ]; }
 sub ReadModules {
