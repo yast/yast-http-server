@@ -94,7 +94,7 @@ sub GetHost {
 }
 
 #boolean ModifyHost( string hostid, list hostdata );
-BEGIN { $TYPEINFO{ModifyHost} = ["function", "boolean", "string", [ "map", "string", "any" ] ]; }
+BEGIN { $TYPEINFO{ModifyHost} = ["function", "boolean", "string", ["list", [ "map", "string", "any" ] ] ]; }
 sub ModifyHost {
     my $hostid = shift;
     my $hostdata = shift;
