@@ -61,7 +61,7 @@ global define boolean Modified() ``{
 global map settings = $[
     "modules" : GetModules(),
     "defaulthost" : $[
-	"ServerName" : "www.example.com:80",
+	"ServerName" : "www.example.com",
 //	"DocumentRoot" : "/srv/www/htdocs",
 	"ServerAdmin" : "webmaster@example.com",
 	"Listen" : ["80"],

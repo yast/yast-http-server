@@ -49,6 +49,7 @@ if(func == "Summary") {
 /* Reset configuration */
 else if (func == "Reset") {
     HttpServer::Import($[]);
+    HttpServer::configured = false;
     ret = $[];
 }
 /* Change configuration (run AutoSequence) */
