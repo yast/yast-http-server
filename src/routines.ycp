@@ -75,7 +75,7 @@ global define term listen2item( string arg, integer id ) ``{
  * Convert a Listen string to a pair: $[ "port": port, "address": network ]
  *
  * @param arg		the Listen string
- * @return term		term for the table
+ * @return map		map with the result
  */
 global define map listen2map( string arg ) ``{
     integer colon = find( arg, ":" );
@@ -118,6 +118,10 @@ global define map GetModules() ``{
 /**
  * Generate list of configured log files. First, use sysconfig and then as at lower priority
  * use CustomLog from httpd.conf files.
+ *
+ * @param access_logs	string containing configured access_log
+ * @param custom_logs	list of other configured logs
+ * @return list		list of all configured logs ordered by priority
  */
 global define list GetLogs( string access_logs, list custom_logs ) ``{
 

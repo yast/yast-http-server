@@ -106,6 +106,12 @@ map cmdline_description = $[
     ]
 ];
 
+/**
+ * Handler for command line action "configure".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
 define boolean ConfigureHandler(map options) ``{
 
     if( options["host"]:nil != "defaulthost" ) {
@@ -144,6 +150,12 @@ define boolean ConfigureHandler(map options) ``{
     return true;
 }
 
+/**
+ * Handler for command line action "modules".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
 define boolean ModulesHandler(map options) ``{
     // check the command to be present exactly once
     string command = CommandLine::UniqueOption( options,
@@ -179,6 +191,12 @@ define boolean ModulesHandler(map options) ``{
     return true;
 }
 
+/**
+ * Handler for command line action "listen".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
 define boolean ListenHandler(map options) ``{
 
     // check the command to be present exactly once
