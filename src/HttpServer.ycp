@@ -527,7 +527,7 @@ global define boolean Import (map s) ``{
     ];
 
     // FIXME: do a transformation from 9.0
-    settings["Listen"] = s[ "defaulthost", "Listen" ]: [ $["PORT":"80"] ];
+//    settings["Listen"] = s[ "defaulthost", "Listen" ]: [ $["PORT":"80"] ];
 
     modified = false;
     configured = true;
