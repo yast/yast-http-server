@@ -149,14 +149,14 @@
 		_("Server Identification"),
 		`VBox(
 		    // translators: textentry, new host server name
-		    `TextEntry( `id( `servername ), _("Server Name:") ),
+		    `TextEntry( `id( `servername ), _("Server &Name:") ),
 		    `HBox(
 			// translators: textentry, document root for the new host
-			`TextEntry( `id( `documentroot ), _("Server Contents Root:") ),
+			`TextEntry( `id( `documentroot ), _("Server &Contents Root:") ),
 			`PushButton( `id( `browse ), Label::BrowseButton () )
 		    ),
 		    // translators: textentry, administrator's e-mail for the new host
-		    `TextEntry( `id( `admin ), _("Administrator E-mail:") )
+		    `TextEntry( `id( `admin ), _("&Administrator E-mail:") )
 		)),
 	    `VSpacing (1),
 	    `Frame(
@@ -164,14 +164,14 @@
 		_("Server Resolution"),
 		`VBox(
 		// translators: IP address for the new host
-		`Left( `ComboBox( `id( `ipaddress ), _("IP Address:"), maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) ) ),
+		`Left( `ComboBox( `id( `ipaddress ), _("&IP Address:"), maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) ) ),
 		`RadioButtonGroup(
 		    `id ( `resolution ),
 		    `VBox (
 			// translators: radio button for name-based virtual hosts
-			`Left(`RadioButton ( `id ( `name_based ), _("Determine Request Server by HTTP Headers"), true ) ),
+			`Left(`RadioButton ( `id ( `name_based ), _("Determine Request Server by HTTP &Headers"), true ) ),
 			// translators: radio button for IP-based virtual hosts
-			`Left(`RadioButton ( `id ( `ip_based ), _("Determine Request Server by Server IP Address") ) )
+			`Left(`RadioButton ( `id ( `ip_based ), _("Determine Request Server by Server IP &Address") ) )
 		    )
 		)))), `HSpacing (0.5)
 	);
