@@ -6,9 +6,7 @@ use HTTPDModules;
 YaST::YCP::Import ("SCR");
 YaST::YCP::Import ("Service");
 YaST::YCP::Import ("SuSEFirewall");
-YaST::YCP::Import ("Lan");
-YaST::YCP::Import ("Label");
-YaST::YCP::Import ("Arch");
+YaST::YCP::Import ("NetworkDevices");
 YaST::YCP::Import ("Progress");
 
 #######################################################
@@ -370,16 +368,11 @@ sub ip2device {
     my %ip2device;
     Progress::off();
     SuSEFirewall::Read();
-    Lan::Read();
-    my $devices = Lan::Export();
-    Progress::on();
-    foreach my $k ( keys(%{$devices->{'devices'}}) ) {
-        foreach my $kk ( keys(%{$devices->{'devices'}->{$k}}) ) {
-            if( $devices->{'devices'}->{$k}->{$kk}->{"BOOTPROTO"} eq 'static' and
-                exists($devices->{'devices'}->{$k}->{$kk}->{"IPADDR"} ) ) {
-                $ip2device{$devices->{'devices'}->{$k}->{$kk}->{"IPADDR"}} = $k.$kk;
-            }
-        }
+    NetworkDevices::Read();
+    my $devices = NetworkDevices::Locate("BOOTPROTO", "static");
+    foreach my $dev ( @$devices ) {
+        my $ip = NetworkDevices::GetValue($dev, "IPADDR");
+        $ip2device{$ip} = $dev if( $ip );
     }
     Progress::on();
     return \%ip2device;
