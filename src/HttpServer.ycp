@@ -27,7 +27,7 @@ import "Summary";
  * Abort function
  * return boolean return true if abort
  */
-global block<boolean> AbortFunction = nil;
+global boolean() AbortFunction = nil;
 
 /**
  * Required packages
@@ -217,7 +217,6 @@ global define boolean Write() ``{
     list<string> rpms = HTTPDData::GetModulePackages();
 
     // install required RPMs for modules
-    // TODO: php4 does not work with thread-based apache2 config
     Require::RequireAndConflictTarget( rpms, [], _("The enabled modules require
 installation of some of these additional packages:
 %1

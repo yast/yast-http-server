@@ -22,7 +22,7 @@ import "Popup";
  */
 global define boolean Abort() ``{
     if(AbortFunction != nil)
-	return eval(AbortFunction) == true;
+	return AbortFunction() == true;
     return false;
 }
 

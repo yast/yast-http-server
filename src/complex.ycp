@@ -15,8 +15,10 @@ import "Wizard";
 import "Wizard_hw";
 
 import "HttpServer";
+import "HTTPDData";
 
 import "Label";
+import "Popup";
 
 include "http-server/helps.ycp";
 
@@ -34,7 +36,7 @@ boolean Modified() {
  */
 symbol ReadDialog() {
     Wizard::RestoreHelp(HELPS["read"]:"");
-# FIXME:    HttpServer::AbortFunction = HttpServer::PollAbort;
+    HttpServer::AbortFunction = HttpServer::PollAbort;
     boolean ret = HttpServer::Read();
     return ret ? `next : `abort;
 }
@@ -45,9 +47,13 @@ symbol ReadDialog() {
  */
 symbol WriteDialog() {
     Wizard::RestoreHelp(HELPS["write"]:"");
-# FIXME:    HttpServer::AbortFunction = HttpServer::PollAbort;
+    HttpServer::AbortFunction = HttpServer::PollAbort;
     boolean ret = HttpServer::Write();
     return ret ? `next : `abort;
+}
+
+boolean ReallyAbort() {
+    return !HttpServer::modified || Popup::ReallyAbort(true);
 }
 
 /* EOF */
