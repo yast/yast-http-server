@@ -423,7 +423,7 @@ sub GetHost {
             $hostHash->{'DATA'} = \@newHH;
             if( $sslEngine eq 'on' and grep( { $_->{KEY} eq 'SSLRequireSSL' } @{$hostHash->{'DATA'}} ) ) {
 #		use Data::Dumper; print Dumper($hostHash);
-                delete($hostHash->{'DATA'}->{'SSLRequireSSL'});
+                $self->ModifyHostKey($hostHash->{'DATA'}, 'SSLRequireSSL');
                 $sslHash->{'VALUE'} = 2;
             } elsif( $sslEngine eq 'on' ) {
                 $sslHash->{'VALUE'} = 1;
