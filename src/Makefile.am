@@ -39,7 +39,8 @@ YaPI_perl_DATA = \
 YaST_perldir = @moduledir@/YaST
 
 YaST_perl_DATA = \
-	YaST/HTTPDData.pm
+	YaST/HTTPDData.pm \
+	YaST/httpdUtils.pm
 
 ycpchook = http-server
 
