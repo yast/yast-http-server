@@ -543,9 +543,9 @@ global map<string,map> popups = $[
 		    "widget" : `radio_buttons,
 		    "items" : [
 			// translators: radio button for name-based virtual hosts
-			[ "0", _("Determine Request Server by HTTP &Headers") ],
+			[ "1", _("Determine Request Server by HTTP &Headers") ],
 			// translators: radio button for IP-based virtual hosts
-			[ "1", _("Determine Request Server by Server IP &Address") ],
+			[ "0", _("Determine Request Server by Server IP &Address") ],
 		    ],
 		]
 	    ],
@@ -1211,7 +1211,7 @@ define string item2listen( string network, string port ) ``{
 	}
 	else if (opt_key == "VirtualByName")
 	{
-	    if (res == "0")
+	    if (res == "1")
 	    {
 		// translators: table entry text for name-based vhosts
 		res = _("Resolution via HTTP Headers");
