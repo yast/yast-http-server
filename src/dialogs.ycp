@@ -20,56 +20,66 @@
     import "Label";
     import "CWM";
     import "Wizard";
+    
+    boolean Abort () {
+	return ( !(HttpServer::modified) || Popup::ReallyAbort(true) );    
+    }
 
     /**
       * Run default host dialog
       * @return symbol for wizard sequencer
       */
-    global define symbol DefaultHostDialog () ``{
+    symbol OverviewDialog () {
 	// fix the help for document root, it defined
 	if( size(HttpServer::document_root) > 0 ) {
 	    HttpServerWidgets::widgets["server_enable", "help" ] = HELPS[ "server_enable" ]:"" + sformat( _("<p>The documents served by
 the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	}
 	
-	list<map> w = CWM::CreateWidgets (["server_enable", "firewall_adapt", "global_table" ],
-	    HttpServerWidgets::widgets);
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
-	    w[0, "widget"]:`VSpacing (0),
+	    "server_enable",
 	    `VSpacing (1),
-	    `Left(w[1, "widget"]:`VSpacing (0)),
+	    `Left("firewall_adapt"),
 	    `VSpacing (1),
-	    w[2,"widget"]:`VSpacing (0)
+	    "overview_widget"
 	), `HSpacing (1));
 	// dialog caption
 	string caption = _("HTTP Server Configuration");
+
+	return CWM::ShowAndRun (["server_enable", "firewall_adapt", "overview_widget" ]
+	    ,HttpServerWidgets::widgets
+	    ,contents, caption, 
+	    Label::BackButton (), Label::FinishButton (), $[`abort : Abort]);
+    }
+
+    /**
+      * Run single host configuration dialog
+      * @return symbol for wizard sequencer
+      */
+    symbol HostDialog () {
+	list<map> w = CWM::CreateWidgets (["host" ],
+	    HttpServerWidgets::widgets);
+	term contents = `HBox (`HSpacing (1), `VBox (
+	    `VSpacing (1),
+	    w[0, "widget"]:`VSpacing (1)
+	), `HSpacing (1));
+
+	// dialog caption
+	string caption = sformat(_("Host '%1' Configuration"), HttpServerWidgets::currenthost);
 	string help = CWM::MergeHelps (w) + HELPS["additional_default"]:"";
 
 	Wizard::SetContentsButtons (caption, contents, help,
-	    Label::BackButton (), Label::FinishButton ());
+	    Label::BackButton (), Label::OKButton ());
 	    
-	UI::ReplaceWidget( `id(`_tp_table_repl), 
-	    // menu button label
-	    `MenuButton( _("Advanced"), 
-		// menu button item
-		Mode::config ? [ `item( `id( `modules ), _("Server &Modules") ) ]
-		// menu button item
-		: [ `item( `id( `show_access_log ), _("Show &Access Log") ), 
-		    // menu button item
-		  `item( `id( `show_error_log ), _("Show &Error Log") ), 
-		    // menu button item
-		  `item( `id( `modules ), _("Server &Modules") ),
-	    ] ) );
-
-	return CWM::Run (w, $[ `abort: ``( !HttpServer::modified || Popup::ReallyAbort(true) ) ]);
+	return CWM::Run (w, $[`abort : Abort]);
     }
 
     /**
       * Run modules dialog
       * @return symbol for wizard sequencer
       */
-    global define symbol ModulesDialog () ``{
+    symbol ModulesDialog () {
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
 	    "modules",
@@ -80,14 +90,41 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	string caption = _("Server Modules");
 
 	return CWM::ShowAndRun (["modules"], HttpServerWidgets::widgets, contents, caption,
-	  Label::BackButton(), Label::OKButton(), $[`abort: ``( !HttpServer::modified || Popup::ReallyAbort(true) )]);
+	  Label::BackButton(), Label::OKButton(), $[`abort : Abort]);
+    }
+
+    /**
+      * Run virtual host list dialog
+      * @return symbol for wizard sequencer
+      */
+    symbol HostsDialog () {
+	list<map> w = CWM::CreateWidgets (["hosts"],
+	    HttpServerWidgets::widgets);
+	term contents = `HBox (`HSpacing (1), `VBox (
+	    `VSpacing (1),
+	    w[0, "widget"]:`VSpacing (0),
+	    `VSpacing (1)
+	), `HSpacing (1));
+
+	// dialog caption
+	string caption = _("Configured Hosts");
+	string help = CWM::MergeHelps (w);
+
+	Wizard::SetContentsButtons (caption, contents, help,
+	    Label::BackButton (), Label::OKButton ());
+	    
+	UI::ReplaceWidget( `id(`_tp_table_repl), 
+	    // menu button label
+	    `PushButton( `id( `set_default ), _("Set as De&fault") ) );
+
+	return CWM::Run (w, $[`abort : Abort]);
     }
 
     /**
       * Run server settings edit dialog
       * @return symbol for wizard sequencer
       */
-    global define symbol ListenDialog () ``{
+    symbol ListenDialog () {
 	list<map> w = CWM::CreateWidgets (["listen"],
 	    HttpServerWidgets::widgets);
 	term contents = `HBox (`HSpacing (1), `VBox (
@@ -104,7 +141,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 
-	return CWM::Run (w, $[`abort: ``( !HttpServer::modified || Popup::ReallyAbort(true) )]);
+	return CWM::Run (w, $[`abort : Abort]);
     }
 
 /* EOF */

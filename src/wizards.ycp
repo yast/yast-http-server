@@ -23,31 +23,53 @@ include "http-server/dialogs.ycp";
  * Main workflow of the http-server configuration
  * @return sequence result
  */
-global define symbol MainSequence() ``{
+symbol MainSequence() {
 
     map aliases = $[
-	"defaults"	:   ``( DefaultHostDialog() ),
+	"overview"	:   ``( OverviewDialog() ),
+	"hosts"		:   ``( HostsDialog()),
+	"host"		:   ``( HostDialog() ),
+	"host-default"	:   ``( HostDialog() ),			// different workflow
 	"listen"	:   ``( ListenDialog() ),
 	"modules"	:   ``( ModulesDialog() ),
+#	"ssl"		:   ``( SSLDialog () ),
+#	"module_sel"	:   ``( ModuleSelectionsDialog ()),
     ];
 
     map sequence = $[
-	"ws_start" : "defaults",
-	"defaults" : $[
+	"ws_start" : "overview",
+	"overview" : $[
 	    `abort	: `abort,
 	    `next	: `next,
+	    `default	: "host-default",
+	    `hosts	: "hosts",
 	    `modules	: "modules",
 	    `listen	: "listen",
 	],
 	"modules" : $[
 	    `abort	: `abort,
-	    `next	: "defaults",
-	    `back	: "defaults",
+	    `next	: "overview",
+	    `back	: "overview",
 	],
 	"listen" : $[
 	    `abort	: `abort,
-	    `next	: "defaults",
-	    `back	: "defaults",
+	    `next	: "overview",
+	    `back	: "overview",
+	],
+	"host-default" : $[
+	    `abort	: `abort,
+	    `next	: "overview",
+	    `back	: "overview",
+	],
+	"hosts" : $[
+	    `abort	: `abort,
+	    `next	: "overview",
+	    `back	: "overview",
+	],
+	"host" : $[
+	    `abort	: `abort,
+	    `next	: "hosts",
+	    `back	: "hosts",
 	],
     ];
 
@@ -60,7 +82,7 @@ global define symbol MainSequence() ``{
  * Whole configuration of http-server
  * @return sequence result
  */
-global define symbol HttpServerSequence() ``{
+symbol HttpServerSequence() {
 
     map aliases = $[
 	"read"	: [ ``( ReadDialog() ), true ],
@@ -97,7 +119,7 @@ global define symbol HttpServerSequence() ``{
  * For use with autoinstallation.
  * @return sequence result
  */
-global define symbol HttpServerAutoSequence() ``{
+symbol HttpServerAutoSequence() {
     // translators: initialization dialog caption
     string caption = _("HTTP Server Configuration");
     // translators: initialization dialog message

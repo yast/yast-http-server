@@ -66,8 +66,8 @@ sub checkHostmap {
 }
 
 #list<string> GetHostList();
-BEGIN { $TYPEINFO{GetHostList} = ["function", [ "list", "string"] ]; }
-sub GetHostList {
+BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
+sub GetHostsList {
     my @ret = ();
     my @data = SCR::Read('.http_server.vhosts');
 
@@ -455,8 +455,8 @@ sub GetModulePackages {
 
 
 sub run {
-    print "-------------- GetHostList\n";
-    foreach my $h ( GetHostList() ) {
+    print "-------------- GetHostsList\n";
+    foreach my $h ( GetHostsList() ) {
         print "ID: $h\n";
     }
 
