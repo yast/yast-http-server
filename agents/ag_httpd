@@ -6,14 +6,14 @@
 #
 
 # A trivial agent for reading/modifying Apache2 httpd.conf file
-# supports only DocumentRoot, ServerAdmin, ServerName and Listen on top-level
+# supports only Listen on top-level
 
 use ycp;
 use strict;
 use File::Temp;
 
 # known values which can be read
-my @known_values = qw( Listen DocumentRoot ServerName ServerAdmin );
+my @known_values = qw( Listen CustomLog ErrorLog );
 
 #
 # MAIN cycle
@@ -22,10 +22,21 @@ my @known_values = qw( Listen DocumentRoot ServerName ServerAdmin );
 # read the agent arguments
 $_ = <STDIN>;
 
-my $httpd_conf = "/etc/apache2/httpd.conf" ; #ycp::ParseCommand ($_);
+my $httpd_conf = "";
+my $init = $_;
+if( $init =~ m/^\"?([^\"]+)\"?$/ )
+{
+   $httpd_conf = $1;
+}
+
+y2debug( $httpd_conf );
+
 if( not open( CONF, $httpd_conf ) ) {
     die "Cannot open configuration file '$httpd_conf'";
 }
+
+ycp::Return (undef);
+
 # read the configuration
 
 my @listen = ();
@@ -34,9 +45,6 @@ my $error_log = "";
 my $line = "";
 my $new_listen = "";
 my $size = "";
-my $servername = "";
-my $serveradmin = "";
-my $documentroot = "";
 
 my @section_stack = ();
 my $stack_size = 0;
@@ -70,21 +78,6 @@ while( $line = <CONF> ) {
 	    push( @listen, $1 );
 	}
     
-	if( $line =~ /^[ \t]*ServerName[ \t]+([^ \t]+)/ ) {
-	    $servername = $1;
-	    y2debug( "Found server name $servername" );
-	}
-
-	if( $line =~ /^[ \t]*ServerAdmin[ \t]+([^ \t]+)/ ) {
-	    $serveradmin = $1;
-	    y2debug( "Found server admin $serveradmin" );
-	}
-
-	if( $line =~ /^[ \t]*DocumentRoot[ \t]+([^ \t]+)/ ) {
-	    $documentroot = $1;
-	    y2debug( "Found document root $documentroot" );
-	}
-
 	if( $line =~ /^[ \t]*CustomLog[ \t]+([^ \t]+)/ ) {
 	    push( @custom_log, $1 );
 	}
@@ -103,10 +96,6 @@ if( $stack_size != 0 ) {
 
 close( CONF );
 
-# no input at all - simply exit
-# exit if ! defined $_;
-# reply to the client (this actually gets eaten by the ScriptingAgent)
-ycp::Return (undef);
 
 while ( <STDIN> )
 {
@@ -125,24 +114,9 @@ while ( <STDIN> )
 	    @custom_log = @{$argument};
 	    ycp::Return ( "true" );
 	}
-	elsif ( $path eq ".DocumentRoot" or $path eq ".\"DocumentRoot\"" )
-	{
-	    $documentroot = $argument;
-	    ycp::Return ( "true" );
-	}
 	elsif ( $path eq ".ErrorLog" or $path eq ".\"ErrorLog\"" )
 	{
 	    $error_log = $argument;
-	    ycp::Return ( "true" );
-	}
-	elsif ( $path eq ".ServerName" or $path eq ".\"ServerName\"" )
-	{
-	    $servername = $argument;
-	    ycp::Return ( "true" );
-	}
-	elsif ( $path eq ".ServerAdmin" or $path eq ".\"ServerAdmin\"" )
-	{
-	    $serveradmin = $argument;
 	    ycp::Return ( "true" );
 	}
 	elsif ( $path eq "." )
@@ -189,7 +163,7 @@ while ( <STDIN> )
     
 		    # only top-level values
 		    if( $stack_size == 0 ) {
-			if( not ( $line =~ /^\s*(Listen|ServerName|ServerAdmin|DocumentRoot|CustomLog|ErrorLog)\s+[^\s]+/ ) ) {
+			if( not ( $line =~ /^\s*(Listen|CustomLog|ErrorLog)\s+[^\s]+/ ) ) {
 			    print $newconf $line;
 			}
 		    } else { 
@@ -204,17 +178,8 @@ while ( <STDIN> )
 		foreach my $i ( @custom_log ) {
 		    print $newconf "CustomLog $i\n";
 		}
-		if( defined $serveradmin && $serveradmin ne "" ) {
-		    print $newconf "ServerAdmin $serveradmin\n";
-		}
 		if( defined $error_log && $error_log ne "" ) {
 		    print $newconf "ErrorLog $error_log\n";
-		}
-		if( defined $servername && $servername ne "" ) {
-		    print $newconf "ServerName $servername\n";
-		}
-		if( defined $documentroot && $documentroot ne "" ) {
-		    print $newconf "DocumentRoot $documentroot\n";
 		}
 	    
 		close( $newconf );
@@ -253,19 +218,7 @@ while ( <STDIN> )
 	}
 	elsif ( $path eq ".ErrorLog" or $path eq ".\"ErrorLog\"" )
 	{
-	    ycp::Return( \$error_log, 1 );
-	}
-	elsif ( $path eq ".DocumentRoot" or $path eq ".\"DocumentRoot\"" )
-	{
-	    ycp::Return( \$documentroot, 1 );
-	}
-	elsif ( $path eq ".ServerName" or $path eq ".\"ServerName\"" )
-	{
-	    ycpReturnSkalarAsString( $servername );
-	}
-	elsif ( $path eq ".ServerAdmin" or $path eq ".\"ServerAdmin\"" )
-	{
-	    ycpReturnSkalarAsString( $serveradmin );
+	    ycp::Return( $error_log, 1 );
 	}
 	else
 	{

@@ -97,8 +97,8 @@ $[
 	    "description" : _("Allows the setting of environment variables based on characteristics of the request")
 	],
 	"status"  : $[
-	    "status": true,
-	    "default": true,
+	    "status": false,
+	    "default": false,
 	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Provides information on server activity and performance")
 	],
@@ -277,8 +277,8 @@ $[
 	    "description" : _("Attempts to correct mistaken URLs that users might have entered")
 	],
 	"ssl"  : $[
-	    "status": false,
-	    "default": false,
+	    "status": true,
+	    "default": true,
 	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Strong cryptography using the Secure Sockets Layer (SSL) and Transport Layer Security (TLS) protocols")
 	],

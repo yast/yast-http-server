@@ -97,12 +97,19 @@ global list listen4firewall = [];
 /**
  * List of httpd.conf options to be stored in settings part, not in hosts
  */
-list server_settings = [];
+list server_settings = [ "ErrorLog", "CustomLog" ];
 
 /**
  * List of options which allow multiple keys
  */
 list multiple_settings = ["Listen", "Include", "CustomLog"];
+
+map sysconfig_values = $[
+    "apache_access_log"	: "APACHE_ACCESS_LOG",
+    "ServerAdmin"	: "APACHE_SERVERADMIN",
+    "ServerName"	: "APACHE_SERVERNAME",
+    "DocumentRoot"	: "APACHE_DOCUMENT_ROOT",
+];
 
 /************************** end of local data *********************************/
 
@@ -161,6 +168,19 @@ global define boolean Read() ``{
 	}
     }
 
+    // check listen.conf
+    if( SCR::Read( .target.lstat, "/etc/apache2/listen.conf" ) == $[] ) {
+	// translators: error message, %1 is the file name of expected configuration file
+	Report::Error( sformat( _("The configuration file '%1' does not exist."), "/etc/apache2/listen.conf" )  );
+	// create empty file
+	if( ! SCR::Write( .target.string, "/etc/apache2/listen.conf", "" ) )
+	{
+	// translators:: error message
+	    Report::Error( sformat( _("Cannot create the file '%1'."), "/etc/apache2/listen.conf" ) );
+	    return false;
+	}
+    }
+    
     // read current settings from httpd.conf and sysconfig
     Progress::NextStage();
 
@@ -184,6 +204,9 @@ global define boolean Read() ``{
 	    settings["defaulthost", opt] = res;
     });
     
+    // now, read Listen statements from listen.conf
+    settings["defaulthost", "Listen"] = SCR::Read( .etc.apachelisten.Listen );
+    
     // read modules from sysconfig
     list modules = splitstring( SCR::Read( .sysconfig.apache2."APACHE_MODULES" ), " " );
     foreach( string mod, modules, ``{
@@ -196,7 +219,14 @@ global define boolean Read() ``{
 	}
     } );
     
+    // read the rest of the configuration from sysconfig
     settings["apache_access_log"] = SCR::Read( .sysconfig.apache2."APACHE_ACCESS_LOG" );
+    any value = SCR::Read( .sysconfig.apache2."APACHE_SERVERADMIN" );
+    if( value != nil ) settings["defaulthost","ServerAdmin"] = value;
+    value = SCR::Read( .sysconfig.apache2."APACHE_SERVERNAME" );
+    if( value != nil ) settings["defaulthost","ServerName"] = value;
+    value = SCR::Read( .sysconfig.apache2."APACHE_DOCUMENT_ROOT" );
+    if( value != nil ) settings["defaulthost","DocumentRoot"] = value;
     
     // check the service status
     settings["settings", "enabled" ] = Runlevel::ServiceEnabled( "apache2" );
@@ -326,10 +356,24 @@ installation of some of these additional packages:
 Do you want to install them now?"), mergestring( rpms, ", " ) ) );
     
     // write httpd.conf
-    // default host
+    // default host, some of the values are in sysconfig
     foreach( string key, any value, settings["defaulthost"]:$[], ``{
 	if( size(key) > 0 )
-	    SCR::Write( add(.etc.httpd, key), value );
+	{
+	    if( haskey( sysconfig_values, key ) )
+	    {
+		SCR::Write( add(.sysconfig.apache2, sysconfig_values[key]:"error" ), value );
+	    }
+	    else if( key == "Listen" )
+	    {
+		// this needs to go to its own path
+		SCR::Write( .etc.apachelisten.Listen, value );
+	    }
+	    else
+	    {
+		SCR::Write( add(.etc.httpd, key), value );
+	    }
+	}
     });
     // global settings
     foreach( string key, any value, settings["settings"]:$[], ``{
@@ -342,6 +386,17 @@ Do you want to install them now?"), mergestring( rpms, ", " ) ) );
 	// TODO: configuration file placing can change
 	Report::Error( sformat(_("Cannot write '%1'."), "/etc/apache2/httpd.conf" ) );
     }
+
+    if( !SCR::Write( .etc.apachelisten, nil ) ) {
+	// TODO: configuration file placing can change
+	Report::Error( sformat(_("Cannot write '%1'."), "/etc/apache2/listen.conf" ) );
+    }
+
+    if( !SCR::Write( .sysconfig.apache2, nil ) ) {
+	// translators: error message
+	Report::Error( sformat(_("Cannot write '%1'."), "/etc/sysconfig/apache2" ) );
+    }
+    
     
     Progress::NextStage();
 

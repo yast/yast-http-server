@@ -32,5 +32,6 @@ Summary:	Configuration of http-server
 @ydatadir@/all-apache2-modules.ycp
 @scrconfdir@/cfg_apache2.scr
 @scrconfdir@/cfg_httpdconf.scr
+@scrconfdir@/cfg_listenconf.scr
 @agentdir@/ag_httpd
 %doc @docdir@

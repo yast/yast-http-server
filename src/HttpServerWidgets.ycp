@@ -222,7 +222,7 @@ global map widgets = $[
 		boolean single_address = ( network != aa );
 		
 		// validation
-		if( ! regexpmatch( res["result"]:"", "^[ \t]*[0-9]+[ \t]*$" ) ) {
+		if( ! regexpmatch( res, "^[ \t]*[0-9]+[ \t]*$" ) ) {
 		    // translators: error message when validating Listen statement
 		    Popup::Error( _("Invalid port number.") );
 		    ret = nil;

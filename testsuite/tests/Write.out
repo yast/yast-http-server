@@ -22,9 +22,11 @@ Read	.probe.system nil
 Read	.target.ycp "/usr/share/YaST2/data/all-apache2-modules.ycp" nil
 Write	.sysconfig.apache2."APACHE_MODULES" "ssl" true
 Write	.sysconfig.apache2 nil true
-Write	.etc.httpd."Listen" ["1.2.3.4:8080", "3128"] true
-Write	.etc.httpd."ServerName" "blablabla.example.com" true
+Write	.etc.apachelisten.Listen ["1.2.3.4:8080", "3128"] true
+Write	.sysconfig.apache2."APACHE_SERVERNAME" "blablabla.example.com" true
 Write	.etc.httpd nil true
+Write	.etc.apachelisten nil true
+Write	.sysconfig.apache2 nil true
 Execute	.target.bash "/sbin/SuSEconfig --module apache2" 0
 Read	.init.scripts.exists "apache2" true
 Read	.init.scripts.exists "apache2" true
