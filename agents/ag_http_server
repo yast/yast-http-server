@@ -4,6 +4,7 @@ BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
 use ycp;
 use YaST::SCRAgent;
 use YaPI;
+textdomain "http-server";
 our @ISA = ("YaST::SCRAgent");
 
 use strict;

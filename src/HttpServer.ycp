@@ -606,7 +606,7 @@ boolean ssl = false;
 	     foreach(map<string, any> params, YaST::HTTPDData::GetHost("default"), {
 		if ( params["KEY"]:"" == "ServerName" ) serv_name = params["VALUE"]:"";
 		if ( params["KEY"]:"" == "DocumentRoot" ) doc_root = params["VALUE"]:"";
-		if ( params["KEY"]:"" == "SSL" && params["VALUE"]:""=="1") ssl = true;
+		if ( params["KEY"]:"" == "SSL" && params["VALUE"]:"" != "0" ) ssl = true;
 			});
             summary = Summary::AddLine(summary, serv_name + _(" in ") + doc_root);
             summary = Summary::AddLine(summary, "SSL " + ((ssl)?_("enabled"):_("disabled")));
@@ -618,7 +618,9 @@ foreach(string host, YaST::HTTPDData::GetHostsList (), {
              foreach(map<string, any> params, YaST::HTTPDData::GetHost(host), {
                 if ( params["KEY"]:"" == "ServerName" ) serv_name = params["VALUE"]:"";
                 if ( params["KEY"]:"" == "DocumentRoot" ) doc_root = params["VALUE"]:"";
-                if ( params["KEY"]:"" == "SSL" && params["VALUE"]:""=="1") ssl = true;
+                if ( params["KEY"]:"" == "SSL" && params["VALUE"]:""!="0") ssl = true;
+//if ( params["KEY"]:"" == "SSL") y2internal ("ssl value - %1", params["VALUE"]:"");
+
                         });
             summary = Summary::AddLine(summary, serv_name + _(" in ") + doc_root + ", SSL " + ((ssl)?_("enabled"):_("disabled")));
 

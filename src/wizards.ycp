@@ -92,7 +92,7 @@ symbol MainSequence() {
 	"ssl": $[
 	    `abort	: `abort,
 	    `next	: "host",
-	    `back	: "host",
+	    `back	: "host"
 	],
     ];
 
@@ -115,9 +115,8 @@ symbol WizardSequence() {
                 "summary"       :``(WizardSequence5()),
 		"addhost"		: ``(AddHost()),
 	        "ssl"           :   ``( SSLDialog () ),
-	        "main"  :   ``( MainSequence() )
-
-
+	        "main"  :   ``( MainSequence() ),
+	        "host"          :   ``( HostDialog() )
 	];
 
 	map sequence =	$[
@@ -142,7 +141,8 @@ symbol WizardSequence() {
                "hosts"  : $[
                 `abort     : `abort,
                 `next      : "summary",
-                `add        : "addhost"
+                `add        : "addhost",
+		`edit	   : "host"
                 ],
 		"addhost"  : $[
 		`abort	   : `abort,
@@ -153,6 +153,12 @@ symbol WizardSequence() {
 		`next	  : `next,
 		`expert	  : "main"
                 ],
+	       "host"	  : $[
+		`abort	  : `abort,
+		`ssl	  : "ssl",
+		`next	  : "hosts"
+		
+		],
 	       "main"	  : $[
 		`abort	  : `abort, 
 		`next	  : `next
