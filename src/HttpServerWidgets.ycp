@@ -29,7 +29,25 @@
 global string currenthost = "default";
 
 string item2listen( string network, string port );
+
+string get_host_value ( string keyword, list< map<string, any> > host )
+{
+    string ret = "";
     
+    foreach( map<string, any> option, host, ``{
+	if (option["KEY"]:nil == keyword)
+	{
+	    ret = option["VALUE"]:"";
+	    break;
+	}
+    });
+    
+    // drop quotes, if exist
+    ret = regexpsub (ret, "\"?([^\"]*)\"?", "\\1");
+    
+    return ret;
+}
+
 /*********************************** inital overview table ********************************/
 
 global symbol showAccessLogPopup (any key, map event);
@@ -43,7 +61,13 @@ void OverviewInit (string widget)
 	maplist( map<string,string> listen, HTTPD::GetCurrentListen(), 
 	    ``(item2listen (listen["ADDRESS"]:"",listen["PORT"]:"80"))), " ");
 	    
-    map<string, any> defaulthost = HTTPD::GetHost ("default");
+    string default_host = get_host_value( "ServerName", HTTPD::GetHost ("default"));
+    if (default_host == "")
+    {
+	// if the default host does not have a servername specified, use it's
+	// document root, %1 is the full path
+	default_host = sformat( _("in %1"), get_host_value( "DocumentRoot", HTTPD::GetHost ("default")));
+    }
     
     if (host_ids == nil)
     {
@@ -52,15 +76,14 @@ void OverviewInit (string widget)
     
     string hosts = mergestring (
 	maplist( string host, host_ids, ``{
-	    map<string, any> h = HTTPD::GetHost (host);
-	    return h["ServerName"]:"";
+	    return get_host_value ( "ServerName", HTTPD::GetHost (host) );
 	}), " ");
 
     UI::ChangeWidget (`overview_table, `Items, 
 	[
 	    `item ( `id(`listen), _("Listen on"), listen_summary ),
 	    `item ( `id(`modules), _("Modules"), "" ),
-	    `item ( `id(`default), _("Default host"), defaulthost["ServerName"]:"" ),
+	    `item ( `id(`default), _("Default host"), default_host ),
 	    `item ( `id(`hosts), _("Hosts"), hosts ),
 	]);
 }
@@ -111,6 +134,7 @@ map<string, any> overview_widget = $[
 void HostsInit (string widget);
 symbol HostsHandle (string table, map event);
 list HostsContents (map descr);
+boolean HostsDelete (any opt_id, any opt_key);
 
 map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 	$["add_delete" : true, 
@@ -120,7 +144,7 @@ map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 	    "init" : HttpServerWidgets::HostsInit,
 	    "handle" : HttpServerWidgets::HostsHandle,
 	    "ids" : HttpServerWidgets::HostsContents,
-# TODO	    "option_delete" : HttpServerWidgets::HostsDelete,
+	    "option_delete" : HttpServerWidgets::HostsDelete,
 	    "help" : HELPS["hosts"]:"",
 	]);
 
@@ -133,16 +157,18 @@ symbol HostsHandle (string table, map event)
 {
     if ( event["ID"]:nil == `_tp_add )
     {
-	// TODO: add the new host
-        TablePopup::TableInit(hosts_widget, table);
-        // continue
-        return nil;
+	return `add;
     }
 
     else if (event["ID"]:nil == `_tp_edit)
     {
 	currenthost = (string)UI::QueryWidget (`_tp_table, `CurrentItem);
-	return `next;
+	return `edit;
+    }
+    
+    else if (event["ID"]:nil == `set_default)
+    {
+	y2milestone ("Changing default host");
     }
     
     return nil;
@@ -155,10 +181,19 @@ list HostsContents (map descr) {
 	string host_id,
 	l,
 	``{
-	    return host_id; // FIXME
+	    return host_id; // FIXME - it should return server name
 	});
 
     return res;
+}
+
+boolean HostsDelete (any opt_id, any opt_key) {
+    // message popup
+    if (! Popup::YesNo (_("Delete selected host?")))
+	return false;
+    // FIXME:
+
+    return true;
 }
 
 /******************************************************************************************/
@@ -544,7 +579,11 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @return list of items for the table
       */
     global define list HostTableContents (map descr) ``{
-	list ret = maplist (string k, any v, HttpServer::settings[currenthost]:$[], ``(k));
+	list ret = maplist (map<string, any> option, HTTPD::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
+
+	// filter out unneeded options
+	ret = filter (string key, ret, ``( ! contains( ["_SECTION"], key )));
+	// FIXME: replace VirtualByName
 	// required entries
 	ret = union (["ServerName", "ServerAdmin" ], ret);
 	return ret;
@@ -593,7 +632,7 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       */
     global define void DefaultHostPopupInit (any opt_id, any opt_key) ``{
 	UI::ChangeWidget (`id (opt_key), `Value,
-	    HttpServer::settings[currenthost, opt_key]:"not found");
+	    get_host_value( (string)opt_key, HTTPD::GetHost(currenthost)));
 	UI::SetFocus (`id (opt_key));
     }
 
@@ -614,7 +653,34 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @return string table entry summary
       */
     global define string HostTableEntrySummary (any opt_id, any opt_key) ``{
-	return sformat ("%1", HttpServer::settings[currenthost, opt_key]:"");
+	string res = get_host_value( (string)opt_key, HTTPD::GetHost(currenthost));
+	if (opt_key == "SSL")
+	{
+	    if (res == "0") 
+	    {
+		res = _("No SSL");
+	    }
+	    else if (res == "1")
+	    {
+		res = _("Enabled");
+	    }
+	    else if (res == "2")
+	    {
+		res = _("Required");
+	    }
+	}
+	else if (opt_key == "VirtualByName")
+	{
+	    if (res == "0")
+	    {
+		res = _("Resolution via HTTP headers");
+	    }
+	    else 
+	    {
+		res = _("Resolution via used IP address");
+	    }
+	}
+	return res;
     }
 
 
@@ -750,7 +816,7 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @param event map event that occured
       */
     global define void storeListenSettings (any key, map event) ``{
-	integer i = size(HttpServer::settings[currenthost, "Listen"]:[]);
+	integer i = size(HttpServer::settings["Listen"]:[]);
 	list newlisten = [];
 	while( i>0 ) {
 	    term item = (term) UI::QueryWidget( `id(`listen), `Item(i-1) );
@@ -758,8 +824,8 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
 	    i = i-1;
 	}
 	
-	HttpServer::modified = (HttpServer::settings[currenthost, "Listen"]:[] == newlisten );
-	HttpServer::settings[currenthost, "Listen"] = newlisten;
+	HttpServer::modified = (HttpServer::settings["Listen"]:[] == newlisten );
+	HttpServer::settings["Listen"] = newlisten;
     }
 
     /**
@@ -782,22 +848,22 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
 	    // translators: all network addresses Listen type
 	    string res = AskListen( _("All Addresses"), "" );
 	    if( res != nil ) {
-		if( contains( HttpServer::settings[currenthost, "Listen"]:[], res )  )
+		if( contains( HttpServer::settings["Listen"]:[], res )  )
 		{
 		    // translators: error message for adding a new Listen statement
 		    Popup::Error( sformat(_("The entry '%1' already exists."), res) );
 		} 
 		else
 		{
-		    HttpServer::settings[currenthost,"Listen"] = 
-			add( HttpServer::settings[currenthost, "Listen"]:[], res );
+		    HttpServer::settings["Listen"] = 
+			add( HttpServer::settings["Listen"]:[], res );
 		}
 	    }
         }
 	else if( event["ID"]:nil == `delete )
 	{
 	    // FIXME: ensure there is at least one listen statement
-	    boolean validate = size( HttpServer::settings[currenthost, "Listen"]:[] ) != 0;
+	    boolean validate = size( HttpServer::settings["Listen"]:[] ) != 0;
 
 	    y2debug( "Validation result: %1", validate );
 	
@@ -809,15 +875,15 @@ listen cannot be empty.
 	    }
 
 	    string res = item2listen( network, port );
-	    HttpServer::settings[currenthost, "Listen"] = 
-		filter( string litem, HttpServer::settings[currenthost, "Listen"]:[], ``(litem != res) );
+	    HttpServer::settings["Listen"] = 
+		filter( string litem, HttpServer::settings["Listen"]:[], ``(litem != res) );
 	}
 	else if( event["ID"]:nil == `edit )
 	{
 	    string res = AskListen( network, port );
 	    if( res != nil ) {
-		HttpServer::settings[currenthost, "Listen"] = add( 
-		    filter( string litem, HttpServer::settings[currenthost, "Listen"]:[], ``(litem != item2listen(network, port)) ),
+		HttpServer::settings["Listen"] = add( 
+		    filter( string litem, HttpServer::settings["Listen"]:[], ``(litem != item2listen(network, port)) ),
 		    res );
 	    }
 	}
@@ -833,7 +899,7 @@ listen cannot be empty.
       * @param key any widget key of widget that is processed
       */
     global define void initServiceStatus (any key) ``{
-	if( HttpServer::settings["settings", "enabled"]:false  ) {
+	if( HttpServer::settings["enabled"]:false  ) {
 	    UI::ChangeWidget (`id ("enabled"), `Value, true);
 	}
 	else 
@@ -862,17 +928,6 @@ listen cannot be empty.
 	HttpServer::settings["enabled"] = current;
     }
 // *********************************** Listen widget ***************************
-
-    /**
-     * Handler for the summary of Listen statements list.
-     *
-     * @param key	key to be configured
-     * @param id	identification of the widget, not used
-     * @return string	the new value
-     */
-    global define string summaryGenericList( any key, any id ) ``{
-	return mergestring( HttpServer::settings[currenthost, key]:[], " ");
-    }
 
 // ************************************ Adapt firewall widget ********************
 
