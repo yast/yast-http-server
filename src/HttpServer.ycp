@@ -67,11 +67,11 @@ include "http-server/routines.ycp";
  */
 global map settings = $[
     "modules" : GetModules(),
-    "defaulthost" : $[
+    "Listen" : [ $["PORT":"80"] ],
+    "default" : $[
 	"ServerName" : "www.example.com",
 //	"DocumentRoot" : "/srv/www/htdocs",
 	"ServerAdmin" : "webmaster@example.com",
-	"Listen" : ["80"],
 // CustomLog - no defaults
 // ErrorLog - no defaults
     ],
@@ -116,7 +116,7 @@ list server_settings = [ "ErrorLog", "CustomLog" ];
 /**
  * List of options which allow multiple keys
  */
-list multiple_settings = ["Listen", "Include", "CustomLog"];
+list multiple_settings = ["Include", "CustomLog"];
 
 map sysconfig_values = $[
     "apache_access_log"	: "APACHE_ACCESS_LOG",
@@ -217,15 +217,15 @@ global define boolean Read() ``{
 	
 	if( res == nil ) res = "";
 
-	// server settings to "settings", rest to "defaulthost"
+	// server settings to "settings", rest to "default"
 	if( contains( server_settings, opt ) ) 
 	    settings["settings", opt] = res;
 	else
-	    settings["defaulthost", opt] = res;
+	    settings["default", opt] = res;
     });
     
     // now, read Listen statements from listen.conf
-    settings["defaulthost", "Listen"] = SCR::Read( .etc.apachelisten.Listen );
+    settings["Listen"] = HTTPD::GetCurrentListen();
     
     // read modules from sysconfig
     list modules = splitstring( (string) SCR::Read( .sysconfig.apache2."APACHE_MODULES" ), " " );
@@ -250,9 +250,9 @@ global define boolean Read() ``{
     // read the rest of the configuration from sysconfig
     settings["apache_access_log"] = SCR::Read( .sysconfig.apache2."APACHE_ACCESS_LOG" );
     string value = (string) SCR::Read( .sysconfig.apache2."APACHE_SERVERADMIN" );
-    if( value != nil ) settings["defaulthost","ServerAdmin"] = value;
+    if( value != nil ) settings["default","ServerAdmin"] = value;
     value = (string) SCR::Read( .sysconfig.apache2."APACHE_SERVERNAME" );
-    if( value != nil ) settings["defaulthost","ServerName"] = value;
+    if( value != nil ) settings["default","ServerName"] = value;
     value = (string) SCR::Read( .sysconfig.apache2."APACHE_DOCUMENT_ROOT" );
     // store document root somewhere else
     if( size(value) > 0 ) document_root = value;
@@ -291,14 +291,13 @@ global define boolean Read() ``{
     
 
     // generate the map of our settings in firewall
-    listen4firewall = maplist( string listen, settings["defaulthost", "Listen"]:[], ``{
-	map l = listen2map( listen );
-	if( l["address"]: nil != nil ) {
-	    string ni = ip2device["address"]:"";
+    listen4firewall = maplist( map<string,string> l, settings["Listen"]:[], ``{
+	if( l["ADDRESS"]: nil != nil ) {
+	    string ni = ip2device["ADDRESS"]:"";
 	    if( ni != "" ) {
-		return $[ "port": l["port"]:"80", "interface": ni ];
+		return $[ "port": l["PORT"]:"80", "interface": ni ];
 	    } else {
-		return $[ "port": l["port"]:"80", "interface": "all" ];
+		return $[ "port": l["PORT"]:"80", "interface": "all" ];
 	    }
 	}
     });
@@ -374,13 +373,7 @@ global define boolean Write() ``{
 	}
     });
 
-    list<string> rpms = [];
-    foreach( string mod, map status, settings["modules"]:$[], ``{
-	if( status["status"]: false ) {
-	    y2debug( "Adding to list requires of %1", mod );
-	    rpms = (list<string>)union( rpms, status["requires"]:[] );
-	}
-    });
+    list<string> rpms = HTTPD::GetModulePackages();
     
     if( php_hack ) {
 	settings[ "modules", "php4", "status" ] = true;
@@ -412,17 +405,12 @@ Install them now?
     
     // write httpd.conf
     // default host, some of the values are in sysconfig
-    foreach( string key, any value, settings["defaulthost"]:$[], ``{
+    foreach( string key, any value, settings["default"]:$[], ``{
 	if( size(key) > 0 )
 	{
 	    if( haskey( sysconfig_values, key ) )
 	    {
 		SCR::Write( add(.sysconfig.apache2, sysconfig_values[key]:"error" ), value );
-	    }
-	    else if( key == "Listen" )
-	    {
-		// this needs to go to its own path
-		SCR::Write( .etc.apachelisten.Listen, value );
 	    }
 	    else
 	    {
@@ -430,6 +418,14 @@ Install them now?
 	    }
 	}
     });
+    
+    // write listen
+    if( /*FIXME: ! HTTPD::WriteListen (settings["Listen"]:[])*/ false ) {
+	// TODO: configuration file placing can change
+	Report::Error( sformat(_("Cannot write '%1'."), "/etc/apache2/listen.conf" ) );
+    }
+
+    
     // global settings
     foreach( string key, any value, settings["settings"]:$[], ``{
 	// filter internal and other options
@@ -440,11 +436,6 @@ Install them now?
     if( !SCR::Write( .etc.httpd, nil ) ) {
 	// TODO: configuration file placing can change
 	Report::Error( sformat(_("Cannot write '%1'."), "/etc/apache2/httpd.conf" ) );
-    }
-
-    if( !SCR::Write( .etc.apachelisten, nil ) ) {
-	// TODO: configuration file placing can change
-	Report::Error( sformat(_("Cannot write '%1'."), "/etc/apache2/listen.conf" ) );
     }
 
     if( !SCR::Write( .sysconfig.apache2, nil ) ) {
@@ -464,10 +455,10 @@ Install them now?
 	});
     
 	// setup the new firewall settings
-	y2debug( "Writing Listen settings to firewall: %1", settings["defaulthost", "Listen"]:[] );
-	foreach( string listen, settings["defaulthost", "Listen"]:[], ``{
-	    map l = listen2map( listen ) ;
-	    SuSEFirewall::AddService( l["port"]:"www", "TCP", l["interface"]:"all" );
+	y2debug( "Writing Listen settings to firewall: %1", settings["Listen"]:[] );
+	foreach( map<string,string> l, settings["Listen"]:[], ``{
+	    // FIXME: interface handling
+	    SuSEFirewall::AddService( l["PORT"]:"www", "TCP", l["interface"]:"all" );
 	});
     
 	Progress::off();
@@ -536,12 +527,14 @@ global define boolean Import (map s) ``{
 	    } else return (map)nil;
 	   } );
 	
-    settings[ "defaulthost" ] = s[ "defaulthost" ]: $[
+    settings[ "default" ] = s[ "default" ]: $[
 	"ServerName" : "www.example.com:80",
 //	"DocumentRoot" : "/srv/www/htdocs",
 	"ServerAdmin" : "webmaster@example.com",
-	"Listen" : ["80"],
     ];
+    
+    // FIXME: do a transformation from 9.0
+    settings["Listen"] = s[ "defaulthost", "Listen" ]: [ $["PORT":"80"] ];
     
     modified = false;
     configured = true;
@@ -559,8 +552,9 @@ global define map Export () ``{
 	"modules": maplist( string mod, map state, settings["modules"]:$[], ``(
 	    $[ "name": mod, "state" : state["status"]:false ]
 	)),
-	"defaulthost": settings["defaulthost"]:$[],
+	"default": settings["default"]:$[],
 	"settings": settings["settings"]:$[],
+	"Listen": settings["Listen"]:$[]
     ];
     
     configured = true;
@@ -588,7 +582,7 @@ global define list Summary() ``{
             summary = Summary::AddLine(summary, _("Apache2 server is <i>disabled</i>") );
 	    
 	// translators: autoyast summary text, %1 is path for default host document root
-//	summary = Summary::AddLine(summary, sformat( _("Default host stored in %1"), settings["defaulthost", "DocumentRoot"]:
+//	summary = Summary::AddLine(summary, sformat( _("Default host stored in %1"), settings["defaul", "DocumentRoot"]:
 //	    "/srv/www/htdocs" ) );
 
     } else {

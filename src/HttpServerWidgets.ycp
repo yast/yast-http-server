@@ -13,6 +13,7 @@
 
     textdomain "http-server";
 
+    import "Mode";
     import "IP";
     import "Label";
     import "Popup";
@@ -21,19 +22,154 @@
     import "LogView";
     import "TablePopup";
     import "HttpServer";
+    import "HTTPD";
     
     include "http-server/helps.ycp";
 
-global string currenthost = "defaulthost";
+global string currenthost = "default";
+
+string item2listen( string network, string port );
+    
+/*********************************** inital overview table ********************************/
+
+global symbol showAccessLogPopup (any key, map event);
+global symbol showErrorLogPopup (any key, map event);
+
+list <string> host_ids = nil;
+
+void OverviewInit (string widget)
+{
+    string listen_summary = mergestring ( 
+	maplist( map<string,string> listen, HTTPD::GetCurrentListen(), 
+	    ``(item2listen (listen["ADDRESS"]:"",listen["PORT"]:"80"))), " ");
+	    
+    map<string, any> defaulthost = HTTPD::GetHost ("default");
+    
+    if (host_ids == nil)
+    {
+	host_ids = HTTPD::GetHostsList ();
+    }
+    
+    string hosts = mergestring (
+	maplist( string host, host_ids, ``{
+	    map<string, any> h = HTTPD::GetHost (host);
+	    return h["ServerName"]:"";
+	}), " ");
+
+    UI::ChangeWidget (`overview_table, `Items, 
+	[
+	    `item ( `id(`listen), _("Listen on"), listen_summary ),
+	    `item ( `id(`modules), _("Modules"), "" ),
+	    `item ( `id(`default), _("Default host"), defaulthost["ServerName"]:"" ),
+	    `item ( `id(`hosts), _("Hosts"), hosts ),
+	]);
+}
+
+symbol OverviewHandle (string table, map event)
+{
+    if (event["ID"]:nil == `edit)
+    {
+	symbol id = (symbol)UI::QueryWidget (`overview_table, `CurrentItem);
+	currenthost = "default";	// ensure to edit the default host, if `default was selected
+	return id;
+    }
+    // handle menu button entries
+    else if( event["ID"]:nil == `show_access_log ) {
+	return showAccessLogPopup( table, event );
+    }
+    else if( event["ID"]:nil == `show_error_log ) {
+	return showErrorLogPopup( table, event );
+    }
+
+    
+    return nil;
+}
+
+map<string, any> overview_widget = $[
+    "widget"		: `custom,
+    "custom_widget"	: 
+	`VBox(
+	    `Table (`id( `overview_table), `header( _("Option"), _("Value") )),
+	    `HBox(
+		`PushButton ( `id(`edit), Label::EditButton ()),
+		`HStretch(),
+		// menu button label
+        	`MenuButton( _("&Log Files"),
+            	    // menu button item
+            	    [ `item( `id( `show_access_log ), _("Show &Access Log") ),
+            	    // menu button item
+            	    `item( `id( `show_error_log ), _("Show &Error Log") )
+        	] )
+	    )
+	),
+    "init"		:  OverviewInit,
+    "handle"		:  OverviewHandle,
+];
+
+/******************************************************************************************/
+
+void HostsInit (string widget);
+symbol HostsHandle (string table, map event);
+list HostsContents (map descr);
+
+map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
+	$["add_delete" : true, 
+	      "up_down" : false, 
+	      "unique_keys" : true]
+	, $[
+	    "init" : HttpServerWidgets::HostsInit,
+	    "handle" : HttpServerWidgets::HostsHandle,
+	    "ids" : HttpServerWidgets::HostsContents,
+# TODO	    "option_delete" : HttpServerWidgets::HostsDelete,
+	    "help" : HELPS["hosts"]:"",
+	]);
+
+void HostsInit (string widget)
+{
+    TablePopup::TableInit(hosts_widget, widget);
+}
+
+symbol HostsHandle (string table, map event)
+{
+    if ( event["ID"]:nil == `_tp_add )
+    {
+	// TODO: add the new host
+        TablePopup::TableInit(hosts_widget, table);
+        // continue
+        return nil;
+    }
+
+    else if (event["ID"]:nil == `_tp_edit)
+    {
+	currenthost = (string)UI::QueryWidget (`_tp_table, `CurrentItem);
+	return `next;
+    }
+    
+    return nil;
+}
+
+list HostsContents (map descr) {
+    list<string> l = HTTPD::GetHostsList ();
+    
+    list<string> res = maplist(
+	string host_id,
+	l,
+	``{
+	    return host_id; // FIXME
+	});
+
+    return res;
+}
+
+/******************************************************************************************/
 
 global string summaryGenericList( any key, any id );
-global symbol handleDefaultHostTable( any key, map event );
-global boolean validateDefaultHostTable (any key, map event);
-global list DefaultHostTableContents (map descr);
+global symbol handleHostTable( any key, map event );
+global list HostTableContents (map descr);
 global void DefaultHostPopupInit (any opt_id, any opt_key);
 global void DefaultHostPopupStore (any opt_id, any opt_key);
-global string DefaultHostTableEntrySummary (any opt_id, any opt_key);
-global boolean DefaultHostTableEntryDelete (any opt_id, any opt_key);
+global string HostTableEntrySummary (any opt_id, any opt_key);
+global boolean HostTableEntryDelete (any opt_id, any opt_key);
 global void initModules (any key);
 global void storeModules (any key, map event);
 global symbol handleModules (any key, map event);
@@ -81,43 +217,31 @@ global map popups = $[
 		    "widget" : `textentry,
 		],
             ],
-            "Listen" : $[
-                "table" : $[
-                    // table cell
-                    "label" : _("Listen on"),
-                    "handle" : `listen,
-                    "optional" : false,
-		    "summary" : HttpServerWidgets::summaryGenericList,
-                ],
-	    ],
 	];
 
 define void HostInit (any key);
 
-global map<string, any> defaulthostwidget = (map<string, any>)TablePopup::CreateTableDescr (
+global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	    $["add_delete" : true, 
 	      "up_down" : false, 
 	      "unique_keys" : true]
 	, $[
 	    "init" : HttpServerWidgets::HostInit,
-	    "handle" : HttpServerWidgets::handleDefaultHostTable,
-	    "validate_type" : `function,
-	    "validate_function" : HttpServerWidgets::validateDefaultHostTable,
+	    "handle" : HttpServerWidgets::handleHostTable,
 	    "options" : popups,
-	    "ids" : HttpServerWidgets::DefaultHostTableContents,
+	    "ids" : HttpServerWidgets::HostTableContents,
 	    "fallback" : $[
 		"init" : HttpServerWidgets::DefaultHostPopupInit,
 		"store" : HttpServerWidgets::DefaultHostPopupStore,
-		"summary" : HttpServerWidgets::DefaultHostTableEntrySummary,
+		"summary" : HttpServerWidgets::HostTableEntrySummary,
 	    ],
-	    "option_delete" : HttpServerWidgets::DefaultHostTableEntryDelete,
+	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
 	    "add_items" : [ "ServerName", "ServerAdmin",],
 	    "help" : HELPS["global_table"]:"",
 	]);
 
 define void HostInit (any key) ``{
-    TablePopup::TableInit (
-        HttpServerWidgets::defaulthostwidget, key);
+    TablePopup::TableInit (HttpServerWidgets::hostwidget, key);
 }
 
 
@@ -203,9 +327,11 @@ global map widgets = $[
 		"init"	: HttpServerWidgets::initAdaptFirewall,
 		"store"	 : HttpServerWidgets::storeAdaptFirewall,
 	    ],
-	    "global_table" : defaulthostwidget,
+	    "host" : hostwidget,
 	    "modules" : moduleslistwidget,
 	    "listen" : listenwidget,
+	    "overview_widget" : overview_widget,
+	    "hosts"	: hosts_widget,
 	];
 
 /********************************** helpers *******************************/
@@ -214,21 +340,15 @@ global map widgets = $[
 /**
  * Convert a Listen string to an item for table. Splits by the colon.
  *
- * @param arg		the Listen string
+ * @param arg		the Listen map
  * @param id		the id of this item
  * @return term		term for the table
  */
-global define term listen2item( string arg, integer id ) ``{
-    integer colon = find( arg, ":" );
+global define term listen2item( map<string,string> arg, integer id ) ``{
 
-    string address = _("All Addresses");
-    string port = arg;
+    string address = arg["ADDRESS"]: _("All Addresses");
+    string port = arg["PORT"]:"80";
     
-    if( colon != -1 ) {
-	// address is present
-	address = substring( arg, 0, colon );
-	port = substring( arg, colon+1 );
-    }
     return `item( `id(id), address, port );
 }
 
@@ -259,7 +379,7 @@ global define map listen2map( string arg ) ``{
  * @param port		port number
  * @return string 	Listen value
  */
-global define string item2listen( string network, string port ) ``{
+define string item2listen( string network, string port ) ``{
 
     if( network == _("All Addresses") ) network = "";
     
@@ -423,10 +543,10 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @param descr map description map of the table
       * @return list of items for the table
       */
-    global define list DefaultHostTableContents (map descr) ``{
-	list ret = maplist (`k, `v, HttpServer::settings[currenthost]:$[], ``(k));
+    global define list HostTableContents (map descr) ``{
+	list ret = maplist (string k, any v, HttpServer::settings[currenthost]:$[], ``(k));
 	// required entries
-	ret = union (["ServerName", "ServerAdmin", "Listen" ], ret);
+	ret = union (["ServerName", "ServerAdmin" ], ret);
 	return ret;
     }
     
@@ -436,12 +556,12 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @param opt_key any option key of selected option
       * @return boolean true if was really deleted
       */
-    global define boolean DefaultHostTableEntryDelete (any opt_id, any opt_key) ``{
+    global define boolean HostTableEntryDelete (any opt_id, any opt_key) ``{
 	// message popup
 	if (! Popup::YesNo (_("Delete selected entry?")))
 	    return false;
 	HttpServer::settings[currenthost]
-	    = filter (`k, `v, HttpServer::settings[currenthost]:$[], ``(k != opt_id));
+	    = filter (string k, any v, HttpServer::settings[currenthost]:$[], ``(k != opt_id));
 	return true;
     }
 
@@ -453,18 +573,14 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
      *  @param event	event description
      *  @return symbol 	the result of the handling
      */
-    global define symbol handleDefaultHostTable( any key, map event ) ``{
+    global define symbol handleHostTable( any key, map event ) ``{
 	// handle menu button entries
-	if( event["ID"]:nil == `modules ) 
-	    return `modules;
-	else if( event["ID"]:nil == `show_access_log ) {
+	if( event["ID"]:nil == `show_access_log ) {
 	    return showAccessLogPopup( key, event );
 	}
 	else if( event["ID"]:nil == `show_error_log ) {
 	    return showErrorLogPopup( key, event );
 	}
-	else if( event["ID"]:nil == `listen )
-	    return `listen;
 
 	// default handling
 	return TablePopup::TableHandle( widgets["global_table"]:$[], key, event );
@@ -479,29 +595,6 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
 	UI::ChangeWidget (`id (opt_key), `Value,
 	    HttpServer::settings[currenthost, opt_key]:"not found");
 	UI::SetFocus (`id (opt_key));
-    }
-
-    /**
-      * Validation of the default host configuration.
-      *
-      * @param key any option key
-      * @param event any event happened
-      * @return boolean	true if there is at least one Listen statement
-      */
-    global define boolean validateDefaultHostTable (any key, map event) ``{
-	if( event["ID"]:nil != `next ) return true;
-	// Listen list cannot be empty
-	boolean validate = size( HttpServer::settings[currenthost, "Listen"]:[] ) != 0;
-
-	y2debug( "Validation result: %1", validate );
-	
-	if( !validate ) {
-	    Popup::Error(_("The list of the ports to which the server should
-listen cannot be empty.
-") );
-	}
-	
-	return validate;
     }
 
     /**
@@ -520,7 +613,7 @@ listen cannot be empty.
       * @param opt_key any option key
       * @return string table entry summary
       */
-    global define string DefaultHostTableEntrySummary (any opt_id, any opt_key) ``{
+    global define string HostTableEntrySummary (any opt_id, any opt_key) ``{
 	return sformat ("%1", HttpServer::settings[currenthost, opt_key]:"");
     }
 
@@ -640,8 +733,8 @@ listen cannot be empty.
     global define void initListenSettings (any key) ``{
 
 	integer id = -1;
-	list listen = HttpServer::settings[currenthost, "Listen"]:[];
-	list items = maplist( string litem, listen, ``{ id = id+1; return listen2item(litem, id); } );
+	list listen = HTTPD::GetCurrentListen();
+	list items = maplist( map<string,string> litem, listen, ``{ id = id+1; return listen2item(litem, id); } );
 	UI::ChangeWidget (`id (`listen), `Items, items);
 	
 	// enable/disable buttons - at least single Listen must be present
@@ -679,7 +772,7 @@ listen cannot be empty.
 	UI::SetFocus (`id (`listen));
 	integer current = (integer) UI::QueryWidget (`id (`listen), `CurrentItem);
 	term currentitem = (term) UI::QueryWidget( `id(`listen), `Item(current) );
-	string network = (string) select(currentitem, 1, "");
+	string network = (string) currentitem[1]:nil;
 	// translators: all network addresses Listen type
 	if( network == _("All Addresses") ) network = "";
 	string port = select(currentitem, 2, "");
@@ -703,6 +796,18 @@ listen cannot be empty.
         }
 	else if( event["ID"]:nil == `delete )
 	{
+	    // FIXME: ensure there is at least one listen statement
+	    boolean validate = size( HttpServer::settings[currenthost, "Listen"]:[] ) != 0;
+
+	    y2debug( "Validation result: %1", validate );
+	
+	    if( !validate ) {
+		Popup::Error(_("The list of the ports to which the server should
+listen cannot be empty.
+") );
+	    return nil;
+	    }
+
 	    string res = item2listen( network, port );
 	    HttpServer::settings[currenthost, "Listen"] = 
 		filter( string litem, HttpServer::settings[currenthost, "Listen"]:[], ``(litem != res) );
