@@ -29,6 +29,9 @@
     include "http-server/helps.ycp";
 
 global string currenthost = "default";
+global string directory_param_regexp = "Directory \"?([^\"]+)\"?";
+
+boolean update_contents = false;
 
 map<string, any> ssl_options = (map<string, any>)SCR::Read (.target.ycp, Directory::datadir + "/all-ssl-options.ycp");
 
@@ -212,6 +215,7 @@ boolean HostsDelete (any opt_id, string opt_key);
 global boolean HostIsDefault (any widget, string opt_key);
 global string HostsMapId2Key( map desc, string id );
 global string HostDocumentRootSummary( string key, any id );
+global string HostName (string id);
 
 map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 	$["add_delete" : true, 
@@ -224,10 +228,10 @@ map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 	    "ids" : HttpServerWidgets::HostsContents,
 	    "option_delete" : HttpServerWidgets::HostsDelete,
 	    "help" : HELPS["hosts"]:"",
-	    "id2key" : HttpServerWidgets::HostsMapId2Key,
 	    "fallback": $[
 		"summary" : HttpServerWidgets::HostDocumentRootSummary,
 		"changed" : HttpServerWidgets::HostIsDefault,
+		"label_func" : HttpServerWidgets::HostName,
 	    ],
 	]);
 
@@ -267,13 +271,14 @@ the default host.")),
 	    // translators: textentry to set the host name
 	    `TextEntry (`id ("servername"), _("Server &Name:"), servername),
 	    // translators: textentry to set the host IP address
-	    `Left( `ComboBox( `id("ip"), `opt(`editable), _("Server &IP address:"), ips, ip ) ),
+	    `Left( `ComboBox( `id("ip"), `opt(`editable), _("Server &IP address:"), ips ) ),
 	    `VSpacing(0.5),
 	    `HBox( `PushButton (`id(`ok), `opt(`default), Label::ContinueButton ()),
 		`PushButton (`id(`cancel), Label::CancelButton ()) )
 	));
 	
-    UI::SetFocus (`name);
+    UI::SetFocus (`id("servername"));
+    UI::ChangeWidget (`id("ip"), `Value, ip);
     
     symbol ret = nil;
 
@@ -286,14 +291,14 @@ the default host.")),
 	}
 	
 	// it must be `ok
-	if (validate_servername("servername",nil,nil))
+	if (! validate_servername("servername",nil,nil))
 	{
 	    continue;
 	}
 
 	servername = (string)UI::QueryWidget (`id("servername"), `Value);
 	
-	if (validate_serverip("ip",nil,nil))
+	if (! validate_serverip("ip",nil,nil))
 	{
 	    continue;
 	}
@@ -388,7 +393,7 @@ boolean HostsDelete (any opt_id, string opt_key) {
     return YaST::HTTPDData::DeleteHost ((string)opt_id);
 }
 
-global string HostsMapId2Key (map desc, string id)
+global string HostName (string id)
 {
     string res = get_host_value ( "ServerName", YaST::HTTPDData::GetHost(id), id );
     // translators: human-readable "default host"
@@ -414,8 +419,9 @@ global symbol handleHostTable( any key, map event );
 global list<string> HostTableContents (map descr);
 global void DefaultHostPopupInit (any opt_id, string opt_key);
 global void DefaultHostPopupStore (any opt_id, string opt_key);
-global string HostTableEntrySummary (any opt_id, string opt_key);
-global boolean HostTableEntryDelete (any opt_id, string opt_key);
+global string HostTableEntrySummary (string opt_id, string opt_key);
+global boolean HostTableEntryDelete (string opt_id, string opt_key);
+global string HostId2Key( map desc, string id );
 global void initModules (any key);
 global symbol handleModules (any key, map event);
 global void initListenSettings (any key);
@@ -424,6 +430,8 @@ global void initServiceStatus (any key);
 global void storeServiceStatus (any key, map event);
 global void initAdaptFirewall (any key);
 global void storeAdaptFirewall (any opt_id, map event);
+global void DirectoryOptionInit (string key);
+global void DirectoryOptionStore (string opt_id, map event);
 
 /**
  * Map of popups for CWM
@@ -482,6 +490,22 @@ global map<string,map> popups = $[
 		    "optional" : false,
 		]
 	    ],
+	    "Directory" : $[
+		"table" : $[
+		    "label" : "Directory",    
+		],
+		"popup" : $[
+		    "widget" : `custom,
+		    "custom_widget"	: 
+		    `VBox(
+			// translators: directory path
+			`TextEntry (`id(`path), _("&Path:")),
+			`MultiLineEdit (`id(`contents),"")
+		    ),
+		    "init" : DirectoryOptionInit,
+		    "store" : DirectoryOptionStore,
+		],
+	    ],
 	];
 
 define void HostInit (any key);
@@ -495,6 +519,7 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	    "handle" : HttpServerWidgets::handleHostTable,
 	    "options" : union( (map)SCR::Read (.target.ycp, Directory::datadir + "/all-host-options.ycp"), popups ),
 	    "ids" : HttpServerWidgets::HostTableContents,
+	    "id2key" : HttpServerWidgets::HostId2Key,
 	    "fallback" : $[
 		"init" : HttpServerWidgets::DefaultHostPopupInit,
 		"store" : HttpServerWidgets::DefaultHostPopupStore,
@@ -859,16 +884,135 @@ define string item2listen( string network, string port ) ``{
 
 // ************************************ default host table ********************
 
+    global string HostId2Key( map desc, string id )
+    {
+	if (regexpmatch (id, directory_param_regexp) )
+	{
+	    return "Directory";
+	}
+	else return id;
+    }
+
+    global void DirectoryOptionInit (string opt_id)
+    {
+	if (opt_id == nil)
+	{
+	    // new option
+	    return;
+	}
+	string dirname = regexpsub (opt_id, directory_param_regexp, "\\1");
+
+	// lookup the _SECTION map
+	map<string, any> section = nil;
+	foreach ( map<string, any> opt, YaST::HTTPDData::GetHost(currenthost), ``{
+	    if (opt["KEY"]:nil == "_SECTION" 
+		&& opt["SECTIONNAME"]:nil == "Directory"
+		&& opt["SECTIONPARAM"]:nil == "\""+dirname+"\""
+	    ) 
+	    {
+		section = opt;
+		break;
+	    }
+	});
+	
+	if (section == nil)
+	{
+	    y2error ("Corresponding section not found for %1", dirname);
+	    return;
+	}
+	
+	// create a textual representation of the section
+	string text = "";
+	foreach (map<string,any> opt, section ["VALUE"]:[], ``{
+	    if (opt["KEY"]:nil != "_SECTION")
+	    {
+		text = text + opt["KEY"]:"" + " " + opt["VALUE"]:"" + "\n";
+	    }
+	    // FIXME: subsections
+	});
+	
+	UI::ChangeWidget( `id(`path), `Value, dirname );
+	UI::ChangeWidget( `id(`contents), `Value, text );
+	UI::SetFocus (`id(`path) );
+    }
+    
+    global void DirectoryOptionStore (string opt_id, map event)
+    {
+	string dirname = regexpsub (opt_id, directory_param_regexp, "\\1");
+	if (size (dirname) == 0)
+	{
+	    y2error ("Invalid directory option: %1", opt_id);
+	    return;
+	}
+	
+	// FIXME: fix path change
+	string dir = (string)UI::QueryWidget (`id(`path), `Value);
+	// ensure \" around dirname
+	dir = regexpsub (dir, "\"?([^\"]+)\"?", "\"\\1\"");
+	
+	string text = (string)UI::QueryWidget (`id(`contents), `Value);
+	
+	map<string,any> new_section = YaST::HTTPDData::ParseDirOption(dir+"\n"+text);
+	y2milestone ("Updated section: %1", new_section );
+
+	list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+	integer index = 0;
+
+	// replace the old section
+	foreach ( map<string, any> opt, host , ``{
+	    if (opt["KEY"]:nil == "_SECTION" 
+		&& opt["SECTIONNAME"]:nil == "Directory"
+		&& opt["SECTIONPARAM"]:nil == "\""+dirname+"\""
+	    ) 
+	    {
+		break;
+	    }
+	    index = index + 1;
+	});
+	
+	if (index == size (host) )
+	{
+	    // add the option
+	    host = add (host, new_section);
+	}
+	else
+	{
+	    // replace the option
+	    host[index] = new_section;
+	}
+
+	YaST::HTTPDData::ModifyHost (currenthost, host);
+	
+	update_contents = true;
+
+	return;
+    }
+    
     /**
       * Function for getting contents of the default host table
       * @param descr map description map of the table
       * @return list of items for the table
       */
     global define list<string> HostTableContents (map descr) ``{
-	list<string> ret = maplist (map<string, any> option, YaST::HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
+    
+	list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+	y2internal ("Host: %1", host );
+	list<string> ret = maplist (map<string, any> option, host, ``{
+	    string key = option["KEY"]: "unknown";
+	    if ( ! contains( ["_SECTION", currenthost == "default" ? "HostIP" : "" ], key ) && ! haskey( ssl_options, key ) )
+	    {
+		return key;
+	    }
+	    else if ( key == "_SECTION" && option["SECTIONNAME"]:"" == "Directory" )
+	    {
+		return "Directory " + option["SECTIONPARAM"]:"";
+	    }
+	    else return "";
+	});
+	
+	// filter out empty entries
+	ret = filter (string key, ret, ``( size(key) > 0 ));
 
-	// filter out unneeded options
-	ret = filter (string key, ret, ``( ! contains( ["_SECTION", currenthost == "default" ? "HostIP" : "" ], key ) && ! haskey( ssl_options, key ) ) );
 	// required entries
 	ret = (list<string>)union (["ServerName", "ServerAdmin" ], ret);
 	return ret;
@@ -880,12 +1024,29 @@ define string item2listen( string network, string port ) ``{
       * @param opt_key any option key of selected option
       * @return boolean true if was really deleted
       */
-    global define boolean HostTableEntryDelete (any opt_id, string opt_key) ``{
+    global define boolean HostTableEntryDelete (string opt_id, string opt_key) ``{
 	// message popup
 	if (! Popup::YesNo (_("Delete selected entry?")))
 	    return false;
 	list< map<string, any> > options = YaST::HTTPDData::GetHost (currenthost);
-	YaST::HTTPDData::ModifyHost (currenthost, filter (map<string,any> opt, options, ``(opt_id != opt["KEY"]:"")));
+	
+	if ( regexpmatch (opt_id, directory_param_regexp) )
+	{
+	    // it's directory, handle differently
+	    string dirname = regexpsub (opt_id, directory_param_regexp, "\"\\1\"");
+
+	    YaST::HTTPDData::ModifyHost (currenthost
+		, filter (map<string,any> opt, options
+		, ``(opt["KEY"]:nil != "_SECTION" 
+			|| opt["SECTIONNAME"]:nil != "Directory"
+			|| opt["SECTIONPARAM"]:nil != dirname )
+	    ));
+	}
+	else
+	{
+	    YaST::HTTPDData::ModifyHost (currenthost, filter (map<string,any> opt, options, ``(opt_id != opt["KEY"]:"")));
+	}
+
 	HttpServer::modified = true;
 	return true;
     }
@@ -908,7 +1069,13 @@ define string item2listen( string network, string port ) ``{
 	}
 
 	// default handling
-	return TablePopup::TableHandle( widgets["host"]:$[], key, event );
+	symbol res = TablePopup::TableHandle( hostwidget, key, event );
+	if (update_contents)
+	{
+	    update_contents = false;
+	    TablePopup::TableInit( hostwidget, key);
+	}
+	return res;
     }
 
     /**
@@ -939,7 +1106,7 @@ define string item2listen( string network, string port ) ``{
       * @param opt_key any option key
       * @return string table entry summary
       */
-    global define string HostTableEntrySummary (any opt_id, string opt_key) ``{
+    global define string HostTableEntrySummary (string opt_id, string opt_key) ``{
 	string res = get_host_value( opt_key, YaST::HTTPDData::GetHost(currenthost), "");
 	if (opt_key == "SSL")
 	{
@@ -971,6 +1138,10 @@ define string item2listen( string network, string port ) ``{
 		// translators: table entry text for IP-based vhosts
 		res = _("Resolution via IP Address Used");
 	    }
+	}
+	else if (regexpmatch (opt_id, directory_param_regexp))
+	{
+	    res = regexpsub (opt_id, directory_param_regexp, "\\1");
 	}
 	return res;
     }
