@@ -302,7 +302,8 @@ use YaPI;
 use YaST::YCP;
 use YaPI::HTTPDModules;
 use YaST::httpdUtils;
-@YaPI::HTTPD::ISA = qw( YaPI YaST::httpdUtils );
+use YaST::HTTPDData;
+@YaPI::HTTPD::ISA = qw( YaPI YaST::httpdUtils YaST::HTTPDData );
 YaST::YCP::Import ("SCR");
 YaST::YCP::Import ("Service");
 YaST::YCP::Import ("SuSEFirewall");
@@ -1247,9 +1248,9 @@ EXAMPLE
 BEGIN { $TYPEINFO{GetModulePackages} = ["function", ["list", "string"] ]; }
 sub GetModulePackages {
     my $self = shift;
-    my $mods = $self->GetModuleList();
+#    my $mods = $self->GetModuleList();
+    my $mods = YaST::HTTPDData->GetModuleList();
     my %uniq;
-
     foreach my $mod ( @$mods ) {
     if ( exists($YaPI::HTTPDModules::modules{$mod}) ) {
         @uniq{@{$YaPI::HTTPDModules::modules{$mod}->{packages}}} = ();
