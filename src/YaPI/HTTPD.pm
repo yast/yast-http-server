@@ -218,18 +218,16 @@ You can not create or delete the default host id.
 =cut
 
 package YaPI::HTTPD;
+BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
+@YaPI::HTTPD::ISA = qw( YaPI );
+use YaPI;
 use YaST::YCP;
 use YaPI::HTTPDModules;
-BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
 YaST::YCP::Import ("SCR");
 YaST::YCP::Import ("Service");
 YaST::YCP::Import ("SuSEFirewall");
 YaST::YCP::Import ("NetworkDevices");
 YaST::YCP::Import ("Progress");
-
-if(not defined do("YaPI.inc")) {
-    die "'$!' Can not include YaPI.inc";
-}
 
 #######################################################
 # temoprary solution end
@@ -247,17 +245,19 @@ my $vhost_files;
 
 # internal only
 sub getFileByHostid {
+    my $self = shift;
     my $hostid = shift;
     foreach my $k ( keys(%$vhost_files) ) {
         foreach my $hostHash ( @{$vhost_files->{$k}} ) {
             return $k if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} eq $hostid );
         }
     }
-    return SetError( summary => 'host not found' );
+    return $self->SetError( summary => 'host not found' );
 }
 
 # internal only
 sub checkHostmap {
+    my $self = shift;
     my $host = shift;
 
     my %checkMap = (
@@ -275,7 +275,7 @@ sub checkHostmap {
         next unless( exists($checkMap{$entry->{KEY}}) );
         my $re = $checkMap{$entry->{KEY}};
         if( $entry->{VALUE} !~ /$re/ ) {
-            return SetError( summary => "illegal '$entry->{KEY}' parameter" );
+            return $self->SetError( summary => "illegal '$entry->{KEY}' parameter" );
         }
         $ssl = $entry->{VALUE} if( $entry->{KEY} eq 'SSL' );
         $nb_vh = $entry->{VALUE} if( $entry->{KEY} eq 'VirtualByName' );
@@ -310,6 +310,7 @@ EXAMPLE:
 
 BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
+    my $self = shift;
     my @ret = ();
     my @data = SCR::Read('.http_server.vhosts');
 
@@ -320,7 +321,7 @@ sub GetHostsList {
             }
         }
     } else {
-        return SetError( summary => 'SCR Agent parsing failed' );
+        return $self->SetError( summary => 'SCR Agent parsing failed' );
     }
     return \@ret;
 }
@@ -350,6 +351,7 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{GetHost} = ["function", ["list", [ "map", "string", "any" ] ], "string"]; }
 sub GetHost {
+    my $self = shift;
     my $hostid = shift;
 
     # FIXME
@@ -360,11 +362,11 @@ sub GetHost {
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return SetError( summary => 'SCR Agent parsing failed' );
+        return $self->SetError( summary => 'SCR Agent parsing failed' );
     }
 
-    my $filename = getFileByHostid( $hostid );
-    return SetError( summary => 'hostid not found' ) unless( $filename );
+    my $filename = $self->getFileByHostid( $hostid );
+    return $self->SetError( summary => 'hostid not found' ) unless( $filename );
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
         if( $hostHash->{HOSTID} eq $hostid ) {
             my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
@@ -389,7 +391,7 @@ sub GetHost {
             return [ @{$hostHash->{'DATA'}}, $sslHash, $vbnHash ];
         }
     }
-    return SetError( summary => 'hostid not found' );
+    return $self->SetError( summary => 'hostid not found' );
 }
 
 =item *
@@ -447,6 +449,7 @@ by the API.
 
 BEGIN { $TYPEINFO{ModifyHost} = ["function", "boolean", "string", [ "list", [ "map", "string", "any" ] ] ]; }
 sub ModifyHost {
+    my $self = shift;
     my $hostid = shift;
     my $newData = shift;
 
@@ -457,11 +460,11 @@ sub ModifyHost {
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return SetError( summary => 'SCR Agent parsing failed' );
+        return $self->SetError( summary => 'SCR Agent parsing failed' );
     }
 
-    my $filename = getFileByHostid( $hostid );
-    return undef if( not checkHostmap( $newData ) );
+    my $filename = $self->getFileByHostid( $hostid );
+    return undef if( not $self->checkHostmap( $newData ) );
     foreach my $entry ( @{$vhost_files->{$filename}} ) {
         if( $entry->{HOSTID} eq $hostid ) {
             my @tmp;
@@ -481,13 +484,13 @@ sub ModifyHost {
                     next;
                 } elsif( $hostid ne 'default' and $tmp->{KEY} =~ /ServerTokens|TimeOu|tExtendedStatus/ ) {
                     # illegal keys in vhost
-                    return SetError( "illegal key in vhost '$tmp->{KEY}'" );
+                    return $self->SetError( "illegal key in vhost '$tmp->{KEY}'" );
                 } else {
                     push( @tmp, $tmp );
                 }
             }
             $entry->{DATA} = \@tmp;
-            writeHost( $filename );
+            $self->writeHost( $filename );
 
             # write sysconfig variables for default host
             # don't know why but we are safe then.
@@ -544,9 +547,13 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{CreateHost} = ["function", "boolean", "string", [ "map", "string", "any" ] ]; }
 sub CreateHost {
+    my $self = shift;
     my $hostid = shift;
     my $data = shift;
 
+    if( ref($data) ne 'ARRAY' ) {
+        return $self->SetError( summary => "data must be an array ref and not ".ref($data) );
+    }
 
     my $sslHash = { KEY => 'SSLEngine' , VALUE => 'off' };
     my @tmp = ( $sslHash );
@@ -560,20 +567,21 @@ sub CreateHost {
         } elsif( $key->{KEY} eq 'SSL' and $key->{VALUE} == 2 ) {
             $sslHash->{'VALUE'} = 'on';
             push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
-#        } 
-#elsif( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
-#            # illegal keys in vhost
-#            return SetError( "illegal key in vhost '$key->{KEY}'" );
+        } elsif( $key->{KEY} eq 'SSL' ) {
+            # already set to "off" above. So ignore.
+        } elsif( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
+            # illegal keys in vhost
+            return $self->SetError( "illegal key in vhost '$key->{KEY}'" );
         } else {
             push( @tmp, $key );
         }
     }
     $data = \@tmp;
-    return undef if( not checkHostmap( $data ) );
+    return undef if( not $self->checkHostmap( $data ) );
 
     $hostid =~ /^([^\/]+)/;
     my $vhost = $1;
-    return SetError( "illegal hostid" ) unless( $vhost );
+    return $self->SetError( "illegal hostid" ) unless( $vhost );
     my $entry = {
                  OVERHEAD      => "# YaST generated vhost entry\n",
                  VirtualByName => $VirtualByName,
@@ -588,7 +596,7 @@ sub CreateHost {
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return SetError( summary => 'SCR Agent parsing failed' );
+        return $self->SetError( summary => 'SCR Agent parsing failed' );
     }
     if( ref($vhost_files->{'yast2_vhosts.conf'}) eq 'ARRAY' ) {
         # merge new entry with existing entries in yast2_vhosts.conf
@@ -597,7 +605,7 @@ sub CreateHost {
         # create new yast2_vhosts.conf
         $vhost_files->{'yast2_vhosts.conf'} = [ $entry ];
     }
-    writeHost( 'yast2_vhosts.conf' );
+    $self->writeHost( 'yast2_vhosts.conf' );
     return 1;
 }
 
@@ -614,10 +622,11 @@ EXAMPLE
 #bool DeleteHost( string hostid );
 BEGIN { $TYPEINFO{DeleteHost} = ["function", "boolean", "string"]; }
 sub DeleteHost {
+    my $self = shift;
     my $hostid = shift;
 
     if( $hostid eq 'default' ) {
-        return SetError( summary => 'can not delete default host' );
+        return $self->SetError( summary => 'can not delete default host' );
     }
     # FIXME
     # will read all vhost files, even if the vhost is found
@@ -626,9 +635,9 @@ sub DeleteHost {
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return SetError( summary => 'SCR Agent parsing failed' );
+        return $self->SetError( summary => 'SCR Agent parsing failed' );
     }
-    my $filename = getFileByHostid( $hostid );
+    my $filename = $self->getFileByHostid( $hostid );
     my @newList = ();
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
         push( @newList, $hostHash ) if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} ne $hostid );
@@ -638,12 +647,13 @@ sub DeleteHost {
     } else {
         delete($vhost_files->{$filename}); # drop empty file
     }
-    writeHost( $filename );
+    $self->writeHost( $filename );
     return 1;
 }
 
 # internal only!
 sub writeHost {
+    my $self = shift;
     my $filename = shift;
 
     SCR::Write(".http_server.vhosts.setFile.$filename", $vhost_files->{$filename} );
@@ -678,6 +688,7 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{GetModuleList} = ["function", [ "list", "string" ] ]; }
 sub GetModuleList {
+    my $self = shift;
     my $data = SCR::Read('.sysconfig.apache2.APACHE_MODULES'); # FIXME: Error handling
     $data =~ s/mod_//g;
 
@@ -720,6 +731,7 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{GetKnownModules} = ["function", [ "list", ["map","string","any"] ] ]; }
 sub GetKnownModules {
+    my $self = shift;
     my @ret = ();
     foreach my $mod ( keys(%YaPI::HTTPDModules::modules) ) {
         push( @ret, { name => $mod, %{$YaPI::HTTPDModules::modules{$mod}} } );
@@ -742,17 +754,18 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{ModifyModuleList} = ["function", "boolean", [ "list","string" ], "boolean" ]; }
 sub ModifyModuleList {
+    my $self = shift;
     my $newModules = shift;
     my $enable = shift;
 
     my @newList = ();
     if( not $enable ) {
-        foreach my $mod ( @{GetModuleList()} ) {
+        foreach my $mod ( @{$self->GetModuleList()} ) {
             next if( grep( /^$mod$/, @$newModules ) );
             push( @newList, $mod );
         }
     } else {
-        my @oldList = ( @{GetModuleList()}, selections2modules( GetModuleSelectionsList() ) );
+        my @oldList = ( @{$self->GetModuleList()}, $self->selections2modules( $self->GetModuleSelectionsList() ) );
         my %uniq;
         @uniq{@oldList} = ();
         @oldList = keys( %uniq );
@@ -797,6 +810,7 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{GetKnownModuleSelections} = ["function", [ "map","string","any" ] ]; }
 sub GetKnownModuleSelections {
+    my $self = shift;
     my @ret = ();
     foreach my $sel ( keys(%YaPI::HTTPDModules::selection) ) {
         push( @ret, { id => $sel, %{$YaPI::HTTPDModules::selection{$sel}} } );
@@ -820,6 +834,7 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{GetModuleSelectionsList} = ["function", ["list","string"] ]; }
 sub GetModuleSelectionsList {
+    my $self = shift;
     return (SCR::Read('.http_server.moduleselection'))[0];
 }
 
@@ -841,22 +856,23 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{ModifyModuleSelectionList} = ["function", "boolean", ["list","string"], "boolean" ]; }
 sub ModifyModuleSelectionList {
+    my $self = shift;
     my $newSelection = shift;
     my $enable = shift;
     my %uniq = ();
 
-    @uniq{@{GetModuleSelectionsList()}} = ();
+    @uniq{@{$self->GetModuleSelectionsList()}} = ();
     if( $enable ) {
         @uniq{@$newSelection} = ();
         foreach my $ns ( @$newSelection ) {
-            ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 1 );
-            ModifyModuleList( [], 1 );
+            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 1 );
+            $self->ModifyModuleList( [], 1 );
         }
     } else {
         delete(@uniq{@$newSelection});
         foreach my $ns ( @$newSelection ) {
-            ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 0 );
-            ModifyModuleList( [], 1 );
+            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 0 );
+            $self->ModifyModuleList( [], 1 );
         }
     }
 
@@ -865,6 +881,7 @@ sub ModifyModuleSelectionList {
 
 # internal only
 sub selections2modules {
+    my $self = shift;
     my $list = shift;
     my @ret;
     foreach my $sel ( @$list ) {
@@ -901,6 +918,7 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{ModifyService} = ["function", "boolean", "boolean" ]; }
 sub ModifyService {
+    my $self = shift;
     my $enable = shift;
 
     if( $enable ) {
@@ -926,6 +944,7 @@ EXAMPLE
 =cut
 BEGIN { $TYPEINFO{ReadService} = ["function", "boolean"]; }
 sub ReadService {
+    my $self = shift;
     return Service::Enabled('apache2');
 }
 
@@ -940,6 +959,7 @@ sub ReadService {
 #######################################################
 # internal only
 sub ip2device {
+    my $self = shift;
     my %ip2device;
     Progress::off();
     SuSEFirewall::Read();
@@ -973,19 +993,20 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ], "boolean" ] ; }
 sub CreateListen {
+    my $self = shift;
     my $fromPort = shift;
     my $toPort = shift;
     my $ip = shift; #FIXME: this is a list
     my $doFirewall = shift;
 
-    my @listenEntries = @{GetCurrentListen()};
+    my @listenEntries = @{$self->GetCurrentListen()};
     my %newEntry;
     $newEntry{ADDRESS} = $ip if ($ip);
     $newEntry{PORT} = ($fromPort eq $toPort)?($fromPort):($fromPort.'-'.$toPort);
     SCR::Write( ".http_server.listen", [ @listenEntries, \%newEntry ] );
 
     if( $doFirewall ) {
-        my $ip2device = ip2device();
+        my $ip2device = $self->ip2device();
         my $if = exists($newEntry{ADDRESS})?$ip2device->{$newEntry{ADDRESS}}:'all';
         SuSEFirewall::AddService( $newEntry{PORT}, "TCP", $if );
     }
@@ -1012,12 +1033,13 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{DeleteListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ], 'boolean' ] ; }
 sub DeleteListen {
+    my $self = shift;
     my $fromPort = shift;
     my $toPort = shift;
     my $ip = shift; #FIXME: this is a list
     my $doFirewall = shift;
 
-    my @listenEntries = @{GetCurrentListen()};
+    my @listenEntries = @{$self->GetCurrentListen()};
     my @newListenEntries = ();
     foreach my $listen ( @listenEntries ) {
         if( defined($ip) and (not exists($listen->{'ADDRESS'}) or $listen->{'ADDRESS'} ne $ip) ) {
@@ -1030,7 +1052,7 @@ sub DeleteListen {
     }
     SCR::Write( ".http_server.listen", \@newListenEntries );
     if( $doFirewall ) {
-        my $ip2device = ip2device();
+        my $ip2device = $self->ip2device();
         my $if = $ip?$ip2device->{$ip}:'all';
         my $port = ($fromPort eq $toPort)?($fromPort):("$fromPort-$toPort");
         SuSEFirewall::RemoveService( $port, "TCP", $if );
@@ -1061,10 +1083,11 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{GetCurrentListen} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetCurrentListen {
+    my $self = shift;
     my @data = SCR::Read('.http_server.listen');
     my @ret;
     if( not ref($data[0]) ) {
-        return SetError( summary => 'read listen in agent failed' );
+        return $self->SetError( summary => 'read listen in agent failed' );
     }
     foreach my $listen ( @{$data[0]} ) {
         if( $listen =~ /^([^:]+):([^:]+)/ ) {
@@ -1095,6 +1118,7 @@ C<GetServicePackages()>
 
 BEGIN { $TYPEINFO{GetServicePackages} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetServicePackages {
+    my $self = shift;
     return 'apache2'; #???
 }
 
@@ -1107,7 +1131,8 @@ C<GetModulePackages()>
 
 BEGIN { $TYPEINFO{GetModulePackages} = ["function", ["list", "string"] ]; }
 sub GetModulePackages {
-    my $mods = GetModuleSelectionsList();
+    my $self = shift;
+    my $mods = $self->GetModuleSelectionsList();
     my %uniq;
 
     foreach my $mod ( @$mods ) {
@@ -1129,18 +1154,21 @@ sub GetModulePackages {
 # list<string> GetErrorLogFiles( list<string> );
 BEGIN { $TYPEINFO{GetErrorLogFiles} = ["function", ["list", "string" ], [ "list", "string" ] ]; }
 sub GetErrorLogFiles {
+    my $self = shift;
 
 }
 
 # list<string> GetAccessLogFiles( list<string> );
 BEGIN { $TYPEINFO{GetAccessLogFiles} = ["function", ["list", "string" ], [ "list", "string" ] ]; }
 sub GetAccessLogFiles {
+    my $self = shift;
 
 }
 
 # list<string> GetTransferLogFiles( list<string> );
 BEGIN { $TYPEINFO{GetTransferLogFiles} = ["function", ["list", "string"], [ "list", "string" ] ]; }
 sub GetTransferLogFiles {
+    my $self = shift;
 
 }
 
@@ -1165,6 +1193,7 @@ EXAMPLE
 =cut
 
 sub GetServerFlags {
+    my $self = shift;
     return SCR::Read('.sysconfig.apache2.APACHE_SERVER_FLAGS');
 }
 
@@ -1182,6 +1211,7 @@ EXAMPLE
 =cut
 
 sub SetServerFlags {
+    my $self = shift;
     my $param = shift;
 
     SCR::Write('.sysconfig.apache2.APACHE_SERVER_FLAGS', $param);
@@ -1220,17 +1250,18 @@ EXAMPLE
 =cut
 
 sub WriteServerCert {
+    my $self = shift;
     my $hostid = shift;
     my $pemData = shift;
     my $key = ($pemData =~ /PRIVATE KEY/)?(1):(0);
 
     if( not $pemData or $pemData !~ /BEGIN CERTIFICATE/ ) {
-        return SetError( summary => "corrupt PEM data" );
+        return $self->SetError( summary => "corrupt PEM data" );
     }
 
-    my $host = GetHost( $hostid );
+    my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1253,7 +1284,7 @@ sub WriteServerCert {
     }
     push( @$host, { KEY => 'SSLCertificateFile', VALUE => $file } ) unless( $found & 1 );
     push( @$host, { KEY => 'SSLCertificateKeyFile', VALUE => $file } ) unless( $key and not($found & 2) );
-    return ModifyHost( $hostid, $host );
+    return $self->ModifyHost( $hostid, $host );
 }
 
 =item *
@@ -1279,16 +1310,17 @@ EXAMPLE
 
 
 sub WriteServerKey {
+    my $self = shift;
     my $hostid = shift;
     my $pemData = shift;
     if( not $pemData or $pemData !~ /PRIVATE KEY/ ) {
-        return SetError( summary => "corrupt PEM data" );
+        return $self->SetError( summary => "corrupt PEM data" );
     }
     my $cert = ($pemData =~ /BEGIN CERTIFICATE/)?(1):(0);
 
-    my $host = GetHost( $hostid );
+    my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1310,7 +1342,7 @@ sub WriteServerKey {
     }
     push( @$host, { KEY => 'SSLCertificateKeyFile', VALUE => $file } ) if( $cert and not($found & 1) );
     push( @$host, { KEY => 'SSLCertificateFile', VALUE => $file } ) unless( $found & 2 );
-    return ModifyHost( $hostid, $host );
+    return $self->ModifyHost( $hostid, $host );
 }
 
 =item *
@@ -1331,15 +1363,16 @@ EXAMPLE
 
 
 sub WriteServerCA {
+    my $self = shift;
     my $hostid = shift;
     my $pemData = shift;
     if( not $pemData or $pemData !~ /BEGIN CERTIFICATE/ ) {
-        return SetError( summary => "corrupt PEM data" );
+        return $self->SetError( summary => "corrupt PEM data" );
     }
 
-    my $host = GetHost( $hostid );
+    my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1359,7 +1392,7 @@ sub WriteServerCA {
         last;
     }
     push( @$host, { KEY => 'SSLCACertificateFile', VALUE => $file } ) if( not $found );
-    return ModifyHost( $hostid, $host );
+    return $self->ModifyHost( $hostid, $host );
 }
 
 =item *
@@ -1382,11 +1415,12 @@ EXAMPLE
 =cut
 
 sub ReadServerCert {
+    my $self = shift;
     my $hostid = shift;
 
-    my $host = GetHost( $hostid );
+    my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1395,15 +1429,15 @@ sub ReadServerCert {
         last;
     }
     unless( $file ) {
-        return SetError( summary => "no certificate file configured for this hostid" );
+        return $self->SetError( summary => "no certificate file configured for this hostid" );
     }
     my $cert = SCR::Read( '.target.string', $file );
     unless( $cert ) {
-        return SetError( summary => "error reading certificate: $file" );
+        return $self->SetError( summary => "error reading certificate: $file" );
     }
     $cert =~ /(-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----)/;
     if( ! $1 ) {
-        return SetError( "parsing cert file failed" );
+        return $self->SetError( "parsing cert file failed" );
     }
     return $1;
 }
@@ -1424,11 +1458,12 @@ EXAMPLE
 =cut
 
 sub ReadServerKey {
+    my $self = shift;
     my $hostid = shift;
 
-    my $host = GetHost( $hostid );
+    my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1443,16 +1478,16 @@ sub ReadServerKey {
             last;
         }
         unless( $file ) {
-            return SetError( summary => "no certificate key file configured for this hostid" );
+            return $self->SetError( summary => "no certificate key file configured for this hostid" );
         }
     }
     my $cert = SCR::Read( '.target.string', $file );
     unless( $cert ) {
-        return SetError( summary => "error reading certificate: $file" );
+        return $self->SetError( summary => "error reading certificate: $file" );
     }
     $cert =~ /(-----BEGIN RSA PRIVATE KEY-----[^-]+-----END RSA PRIVATE KEY-----)/;
     if( ! $1 ) {
-        return SetError( "parsing key file failed" );
+        return $self->SetError( "parsing key file failed" );
     }
     return $1;
 
@@ -1475,11 +1510,12 @@ EXAMPLE
 =cut
 
 sub ReadServerCA {
+    my $self = shift;
     my $hostid = shift;
 
-    my $host = GetHost( $hostid );
+    my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1488,11 +1524,11 @@ sub ReadServerCA {
         last;
     }
     unless( $file ) {
-        return SetError( summary => "no ca certificate file configured for this hostid" );
+        return $self->SetError( summary => "no ca certificate file configured for this hostid" );
     }
     my $cert = SCR::Read( '.target.string', $file );
     unless( $cert ) {
-        return SetError( summary => "error reading ca certificate: $file" );
+        return $self->SetError( summary => "error reading ca certificate: $file" );
     }
     return $cert;
 }
@@ -1503,15 +1539,16 @@ sub ReadServerCA {
 
 
 sub run {
+    my $self = __PACKAGE__;
     print "-------------- GetHostsList\n";
-    foreach my $h ( @{GetHostsList()} ) {
+    foreach my $h ( @{$self->GetHostsList()} ) {
         print "ID: $h\n";
     }
 
     print "-------------- ModifyHost Number 0\n";
     my $hostid = "default";
-    my @hostArr = @{GetHost( $hostid )};
-    ModifyHost( $hostid, \@hostArr );
+    my @hostArr = @{$self->GetHost( $hostid )};
+    $self->ModifyHost( $hostid, \@hostArr );
 
     print "-------------- CreateHost\n";
     my @temp = (
@@ -1519,73 +1556,73 @@ sub run {
                 { KEY => "VirtualByName", VALUE => 1 },
                 { KEY => "ServerAdmin",   VALUE => 'no@one.de' }
                 );
-    CreateHost( '192.168.1.2/createTest2.suse.de', \@temp );
+    $self->CreateHost( '192.168.1.2/createTest2.suse.de', \@temp );
 
     print "-------------- GetHost created host\n";
-    @hostArr = @{GetHost( '*:80/dummy-host.example.com' )};
+    @hostArr = @{$self->GetHost( '*:80/dummy-host.example.com' )};
     use Data::Dumper;
     print Data::Dumper->Dump( [ \@hostArr ] );
 
     system("cat /etc/apache2/vhosts.d/yast2_vhosts.conf");
 
     print "-------------- DeleteHost Number 0\n";
-    DeleteHost( '192.168.1.2/createTest2.suse.de' );
+    $self->DeleteHost( '192.168.1.2/createTest2.suse.de' );
 
     print "-------------- show module list\n";
-    foreach my $mod ( @{GetModuleList()} ) {
+    foreach my $mod ( @{$self->GetModuleList()} ) {
         print "MOD: $mod\n";
     }
 
     print "-------------- show known modules\n";
-    foreach my $mod ( @{GetKnownModules()} ) {
+    foreach my $mod ( @{$self->GetKnownModules()} ) {
         print "KNOWN MOD: $mod->{name}\n";
     }
 
     print "-------------- show known selections\n";
-    foreach my $mod ( @{GetKnownModuleSelections()} ) {
+    foreach my $mod ( @{$self->GetKnownModuleSelections()} ) {
         print "KNOWN SEL: $mod->{id}\n";
     }
 
-    ModifyModuleList( ['ssl'], 0 );
+    $self->ModifyModuleList( ['ssl'], 0 );
 
     print "-------------- show active selections\n";
-    GetModuleSelectionsList();
+    $self->GetModuleSelectionsList();
 
     print "-------------- activate apache2\n";
-    ModifyService(1);
+    $self->ModifyService(1);
 
     print "-------------- get listen\n";
-    foreach my $l ( @{GetCurrentListen()} ) {
+    foreach my $l ( @{$self->GetCurrentListen()} ) {
         print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
         print $l->{PORT}."\n";
     }
 
     print "-------------- del listen\n";
-    DeleteListen( 443,443,'',1 );
-    DeleteListen( 80,80,"12.34.56.78",1 );
+    $self->DeleteListen( 443,443,'',1 );
+    $self->DeleteListen( 80,80,"12.34.56.78",1 );
     print "-------------- get listen\n";
-    foreach my $l ( @{GetCurrentListen()} ) {
+    foreach my $l ( @{$self->GetCurrentListen()} ) {
         print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
         print $l->{PORT}."\n";
     }
 
     print "-------------- create listen\n";
-    CreateListen( 443,443,'',1 );
-    CreateListen( 80,80,"12.34.56.78",1 );
+    $self->CreateListen( 443,443,'',1 );
+    $self->CreateListen( 80,80,"12.34.56.78",1 );
 
     print "--------------set ModuleSelections\n";
-    ModifyModuleSelectionList( [ 'mod_test1', 'mod_test2', 'mod_test3' ], 1 );
-    ModifyModuleSelectionList( [ 'mod_test3' ], 0 );
+    $self->ModifyModuleSelectionList( [ 'mod_test1', 'mod_test2', 'mod_test3' ], 1 );
+    $self->ModifyModuleSelectionList( [ 'mod_test3' ], 0 );
 
     print "-------------- get ModuleSelections\n";
-    foreach my $sel ( @{GetModuleSelectionsList()} ) {
+    foreach my $sel ( @{$self->GetModuleSelectionsList()} ) {
         print "SEL: $sel\n";
     }
 
     print "--------------trigger error\n";
-    my $host = GetHost( 'will.not.be.found' );
+    my $host = $self->GetHost( 'will.not.be.found' );
     if( not defined $host ) {
-        my %error = Error();
+        my %error = $self->Error();
         while( my ($k,$v) = each(%error) ) {
             print "ERROR: $k = $v\n";
         }
