@@ -65,6 +65,9 @@ else if (func == "Import") {
 else if (func == "Packages") {
     ret = HttpServer::AutoPackages();
 }
+else if (func == "GetModified") {
+    ret = HttpServer::modified;
+}
 /* Return actual state */
 else if (func == "Export") {
     ret = HttpServer::Export();

@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Aug 30 05:28:44 CEST 2004 - nashif@suse.de
+
+- Added GetModified function to _auto client 
+
+-------------------------------------------------------------------
 Fri Aug 27 15:16:12 CEST 2004 - visnov@suse.cz
 
 - merged proofread texts 
@@ -27,7 +32,6 @@ Tue Aug 10 09:42:22 CEST 2004 - jsrain@suse.cz
 - merged texts from proofread
 
 -------------------------------------------------------------------
->>>>>>> 1.67
 Wed Aug  4 14:09:46 CEST 2004 - visnov@suse.cz
 
 - adapt for the new CWM interface
@@ -168,7 +172,6 @@ Fri Apr 16 15:20:00 CEST 2004 - ug@suse.de
 . ReloadService implemented
 
 -------------------------------------------------------------------
->>>>>>> 1.62.4.27
 Mon Apr  5 10:53:55 CEST 2004 - ug@suse.de
 
 - order of mod_ldap and mod_auth_ldap fixed (#31436 again)
