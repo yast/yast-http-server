@@ -32,6 +32,7 @@ parse_files();
 sub parse_files {
     my $class = shift;
 
+    # parse all NameVirtualHost entries.
     if( open( FILE, "< /etc/apache2/listen.conf" ) ) {
         while( my $line = <FILE> ) {
             next unless( $line =~ /^NameVirtualHost\s+(.*)/ );
@@ -49,49 +50,104 @@ sub parse_files {
         };
         $file =~ /([^\/]+\.conf)$/;
         $file = $1;
+        my $fileData = sectionParser();
         $vhost_files{$file} = [];
-        my $entry = {};
-        while( my $line = <FILE> ) {
-            if( $line =~ /^\s*<VirtualHost\s*([^\s>]+)\s*>/ ) {
-                my $vhost = $1;
-                $entry->{VHOST} = $vhost;
-                $entry->{VirtualByName} = 0;
-                if( grep( { $vhost eq $_ } keys(%vhost_by_name) ) ) {
-                    $entry->{VirtualByName} = 1;
-                }
-                push( @{$vhost_files{$file}}, $entry );
-                my $data = [];
-                my $option = {};
-                my $tmpServerName = '';
-                while( my $line = <FILE> ) {
-                    last if( $line =~ /^\s*<\s*\/VirtualHost/ );
-                    if( $line =~ /^\s*(\w+)\s+(.*)$/ ) {
-                        $option->{KEY} = $1;
-                        $option->{VALUE} = $2;
-                        $tmpServerName = $2 if( $1 eq 'ServerName' ); # needed for hostid later
-                        push( @$data, $option );
-                        $option = {};
-                    } else {
-                        $option->{OVERHEAD} = $line;
-                    }
-                }
-                $entry->{DATA} = $data;
-                $entry->{HOSTID} = $entry->{VHOST}.'/'.$tmpServerName;
-                $entry = {};
-            } else {
-                $entry->{OVERHEAD} .= $line;
+        my $tmpOverhead = "";
+        foreach my $vhost (@$fileData) {
+            # transform none-vhost sections into overhead
+            if( exists($vhost->{'SECTIONNAME'}) and ($vhost->{'SECTIONNAME'} ne 'VirtualHost') ) {
+                $tmpOverhead .= section2string( [$vhost] );
+                next;
             }
+            my $data = [];
+            my $vhostData = {};
+            $vhostData->{'VHOST'}    = $vhost->{'SECTIONPARAM'};
+            $vhostData->{'HOSTID'}   = $vhost->{'SECTIONPARAM'};
+            $vhostData->{'OVERHEAD'} = $tmpOverhead.$vhost->{'OVERHEAD'};
+            $tmpOverhead = "";
+            if( grep( { $vhost eq $_ } keys(%vhost_by_name) ) ) {
+                $vhostData->{'VirtualByName'} = 1;
+            } else {
+                $vhostData->{'VirtualByName'} = 0;
+            }
+            foreach my $key ( @{$vhost->{'VALUE'}} ) {
+                push( @$data, $key );
+                if( $key->{'KEY'} eq 'ServerName' ) {
+                    $vhostData->{'HOSTID'} .= "/$key->{VALUE}";
+                }
+            }
+            $vhostData->{'DATA'} = $data;
+            push( @{$vhost_files{$file}}, $vhostData );
         }
-        push( @{$vhost_files{$file}}, $entry );
         close( FILE );
     }
+
+    my $entry = {};
+    open( FILE, "< /etc/apache2/default-server.conf" ) or do {
+        y2error("unable to open file /etc/apache2/default-server.conf for reading.$!");
+        return 0;
+    };
+    $entry->{DATA} = sectionParser();
+    close(FILE);
+    $entry->{HOSTID} = 'default';
+    $entry->{VirtualByName} = 0;
+    $vhost_files{'default-server.conf'} = [ $entry ];
 
     return 1;
 }
 
+# generic apache2 configfile format parser
+sub sectionParser {
+    my $keys = [];
+    my $key  = {};
+    while( my $line = <FILE> ) {
+        last if( $line =~ /^\s*<\s*\/\w+/ ); # end of section
+        if( $line =~ /^\s*<(\w+)\s*([^\s>]+)\s*>/ ) { # new Subsection?
+           $key->{KEY} = '_SECTION';
+           $key->{SECTIONNAME} = $1;
+           $key->{SECTIONPARAM} = $2;
+           $key->{VALUE} = sectionParser();
+           push( @$keys, $key );
+           $key = {};
+        } elsif( $line =~ /^\s*(\w+)\s+(.*)$/ ) {
+           $key->{KEY} = $1;
+           $key->{VALUE} = $2;
+           push( @$keys, $key );
+           $key = {};
+        } else {
+           $key->{OVERHEAD} .= $line;
+        }
+    }
+    return $keys;
+}
+
+sub section2string {
+    my $section = shift;
+    my $ident = shift || 0;
+    my $ret;
+
+    foreach my $k ( @$section ) {
+        if( $k->{KEY} eq '_SECTION' ) {
+            $ret .= (" "x$ident).$k->{'OVERHEAD'} if( $k->{'OVERHEAD'} );
+            $ret .= (" "x$ident)."<".$k->{SECTIONNAME}." ".$k->{SECTIONPARAM}.">\n";
+            $ret .= section2string($k->{VALUE}, $ident+1);
+            $ret .= (" "x$ident)."</".$k->{SECTIONNAME}.">\n";
+        } else {
+            $ret .= (" "x$ident);
+            $ret .= $k->{'OVERHEAD'} if( $k->{'OVERHEAD'} );
+            $ret .= $k->{'KEY'}." ".$k->{'VALUE'}."\n";
+        }
+    }
+    return $ret;
+}
+
+
 sub write_files {
     my $class = shift;
 
+    #
+    # create NameVirtualHost entries in listen.conf
+    #
     if( open( FILE, "< /etc/apache2/listen.conf" ) ) {
         my @file = <FILE>;
         close(FILE);
@@ -112,6 +168,7 @@ sub write_files {
     }
 
     foreach my $file ( keys(%vhost_files) ) {
+        next if( $file eq 'default-server.conf' ); # skip the default server here
         open( FILE, "> /etc/apache2/vhosts.d/$file" ) or do {
             y2error("open for /etc/apache2/vhosts.d/$file failed with $!");
             return 0;
@@ -121,13 +178,30 @@ sub write_files {
             print FILE "<VirtualHost $entry->{VHOST}>\n" if( $entry->{VHOST} );
             foreach my $data ( @{$entry->{DATA}} ) {
                 next if( $data->{KEY} eq 'HostIP' ); # just for internal use
-                print FILE $data->{OVERHEAD} if( $data->{OVERHEAD} );
-                print FILE " ".$data->{KEY}." ".$data->{VALUE}."\n" if( $data->{KEY} );
+                # FIXME: subsections in vhosts possible?
+                # subsections in vhosts must be written here via section2string
+                if( $data->{KEY} eq '_SECTION' ) {
+                    print FILE section2string( $entry->{DATA} );
+                } else {
+                    print FILE $data->{OVERHEAD} if( $data->{OVERHEAD} );
+                    print FILE " ".$data->{KEY}." ".$data->{VALUE}."\n" if( $data->{KEY} );
+                }
             }
             print FILE "</VirtualHost>\n" if( $entry->{VHOST} );
         }
         close(FILE);
     }
+
+    # save the default-server.conf
+    open( FILE, "> /etc/apache2/default-server.conf" ) or do {
+        y2error("open for /etc/apache2/default-server.conf failed with $!");
+        return 0;
+    };
+    foreach my $entry ( @{$vhost_files{'default-server.conf'}} ) {
+        print FILE section2string( $entry->{DATA} );
+    }
+    close(FILE);
+
     return 1;
 }
 
@@ -155,17 +229,12 @@ sub Write {
     my $class = shift;
     my ($path, @args) = @_;
 
-    y2error('--------- Write');
     if( $path eq '.' ) {
-        y2error('--------- path = .');
         write_files();
     } elsif( $path =~ /\.setFile\.(.*)/ ) {
-        y2error("--------- path = $path");
         # args[0] = array ref (structure explained above)
         if( $1 ) {
             my $filename = $1;
-            y2error("--------- filename = $1");
-            y2error("--------- args[0] = ".$args[0]);
             if( ref($args[0]) eq 'ARRAY' ) {
                 $vhost_files{$filename} = $args[0];
                 write_files();
