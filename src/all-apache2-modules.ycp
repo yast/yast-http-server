@@ -298,19 +298,35 @@ $[
 	    "status": false,
 	    "default": false,
 	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Provides for dynamically configured mass virtual hosting")
+	    "description" : _("Provides support for dynamically configured mass virtual hosting")
 	],
 	"php4"  : $[
 	    "status": false,
 	    "default": false,
 	    // translators: Apache2 module description 
-	    "description" : _("Provides for PHP4 dynamically generated pages")
+	    "description" : _("Provides support for PHP4 dynamically generated pages"),
+	    "requires" : [ "apache-mod_php4" ]
 	],
 	"perl"  : $[
 	    "status": false,
 	    "default": false,
 	    // translators: Apache2 module description 
-	    "description" : _("Provides for Perl dynamically generated pages")
+	    "description" : _("Provides support for Perl dynamically generated pages"),
+	    "requires" : [ "apache2-mod_perl" ]
+	],
+	"python"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description 
+	    "description" : _("Provides support for Python dynamically generated pages"),
+	    "requires" : [ "apache2-mod_python" ]
+	],
+	"ruby"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description 
+	    "description" : _("Provides support for Ruby dynamically generated pages"),
+	    "requires" : [ "apache2-mod_ruby" ]
 	],
 ]
 

@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Fri Aug  8 09:47:42 CEST 2003 - visnov@suse.de
+
+- Apache2 modules can install additional RPMs
+- do not show logs in AutoYaST
+- fix httpd agent
+- fix syntax errors
+- 2.8.3
+
+-------------------------------------------------------------------
 Tue Aug  5 08:18:45 CEST 2003 - visnov@suse.de
 
 - allow to adapt firewall only if the firewall is enabled 

@@ -19,6 +19,7 @@ import "SuSEFirewall";
 import "Lan";
 import "Progress";
 import "Report";
+import "Require";
 import "Summary";
 import "Runlevel";
 
@@ -238,7 +239,7 @@ global define boolean Read() ``{
 	}
     });
     
-    settings["settings", "firewall_started"] = select( SuSEFirewall::Export(), "start_firewall", false );
+    settings["settings", "firewall_started"] = lookup( SuSEFirewall::Export(), "start_firewall", false );
     
     Progress::on();
     
@@ -303,15 +304,26 @@ global define boolean Write() ``{
     
     // write sysconfig
     list modlist = [];
+    list rpms = [];
     foreach( string mod, map status, settings["modules"]:$[], ``{
-	if( status["status"]:false ) modlist = add( modlist, mod );
+	if( status["status"]:false ) {
+	    modlist = add( modlist, mod );
+	    rpms = union( rpms, status["requires"]:[] );
+	}
     });
-
+    
     SCR::Write( .sysconfig.apache2."APACHE_MODULES", mergestring( modlist, " " ) );
     if( !SCR::Write( .sysconfig.apache2, nil ) ) {
 	// translators: error message
 	Report::Error( sformat(_("Cannot write '%1'."), "/etc/sysconfig/apache2" ) );
     }
+    
+    // install required RPMs for modules
+    // TODO: php4 does not work with thread-based apache2 config
+    Require::RequireAndConflictTarget( rpms, [], sformat( _("The enabled modules require
+installation of some of these additional packages:
+%1
+Do you want to install them now?"), mergestring( rpms, ", " ) ) );
     
     // write httpd.conf
     // default host
@@ -321,8 +333,8 @@ global define boolean Write() ``{
     });
     // global settings
     foreach( string key, any value, settings["settings"]:$[], ``{
-	// filter internal options
-	if( !contains( ["enabled"], key ) ) 
+	// filter internal and other options
+	if( !contains( ["enabled", "firewall", "firewall_started" ], key ) ) 
 	    SCR::Write( add(.etc.httpd, key), value );
     });
     // TODO: virtual hosts, SSL etc
