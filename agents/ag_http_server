@@ -230,7 +230,7 @@ sub write_vhost_files {
                 # FIXME: subsections in vhosts possible?
                 # subsections in vhosts must be written here via section2string
                 if( $data->{KEY} eq '_SECTION' ) {
-                    print FILE section2string( $entry->{DATA} );
+                    print FILE section2string( [ $data ] ); # ??? lost in my own data structures
                 } else {
                     print FILE $data->{OVERHEAD} if( $data->{OVERHEAD} );
                     print FILE " ".$data->{KEY}." ".$data->{VALUE}."\n" if( $data->{KEY} );
