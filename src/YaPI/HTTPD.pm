@@ -739,7 +739,7 @@ sub readHosts {
             foreach my $host ( @{$data[0]->{$file}} ) {
                 foreach my $data ( @{$host->{DATA}} ) {
                     if( exists($data->{OVERHEAD}) and
-                        $data->{OVERHEAD} =~ /^# YaST auto define section/ ) {
+                        $data->{OVERHEAD} =~ /# YaST auto define section/ ) {
                         $data = $data->{VALUE}->[0]; # delete the "auto define" section
                     }
                 }
