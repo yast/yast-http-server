@@ -61,7 +61,11 @@
 	), `HSpacing (1));
 
 	// dialog caption
-	string caption = sformat(_("Host '%1' Configuration"), HttpServerWidgets::currenthost);
+	string caption = sformat(_("Host '%1' Configuration"), 
+	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") 
+		: HttpServerWidgets::get_host_value ( "ServerName"
+		, HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ));
+
 	string help = CWM::MergeHelps (w);
 
 	Wizard::SetContentsButtons (caption, contents, help,
@@ -128,9 +132,7 @@
 	    `VSpacing (1)
 	), `HSpacing (1));
 	// dialog caption for Listen statements configuration
-	string caption = sformat(_("Listen for '%1'"),
-	    // translators: default host label
-	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") : HttpServerWidgets::currenthost );
+	string caption = _("Listen ports and addresses");
 	string help = CWM::MergeHelps (w);
 
 	Wizard::SetContentsButtons (caption, contents, help,
@@ -169,7 +171,9 @@
 	string help = HELPS ["add_host_general"]:"";
 
 	Wizard::SetContentsButtons (caption, contents, help,
-	    Label::BackButton (), Label::NextButton ());
+	    Label::BackButton (), Label::OKButton ());
+	    
+	UI::SetFocus (`servernam);
 
 	symbol ret = nil;
 
@@ -191,6 +195,8 @@
 	    if (ret == `next )
 	    {
 		// FIXME: Do checks about the IP address availability
+		// FIXME: check, if the server name is valid 
+		// FIXME: check for duplicate hosts
 		string ip = (string) UI::QueryWidget ( `ipaddress, `Value );
 		string servername = (string) UI::QueryWidget( `servername, `Value );
 		string documentroot = (string) UI::QueryWidget( `documentroot, `Value );
@@ -227,7 +233,10 @@
 
 	// dialog caption
 	// dialog caption, %1 is the host name
-	string caption = sformat( _("SSL Configuration for '%1'"), HttpServerWidgets::currenthost );
+	string caption = sformat( _("SSL Configuration for '%1'"),
+	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") 
+		: HttpServerWidgets::get_host_value ( "ServerName"
+		, HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ) );
 
 	string help = CWM::MergeHelps (w);
 
@@ -236,7 +245,8 @@
 
 	UI::ReplaceWidget( `id(`_tp_table_repl),
 	    // menu button label
-	    `PushButton( `id( `generate_certificate ), _("&Generate Certificate") ) );
+	    // FIXME for SLES: `PushButton( `id( `generate_certificate ), _("&Generate Certificate") ) );
+	    `Empty() );
 
 	return CWM::Run (w, $[`abort : Abort]);
     }
