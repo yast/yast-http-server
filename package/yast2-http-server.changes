@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Sep 13 16:42:44 CEST 2004 - visnov@suse.cz
+
+- also validate server admin email
+- 2.10.5 
+
+-------------------------------------------------------------------
 Mon Sep  6 13:37:50 CEST 2004 - visnov@suse.cz
 
 - added SetModified and GetModified for autoyast
