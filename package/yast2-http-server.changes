@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Mar 30 13:49:48 CEST 2004 - ug@suse.de
+
+- fixed double "NameVirtualHost" entries
+- fixed broken DeleteListen()
+
+-------------------------------------------------------------------
 Tue Mar 30 11:40:08 CEST 2004 - ug@suse.de
 
 - moved internal functions from HTTPD.pm to httpdUtils.pm 
