@@ -27,7 +27,7 @@ Summary:	Configuration of http-server
 @clientdir@/http-server_*.ycp
 @moduledir@/*
 @desktopdir@/http-server.desktop
-@ydatadir@/all-apache2-modules.ycp
+@ydatadir@/all-*.ycp
 @scrconfdir@/*
 @agentdir@/*
 %doc @docdir@
