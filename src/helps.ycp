@@ -62,10 +62,10 @@ Activate the HTTP server by choosing <b>Enabled</b>. To deactive it, choose
 ") ,
 
 	// firewall adapting help 1/1
-	"firewall_adapt" : _("<p>By enabling <b>Open Firewall on Selected Ports</b>
-	, instruct YaST2 to adapt the firewall according the ports where Apache2 listens.
-The interfaces of the firewall are <b>not</b> added or deleted. 
-This option is available only if the firewall is enabled.</p>
+	"firewall_adapt" : _("<p>By enabling <b>Open Firewall on Selected Ports</b>, 
+instruct YaST2 to adapt the firewall according the ports where Apache2 listens. 
+The interfaces of the firewall are not added or deleted. 
+This option is only available if the firewall is enabled.</p>
 "),
 
 	// server configuration overview help 1/2
