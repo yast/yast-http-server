@@ -25,20 +25,24 @@ include "commandline/commandline.ycp";
 
 map cmdline_description = $[
     "id" 	: "http-server",
+    // translators: command line help for HTTP server module
     "help"	: _("Configuration of HTTP server (Apache2)"),
     "guihandler"        : ``(HttpServerSequence()),
     "initialize"        : ``(HttpServer::Read()),
     "finish"            : ``(HttpServer::Write()),
     "actions"           : $[
 	"configure"	: $[
+	    // translators: help text for configure command line action
 	    "help" 	: _("Configure a host settings"),
 	    "handler"	: ``(ConfigureHandler())
 	],
 	"modules"	: $[
+	    // translators: help text for modules command line action
 	    "help"	: _("Configure the Apache2 server modules"),
 	    "handler"	: ``(ModulesHandler())
 	],
 	"listen"	: $[
+	    // translators: help text for listen command line action
 	    "help" 	: _("Setup the ports and network addresses, where should the server listen"),
 	    "handler"	: ``(ListenHandler())
 	],
@@ -46,41 +50,50 @@ map cmdline_description = $[
     "options"		: $[
 	"servername"	: $[
 	    "type"	: "hostname",
+	    // translators: help text for servername option (configure command line action)
 	    "help"	: _("Server name, for example www.example.com")
 	],
 	"serveradmin"	: $[
 	    "type"	: "email",
+	    // translators: help text for serveradmin option (configure command line action)
 	    "help"	: _("E-mail address of of the server administrator")
 	],
 	"documentroot"	: $[
 	    "type"	: "string",
+	    // translators: help text for documentroot option (configure command line action)
 	    "help"	: _("Directory, where are the documents of the server stored")
 	],
 	"host"		: $[
 	    "type"	: "string",
+	    // translators: help text for host option (configure command line action)
 	    "help"	: _("Name of the host to be configured. Only \"defaulthost\" is valid at the moment.")
 	],
 	"add"		: $[
 	    "type"	: "regex",
 	    "typespec"	: "(\[[0-9a-f:]+\]:[0-9]+)|([0-9]+)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)",
+	    // translators: help text for add subcommand (listen command line action)
 	    "help"	: _("Add a new listen entry ([address:]port)"),
 	],
 	"delete"	: $[
 	    "type"	: "regex",
 	    "typespec"	: "(\[[0-9a-f:]+\]:[0-9]+)|([0-9]+)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)",
+	    // translators: help text for delete subcommand (listen command line action)
 	    "help"	: _("Delete already existing listen entry ([address:]port)"),
 	],
 	"list"		: $[
+	    // translators: help text for list subcommand (listen command line action)
 	    "help"	: _("List already configured entries"),
 	],
 	"enable"	: $[
 	    "type"	: "regex",
 	    "typespec"	: ".+(,.+)*",
+	    // translators: help text for enable subcommand (modules command line action)
 	    "help"	: _("Comma separated list of modules to be enabled")
 	],
 	"disable"	: $[
 	    "type"	: "regex",
 	    "typespec"	: ".+(,.+)*",
+	    // translators: help text for disable subcommand (modules command line action)
 	    "help"	: _("Comma separated list of modules to be disabled")
 	]
     ],
@@ -95,10 +108,12 @@ define boolean ConfigureHandler(map options) ``{
 
     if( options["host"]:nil != "defaulthost" ) {
 	if( ! haskey( options, "host" ) ) {
+	    // translators: error message in configure command line action
 	    Report::Error( _("Configured host not specified") );
 	}
 	else 
 	{
+	    // translators: error message in configure command line action
 	    Report::Error( _("Only \"defaulthost\" can be specified as host to be configured") );
 	}
 	return false;
@@ -150,11 +165,13 @@ define boolean ModulesHandler(map options) ``{
 	HttpServer::modified = true;
     }
     else if( command == "list" ) {
-        // heading
-	CommandLine::Print( _("Status \tModule"));
-	CommandLine::Print( _("=================="));
+        // translators: heading for the "modules list" command line action output
+	// please, try to align the texts if possible.
+	CommandLine::Print( _("Status \tModule
+=================="));
 	
 	foreach( string mod, boolean status, HttpServer::settings["modules"]:[], ``{
+	    // translators: status of a module
 	    CommandLine::Print( sformat( "%1\t%2", status ? _("Enabled") : _("Disabled"), mod ) );
 	});
     }
@@ -172,6 +189,7 @@ define boolean ListenHandler(map options) ``{
     if( command == "add" ) {
 	if( contains( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" ) )
 	{
+	    // translators: error message in "listen add" command line action
 	    Report::Error( sformat( _("The listen statement '%1' is already configured.") , options["add"]:"") );
 	    return false;
 	}
@@ -183,6 +201,7 @@ define boolean ListenHandler(map options) ``{
     else if( command == "delete" ) {
 	if( !contains( HttpServer::settings["defaulthost", "Listen"]:[], options["delete"]:"" ) )
 	{
+	    // translators: error message in "listen delete" command line action
 	    Report::Error( sformat( _("Cannot delete unconfigured listen statement '%1'") , options["delete"]:"") );
 	    return false;
 	}
@@ -192,9 +211,10 @@ define boolean ListenHandler(map options) ``{
 	HttpServer::modified = true;
     }
     else if( command == "list" ) {
-        // heading
-	CommandLine::Print( _("Listen statements:"));
-	CommandLine::Print( _("=================="));
+        // translators: heading for the "listen list" command line action output
+	// please, try to align the texts if possible.
+	CommandLine::Print( _("Listen statements:
+=================="));
 	
 	foreach( string listen, HttpServer::settings["defaulthost", "Listen"]:[], ``{
 	    if( issubstring( listen, ":" ) ) {
@@ -202,6 +222,7 @@ define boolean ListenHandler(map options) ``{
 	    }
 	    else
 	    {
+		// translators: listen statement for all available interfaces
 		CommandLine::Print( sformat( _("All interfaces: %1"), listen ) );
 	    }
 	});
@@ -229,8 +250,9 @@ if(size(args) > 0) {
 
 // check rpms
 if( !Require::RequireAndConflictTarget( ["apache2"], [],
+    // notification about package needed 1/2
     _("<p>To configure the HTTP server, the <b>%1</b> package must be installed.</p>") +
-    // notification 2/2
+    // notification about package needed 2/2
     _("<p>Do you want to install it now?</p>")) )
 {
     return false;

@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Jul 30 08:46:28 CEST 2003 - visnov@suse.de
+
+- autoyast support added
+- command line interface implemented
+- allow to show error log
+- support for APACHE_ACCESS_LOG from sysconfig
+
+-------------------------------------------------------------------
 Thu Jun 19 13:28:41 2003 - visnov@suse.cz
 
 - initial version

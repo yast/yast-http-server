@@ -64,10 +64,14 @@
 	    Label::BackButton (), Label::FinishButton ());
 	    
 	UI::ReplaceWidget( `id(`_tp_table_repl), 
+	    // menu button label
 	    `MenuButton( _("Advanced"), 
-		[ `item( `id( `show_access_log ), "Show &access log" ), 
-		  `item( `id( `show_error_log ), "Show &error log" ), 
-		  `item( `id( `modules ), "Server &modules" ),
+		// menu button item
+		[ `item( `id( `show_access_log ), _("Show &access log") ), 
+		    // menu button item
+		  `item( `id( `show_error_log ), _("Show &error log") ), 
+		    // menu button item
+		  `item( `id( `modules ), _("Server &modules") ),
 	    ] ) );
 
 	return CWM::Run (w, $[ `abort: ``( !HttpServer::modified || Popup::ReallyAbort(true) ) ]);
@@ -106,7 +110,10 @@
 	    w[0, "widget"]:`VSpacing (0),
 	    `VSpacing (1)
 	), `HSpacing (1));
-	string caption = sformat(_("Listen for '%1'"), HttpServerWidgets::currenthost == "defaulthost" ? _("Default host") : HttpServerWidgets::currenthost );
+	// dialog caption for Listen statements configuration
+	string caption = sformat(_("Listen for '%1'"), 
+	    // translators: default host label
+	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default host") : HttpServerWidgets::currenthost );
 	string help = CWM::MergeHelps (w);
 
 	Wizard::SetContentsButtons (caption, contents, help,

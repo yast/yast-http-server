@@ -6,7 +6,7 @@
 
 [Y2Module http-server]
 
-; name of the entry, shown in y2cc
+; // name of the entry, shown in y2cc
 Name = _("Http Server")
 
 ; "raw" group name to which this module belongs
@@ -16,7 +16,7 @@ Group = Net_advanced
 ; icon displayed in y2cc
 Icon = http-server.png
 
-; *one* *short* descriptive line for y2cc
+; // *one* *short* descriptive line for y2cc
 Helptext = _("Configure Apache 2 server")
 
 ; arguments, seperated by space
