@@ -482,9 +482,12 @@ sub ModifyHost {
                         push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
                     }
                     next;
-                } elsif( $hostid ne 'default' and $tmp->{KEY} =~ /ServerTokens|TimeOu|tExtendedStatus/ ) {
+                } elsif( $hostid ne 'default' and $tmp->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
                     # illegal keys in vhost
                     return $self->SetError( "illegal key in vhost '$tmp->{KEY}'" );
+                } elsif( $tmp->{'KEY'} eq 'DocumentRoot' ) {
+                    $self->addDir( $tmp->{'VALUE'} );
+                    push( @tmp, $tmp );
                 } else {
                     push( @tmp, $tmp );
                 }
@@ -500,8 +503,6 @@ sub ModifyHost {
                         SCR->Write('.sysconfig.apache2.APACHE_SERVERADMIN', $tmp->{'VALUE'});
                     } elsif( $tmp->{KEY} eq 'ServerName' ) {
                         SCR->Write('.sysconfig.apache2.APACHE_SERVERNAME', $tmp->{'VALUE'} );
-                    } elsif( $tmp->{KEY} eq 'DocumentRoot' ) {
-                        SCR->Write('.sysconfig.apache2.APACHE_DOCUMENT_ROOT', $tmp->{'VALUE'} );
                     } elsif( $tmp->{KEY} eq 'ServerSignature' ) {
                         SCR->Write('.sysconfig.apache2.APACHE_SERVERSIGNATURE', $tmp->{'VALUE'} );
                     } elsif( $tmp->{KEY} eq 'LogLevel' ) {
@@ -521,6 +522,61 @@ sub ModifyHost {
         }
     }
     return 0; # host not found. Error?
+}
+
+sub delDir {
+    my $self = shift;
+    my $dir = shift;
+    my @newData = ();
+
+    $dir =~ s/\/+/\//g;
+
+    my $filename = $self->getFileByHostid( "default" );
+    foreach my $entry ( @{$vhost_files->{$filename}} ) {
+        foreach my $e ( @{$entry->{DATA}} ) {
+            next if( $e->{KEY} eq '_SECTION' and
+                     $e->{SECTIONNAME} eq 'Directory' and
+                     $e->{SECTIONPARAM} =~ /^$dir\/*/ );
+            push( @newData, $e );
+        }
+        $entry->{DATA} = \@newData;
+    }
+    return;
+}
+
+sub addDir {
+    my $self = shift;
+    my $dir = shift;
+    $dir =~ s/\/+/\//g;
+    $self->delDir( $dir ); # avoid double entries
+
+    my $filename = $self->getFileByHostid( "default" );
+    my $dirEntry = {
+        'OVERHEAD'    => "# YaST created entry\n",
+        'SECTIONNAME' => 'Directory',
+        'KEY'   => '_SECTION',
+        'VALUE' => [
+                    {
+                     'KEY'   => 'Options',
+                     'VALUE' => 'None'
+                    },
+                    {
+                     'KEY'   => 'AllowOverride',
+                     'VALUE' => 'None'
+                    },
+                    {
+                     'KEY'   => 'Order',
+                     'VALUE' => 'allow,deny'
+                    },
+                    {
+                     'KEY'   => 'Allow',
+                     'VALUE' => 'from all'
+                    }
+                  ],
+        'SECTIONPARAM' => "\"$dir\""
+    };
+    push( @{$vhost_files->{$filename}->[0]->{DATA}}, $dirEntry );
+    return;
 }
 
 =item *
@@ -558,6 +614,7 @@ sub CreateHost {
     my $sslHash = { KEY => 'SSLEngine' , VALUE => 'off' };
     my @tmp = ( $sslHash );
     my $VirtualByName = 0;
+    my $docRoot = "";
     foreach my $key ( @$data ) {
         # VirtualByName and SSL get dropped/replaced
         if( $key->{KEY} eq 'VirtualByName' ) {
@@ -569,6 +626,9 @@ sub CreateHost {
             push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
         } elsif( $key->{KEY} eq 'SSL' ) {
             # already set to "off" above. So ignore.
+        } elsif( $key->{KEY} eq 'DocumentRoot' ) {
+            $docRoot = $key->{VALUE};
+            push( @tmp, $key );
         } elsif( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
             # illegal keys in vhost
             return $self->SetError( "illegal key in vhost '$key->{KEY}'" );
@@ -605,6 +665,7 @@ sub CreateHost {
         # create new yast2_vhosts.conf
         $vhost_files->{'yast2_vhosts.conf'} = [ $entry ];
     }
+    $self->addDir( $docRoot );
     $self->writeHost( 'yast2_vhosts.conf' );
     return 1;
 }
@@ -640,7 +701,16 @@ sub DeleteHost {
     my $filename = $self->getFileByHostid( $hostid );
     my @newList = ();
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
-        push( @newList, $hostHash ) if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} ne $hostid );
+        if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} ne $hostid ) {
+            push( @newList, $hostHash );
+        } else {
+            foreach my $dat ( @{$hostHash->{DATA}} ) {
+                if( $dat->{KEY} eq 'DocumentRoot' ) {
+                    $self->delDir( $dat->{VALUE} );
+                    last;
+                }
+            }
+        }
     }
     if( @newList ) {
         $vhost_files->{$filename} = \@newList;
@@ -657,6 +727,10 @@ sub writeHost {
     my $filename = shift;
 
     SCR->Write(".http_server.vhosts.setFile.$filename", $vhost_files->{$filename} );
+
+    # write default-server.conf always because of Directory Entries
+    my $def = $self->getFileByHostid( 'default' );
+    SCR->Write(".http_server.vhosts.setFile.$def", $vhost_files->{$def} );
     return 1;
 }
 
