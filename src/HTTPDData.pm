@@ -79,6 +79,7 @@ sub ReadModules {
 }
 
 my $serviceState;   # 1 = enable, 0=disable
+BEGIN { $TYPEINFO{ReadService} = ["function", "boolean" ]; }
 sub ReadService {
     $serviceState = HTTPD::ReadService();
 }
@@ -262,12 +263,6 @@ sub WriteModuleSelectionList {
 # apache2 modify service
 #######################################################
 
-BEGIN { $TYPEINFO{ReadService} = ["function", "boolean" ]; }
-sub ReadService {
-    $serviceState = Service::Enabled( "apache2" );
-    return 1;
-}
-
 BEGIN { $TYPEINFO{GetService} = ["function", "boolean" ]; }
 sub GetService {
     return $serviceState;
@@ -283,10 +278,6 @@ sub ModifyService {
 BEGIN { $TYPEINFO{WriteService} = ["function", "boolean", "boolean" ]; }
 sub WriteService {
     return HTTPD::ModifyService( $serviceState );
-}
-
-sub GetService {
-    return $serviceState;
 }
 
 #######################################################
