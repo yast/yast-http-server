@@ -1,6 +1,6 @@
 =head1 NAME
 
-YaPI::Apache2
+YaPI::HTTPD
 
 =head1 PREFACE
 
@@ -8,7 +8,7 @@ This package is the public Yast2 API to configure the apache2.
 
 =head1 SYNOPSIS
 
-use YaPI::Apache2
+use YaPI::HTTPD
 
 $hostList GetHostsList()
 
@@ -182,38 +182,23 @@ You can not create or delete the default host id.
 
 =cut
 
-package HTTPD;
+package YaPI::HTTPD;
 use YaST::YCP;
+use YaPI::HTTPDModules;
 BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
-use HTTPDModules;
 YaST::YCP::Import ("SCR");
 YaST::YCP::Import ("Service");
 YaST::YCP::Import ("SuSEFirewall");
 YaST::YCP::Import ("NetworkDevices");
 YaST::YCP::Import ("Progress");
 
-
-#######################################################
-# temoprary solution start
-#######################################################
-
-my %__error = ();
-
-sub SetError {
-    %__error = @_;
-    @__error{'package','file','line'} = caller();
-    return undef;
-}
-
-sub Error {
-    return %__error;
+if(not defined do("YaPI.inc")) {
+    die "'$!' Can not include YaPI.inc";
 }
 
 #######################################################
 # temoprary solution end
 #######################################################
-
-
 our $VERSION="0.01";
 our %TYPEINFO;
 
@@ -223,7 +208,6 @@ use Errno qw(ENOENT);
 #######################################################
 # default and vhost API start
 #######################################################
-
 my $vhost_files;
 
 # internal only
@@ -702,8 +686,8 @@ EXAMPLE
 BEGIN { $TYPEINFO{GetKnownModules} = ["function", [ "list", ["map","string","any"] ] ]; }
 sub GetKnownModules {
     my @ret = ();
-    foreach my $mod ( keys(%HTTPDModules::modules) ) {
-        push( @ret, { name => $mod, %{$HTTPDModules::modules{$mod}} } );
+    foreach my $mod ( keys(%YaPI::HTTPDModules::modules) ) {
+        push( @ret, { name => $mod, %{$YaPI::HTTPDModules::modules{$mod}} } );
         @ret = sort( { $a->{position} <=> $b->{position} } @ret );
     }
     return \@ret;
@@ -742,13 +726,14 @@ sub ModifyModuleList {
             push( @oldList, $mod );
         }
         @newList = sort( {
-                         my $aa = (exists($HTTPDModules::modules{$a}))?($HTTPDModules::modules{$a}->{position}):(10000000);
-                         my $bb = (exists($HTTPDModules::modules{$b}))?($HTTPDModules::modules{$b}->{position}):(10000000);
+                         my $aa = (exists($YaPI::HTTPDModules::modules{$a}))?($YaPI::HTTPDModules::modules{$a}->{position}):(10000000);
+                         my $bb = (exists($YaPI::HTTPDModules::modules{$b}))?($YaPI::HTTPDModules::modules{$b}->{position}):(10000000);
                          $aa <=> $bb;
                         } @oldList );
     }
 
     SCR::Write('.sysconfig.apache2.APACHE_MODULES', join(' ',@newList));
+    SCR::Write('.sysconfig.apache2', undef);
     return 1;
 }
 
@@ -778,8 +763,8 @@ EXAMPLE
 BEGIN { $TYPEINFO{GetKnownModuleSelections} = ["function", [ "map","string","any" ] ]; }
 sub GetKnownModuleSelections {
     my @ret = ();
-    foreach my $sel ( keys(%HTTPDModules::selection) ) {
-        push( @ret, { id => $sel, %{$HTTPDModules::selection{$sel}} } );
+    foreach my $sel ( keys(%YaPI::HTTPDModules::selection) ) {
+        push( @ret, { id => $sel, %{$YaPI::HTTPDModules::selection{$sel}} } );
     }
     return \@ret;
 }
@@ -848,8 +833,8 @@ sub selections2modules {
     my $list = shift;
     my @ret;
     foreach my $sel ( @$list ) {
-        if( exists( $HTTPDModules::selection{$sel} ) ) {
-            push( @ret, @{$HTTPDModules::selection{$sel}->{modules}} );
+        if( exists( $YaPI::HTTPDModules::selection{$sel} ) ) {
+            push( @ret, @{$YaPI::HTTPDModules::selection{$sel}->{modules}} );
         }
     }
     return @ret;
@@ -1382,6 +1367,8 @@ sub run {
     foreach my $mod ( @{GetKnownModuleSelections()} ) {
         print "KNOWN SEL: $mod->{id}\n";
     }
+
+    ModifyModuleList( ['ssl'], 0 );
 
     print "-------------- show active selections\n";
     GetModuleSelectionsList();
