@@ -29,6 +29,8 @@ if( not open( CONF, $httpd_conf ) ) {
 # read the configuration
 
 my @listen = ();
+my @custom_log = ();
+my $error_log = "";
 my $line = "";
 my $new_listen = "";
 my $size = "";
@@ -82,6 +84,15 @@ while( $line = <CONF> ) {
 	    $documentroot = $1;
 	    y2debug( "Found document root $documentroot" );
 	}
+
+	if( $line =~ /^[ \t]*CustomLog[ \t]+([^ \t]+)/ ) {
+	    push( @custom_log, $1 );
+	}
+
+	if( $line =~ /^[ \t]*ErrorLog[ \t]+([^ \t]+)/ ) {
+	    $error_log = $1;
+	    y2debug( "Found error log $error_log" );
+	}
     }
 
 }
@@ -109,9 +120,19 @@ while ( <STDIN> )
 	    @listen = @{$argument};
 	    ycp::Return ( "true" );
 	}
+	elsif( $path eq ".CustomLog" or $path eq ".\"CustomLog\"" )
+	{
+	    @custom_log = @{$argument};
+	    ycp::Return ( "true" );
+	}
 	elsif ( $path eq ".DocumentRoot" or $path eq ".\"DocumentRoot\"" )
 	{
 	    $documentroot = $argument;
+	    ycp::Return ( "true" );
+	}
+	elsif ( $path eq ".ErrorLog" or $path eq ".\"ErrorLog\"" )
+	{
+	    $error_log = $argument;
 	    ycp::Return ( "true" );
 	}
 	elsif ( $path eq ".ServerName" or $path eq ".\"ServerName\"" )
@@ -168,7 +189,7 @@ while ( <STDIN> )
     
 		    # only top-level values
 		    if( $stack_size == 0 ) {
-			if( not ( $line =~ /^\s*(Listen|ServerName|ServerAdmin|DocumentRoot)\s+[^\s]+/ ) ) {
+			if( not ( $line =~ /^\s*(Listen|ServerName|ServerAdmin|DocumentRoot|CustomLog|ErrorLog)\s+[^\s]+/ ) ) {
 			    print $newconf $line;
 			}
 		    } else { 
@@ -180,8 +201,14 @@ while ( <STDIN> )
 		foreach my $i ( @listen ) {
 		    print $newconf "Listen $i\n";
 		}
+		foreach my $i ( @custom_log ) {
+		    print $newconf "CustomLog $i\n";
+		}
 		if( $serveradmin ne "" ) {
 		    print $newconf "ServerAdmin $serveradmin\n";
+		}
+		if( $error_log ne "" ) {
+		    print $newconf "ErrorLog $error_log\n";
 		}
 		if( $servername ne "" ) {
 		    print $newconf "ServerName $servername\n";
@@ -219,6 +246,14 @@ while ( <STDIN> )
 	if( $path eq ".Listen" or $path eq ".\"Listen\"" )
 	{
 	    ycp::Return (\@listen, 1 );
+	}
+	elsif( $path eq ".CustomLog" or $path eq ".\"CustomLog\"" )
+	{
+	    ycp::Return (\@custom_log, 1 );
+	}
+	elsif ( $path eq ".ErrorLog" or $path eq ".\"ErrorLog\"" )
+	{
+	    ycp::Return( \$error_log, 1 );
 	}
 	elsif ( $path eq ".DocumentRoot" or $path eq ".\"DocumentRoot\"" )
 	{

@@ -13,6 +13,7 @@ textdomain "http-server";
 
 import "Directory";
 import "Progress";
+import "String";
 
 /**
  * Abort function
@@ -92,6 +93,23 @@ global define string item2listen( string network, string port ) ``{
  */
 global define map GetModules() ``{
     return SCR::Read(.target.ycp, Directory::datadir + "/all-apache2-modules.ycp");
+}
+
+/**
+ * Generate list of configured log files. First, use sysconfig and then as at lower priority
+ * use CustomLog from httpd.conf files.
+ */
+global define list GetLogs( string access_logs, list custom_logs ) ``{
+
+    // initialize using access_logs
+    list result = maplist( string value, splitstring( access_logs, "," ), ``( String::CutBlanks( value ) ) );
+
+    foreach( string log, custom_logs, ``{
+	string l = String::CutBlanks( log );
+	if( ! contains( result, l ) ) result = add( result, l );
+    });
+    
+    return result;
 }
 
 /* EOF */

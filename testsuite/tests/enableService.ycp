@@ -1,0 +1,36 @@
+{
+
+// test for HttpServer::enableService( boolean ) - enable/disable apache2 service
+// $Id$
+
+    include "testsuite.ycp";
+    
+    import "HttpServer";
+    
+    // enable service
+    TEST( ``( HttpServer::enableService( true ) ), [ 
+	$[ "init" : $[ "scripts" : $[ "exists" : true ] ] ],
+	$[],
+	$[ "target" :$[ "bash_output" : 
+	    $[
+		"exit" : 0,
+	    ]
+	] ]
+    ], nil );
+    DUMP( HttpServer::modified );
+    DUMP( HttpServer::settings["settings"]: $[] );
+
+    HttpServer::modified = false;
+    // disable service
+    TEST( ``( HttpServer::enableService( false ) ), [ 
+	$[ "init" : $[ "scripts" : $[ "exists" : true ] ] ],
+	$[],
+	$[ "target" :$[ "bash_output" : 
+	    $[
+		"exit" : 0,
+	    ]
+	] ]
+    ], nil );
+    DUMP( HttpServer::modified );
+    DUMP( HttpServer::settings["settings"]: $[] );
+}

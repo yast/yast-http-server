@@ -33,6 +33,8 @@ global block AbortFunction = nil;
  */
 global boolean modified = false;
 
+global boolean configured = false;
+
 global boolean proposal_valid = false;
 
 /**
@@ -60,9 +62,10 @@ global map settings = $[
 	"ServerName" : "www.example.com:80",
 	"DocumentRoot" : "/srv/www/htdocs",
 	"ServerAdmin" : "webmaster@example.com",
-	"Listen" : "80",
+	"Listen" : ["80"],
+// CustomLog - no defaults
+// ErrorLog - no defaults
     ],
-    "virtualhosts" : $[],
     "settings" : $[
 	"enabled" : false
     ]
@@ -88,7 +91,7 @@ list server_settings = [];
 /**
  * List of options which allow multiple keys
  */
-list multiple_settings = ["Listen", "Include"];
+list multiple_settings = ["Listen", "Include", "CustomLog"];
 
 /************************** end of local data *********************************/
 
@@ -170,6 +173,8 @@ global define boolean Read() ``{
 	return [ mod, $[ "status" : true, "description": all_modules[mod,"description"]:_("Apache2 module") ] ];
     } );
     
+    settings["apache_access_log"] = SCR::Read( .sysconfig.apache2."APACHE_ACCESS_LOG" );
+    
     // check the service status
     settings["settings", "enabled" ] = Runlevel::ServiceEnabled( "apache2" );
     
@@ -180,6 +185,8 @@ global define boolean Read() ``{
 
     if(Abort()) return false;
     modified = false;
+    
+    configured = true;
     
     return true;
 }
@@ -269,9 +276,25 @@ global define boolean Write() ``{
  * @param settings The YCP structure to be imported.
  * @return boolean True on success
  */
-global define boolean Import (map settings) ``{
-    // TODO FIXME: your code here (fill the above mentioned variables)...
-    sleep(3000);
+global define boolean Import (map s) ``{
+
+    if( size( s ) == 0 ) return false;
+
+    settings[ "settings" ] = s[ "settings" ]: $[ "enabled" : false ];
+    
+    settings[ "modules" ] = listmap( map value, s["modules"]:[], 
+	``( [ value["name"]:nil, $[ "status": value["state"]:false ] ] ) );
+	
+    settings[ "defaulthost" ] = s[ "defaulthost" ]: $[
+	"ServerName" : "www.example.com:80",
+	"DocumentRoot" : "/srv/www/htdocs",
+	"ServerAdmin" : "webmaster@example.com",
+	"Listen" : ["80"],
+    ];
+    
+    modified = false;
+    configured = true;
+    
     return true;
 }
 
@@ -281,9 +304,17 @@ global define boolean Import (map settings) ``{
  * @return map Dumped settings (later acceptable by Import ())
  */
 global define map Export () ``{
-    // TODO FIXME: your code here (return the above mentioned variables)...
-    sleep(3000);
-    return $[];
+    map result = $[
+	"modules": maplist( string mod, map state, settings["modules"]:$[], ``(
+	    $[ "name": mod, "state" : state["status"]:false ]
+	)),
+	"defaulthost": settings["defaulthost"]:$[],
+	"settings": settings["settings"]:$[],
+    ];
+    
+    configured = true;
+    
+    return result;
 }
 
 /**
@@ -292,8 +323,26 @@ global define map Export () ``{
  * @return summary of the current configuration
  */
 global define list Summary() ``{
-    // TODO FIXME: your code here...
-    return [ _("Configuration summary ..."), [] ];
+
+    string nc = Summary::NotConfigured ();
+    
+    string summary = "";
+
+    if( configured ) {
+        // summary item: an option is turned on
+        if( settings["settings", "enabled"]:false ) 
+            summary = Summary::AddLine(summary, _("Apache2 server is <i>enabled</i>") );
+        else
+            summary = Summary::AddLine(summary, _("Apache2 server is <i>disabled</i>") );
+	    
+	summary = Summary::AddLine(summary, sformat( _("Default host stored in: %1"), settings["defaulthost", "DocumentRoot"]:
+	    "/srv/www/htdocs" ) );
+
+    } else {
+        summary = Summary::AddLine(summary, nc );
+    }
+
+    return [ summary, [] ];
 }
 
 global define void enableService(boolean on) ``{

@@ -1,0 +1,1 @@
+Return	$["defaulthost":$["Listen":["1.2.3.4:8080", "3128"], "ServerName":"blablabla.example.com"], "modules":[$["name":"negotiation", "state":false], $["name":"ssl", "state":true]], "settings":$["enabled":true]]

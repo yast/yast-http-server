@@ -1,0 +1,23 @@
+{
+
+// test for HttpServer::Import() - autoyast
+// $Id$
+
+    include "testsuite.ycp";
+    
+    import "HttpServer";
+
+    DUMP( HttpServer::settings );
+    DUMP( HttpServer::configured );
+    DUMP( HttpServer::modified );
+    
+    TEST( ``( HttpServer::Import( $[
+	"settings":$["enabled":true], 
+	"modules": [ $["name": "ssl", "status": true], $["name": "negotiation", "status": false ] ],
+	"defaulthost" : $[ "Listen" : "3128", "ServerAdmin": "webadmin@haha.com" ]
+    ] ) ), [], nil );
+
+    DUMP( HttpServer::settings );
+    DUMP( HttpServer::configured );
+    DUMP( HttpServer::modified );    
+}

@@ -65,7 +65,8 @@
 	    
 	UI::ReplaceWidget( `id(`_tp_table_repl), 
 	    `MenuButton( _("Advanced"), 
-		[ `item( `id( `show_log ), "&Show log" ), 
+		[ `item( `id( `show_access_log ), "Show &access log" ), 
+		  `item( `id( `show_error_log ), "Show &error log" ), 
 		  `item( `id( `modules ), "Server &modules" ),
 	    ] ) );
 

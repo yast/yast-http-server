@@ -1,0 +1,29 @@
+{
+
+// test for HttpServer::Export - autoyast
+// $Id$
+
+    include "testsuite.ycp";
+    
+    import "HttpServer";
+
+    HttpServer::settings = $[
+        "settings": $[
+            "enabled" : true
+        ],
+        "modules" : $[
+            "ssl": $[
+                "status": true,
+            ],
+            "negotiation": $[
+                "status": false
+            ],
+        ],
+        "defaulthost": $[
+            "ServerName": "blablabla.example.com",
+            "Listen": [ "1.2.3.4:8080", "3128" ]
+        ]
+    ];
+
+    TEST( ``(HttpServer::Export() ), [], nil );
+}

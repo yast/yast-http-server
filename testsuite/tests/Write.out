@@ -1,0 +1,13 @@
+Write	.sysconfig.apache2."APACHE_MODULES" "ssl" true
+Write	.sysconfig.apache2 nil true
+Write	.etc.httpd."Listen" ["1.2.3.4:8080", "3128"] true
+Write	.etc.httpd."ServerName" "blablabla.example.com" true
+Write	.etc.httpd nil true
+Execute	.target.bash "/sbin/SuSEconfig --module apache2" 0
+Read	.init.scripts.exists "apache2" true
+Read	.init.scripts.exists "apache2" true
+Read	.init.scripts.runlevel "apache2" nil
+Read	.init.scripts.comment "apache2" nil
+Execute	.target.bash_output "/sbin/insserv -d /etc/init.d/apache2" $["exit":0, "stderr":"", "stdout":""]
+Execute	.target.bash "/etc/init.d/apache2 restart" $["TERM":"raw"] 0
+Return	true

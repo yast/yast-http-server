@@ -231,17 +231,50 @@ global map widgets = $[
 	return res;
     }	
     
-// *************************************** log popup **************************
+// *************************************** log popups **************************
 
     /**
-      * Handle function of the log button
+      * Handle function of the access log button (the first defined access log file)
       * @param key any key of the widget
       * @param event any event that occured
       * @return value for wizard sequencer, always nil
       */
-    global define any showLogPopup (any key, any event) ``{
+    global define any showAccessLogPopup (any key, any event) ``{
+	string log = select( GetLogs( HttpServer::settings["apache_access_log"]:"", HttpServer::settings[currenthost, "CustomLog"]:[] ), 0, "/var/log/apache2/access_log" );
+
+	// strip the log format, if present
+	log = select( splitstring( log, " " ), 0, "/var/log/apache2/access_log" );
+
 	LogView::Display ($[
-	    "file" : "/var/log/apache2/access_log",
+	    "command" : sformat( "tail -f %1 -n 100 | /usr/sbin/logresolve2", log ),
+	    "save" : true,
+	    "actions" : [
+		// menubutton entry, try to keep short
+		[ _("Restart HTTP server"),
+		    ``{SCR::Execute (.target.bash,
+			"rcapache2 restart");}],
+		// menubutton entry, try to keep short
+		[ _("Save settings and restart HTTP server"),
+		    ``{HttpServer::Write ();} ],
+	    ],
+	]);
+	return nil;
+    }
+
+    /**
+      * Handle function of the error log button
+      * @param key any key of the widget
+      * @param event any event that occured
+      * @return value for wizard sequencer, always nil
+      */
+    global define any showErrorLogPopup (any key, any event) ``{
+	string log = HttpServer::settings[currenthost, "ErrorLog"]: "/var/log/apache2/error_log";
+	
+	// strip the log format, if present
+	log = select( splitstring( log, " " ), 0, "/var/log/apache2/error_log" );
+
+	LogView::Display ($[
+	    "command" : sformat( "tail -f -n +100  %1 | /usr/sbin/logresolve2", log ),
 	    "save" : true,
 	    "actions" : [
 		// menubutton entry, try to keep short
@@ -289,10 +322,13 @@ global map widgets = $[
 	// handle menu button entries
 	if( event == `modules ) 
 	    return `modules;
-	if( event == `show_log ) {
-	    return showLogPopup( key, event );
+	else if( event == `show_access_log ) {
+	    return showAccessLogPopup( key, event );
 	}
-	if( event == `listen )
+	else if( event == `show_error_log ) {
+	    return showErrorLogPopup( key, event );
+	}
+	else if( event == `listen )
 	    return `listen;
 
 	// default handling
@@ -360,6 +396,7 @@ global map widgets = $[
 	    y2debug( "Changing %1 to %2", mod, (select( item, 2, "" ) == _("Enabled") ) );
 	    HttpServer::settings["modules", mod, "status"] = (select( item, 2, "" ) == _("Enabled") );	
 	    i = i-1;
+	    // FIXME: this needs to care about flags as well (SSL)
 	}
 	
 	y2debug( "%1", HttpServer::settings["modules"]:$[] );
