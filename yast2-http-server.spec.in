@@ -28,6 +28,7 @@ Summary:	Configuration of http-server
 @moduledir@/HttpServer.ycp
 @moduledir@/HttpServerWidgets.ycp
 @configdir@/http-server.y2cc
+@desktopdir@/http-server.desktop
 @ydatadir@/all-apache2-modules.ycp
 @scrconfdir@/cfg_apache2.scr
 @scrconfdir@/cfg_httpdconf.scr
