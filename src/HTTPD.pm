@@ -9,15 +9,7 @@ our %TYPEINFO;
 use strict;
 use Errno qw(ENOENT);
 
-
-@YaST::Logic::ISA = qw( YaST );
-
 my $vhost_files;
-my $scr_result;
-
-if( ref($scr_result) eq 'HASH' ) {
-    $vhost_files = $scr_result;
-}
 
 sub getFileByHostid {
     my $hostid = shift;
@@ -34,9 +26,13 @@ sub getFileByHostid {
 BEGIN { $TYPEINFO{GetHostList} = ["function", [ "list", "string"] ]; }
 sub GetHostList {
     my @ret = ();
-    foreach my $hostList ( values(%$vhost_files) ) {
-        foreach my $hostentryHash ( @$hostList ) {
-            push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
+    my @data = SCR::Read('.httpd.vhosts');
+
+    if( ref($data[0]) eq 'HASH' ) {
+        foreach my $hostList ( values(%{$data[0]}) ) {
+            foreach my $hostentryHash ( @$hostList ) {
+                push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
+            }
         }
     }
     return \@ret;
@@ -46,6 +42,17 @@ sub GetHostList {
 BEGIN { $TYPEINFO{GetHost} = ["function", [ "map", "string", "any" ], "string"]; }
 sub GetHost {
     my $hostid = shift;
+
+    # FIXME
+    # will read all vhost files, even if the vhost is found
+    # in the first file.
+    my @data = SCR::Read('.httpd.vhosts');
+
+    if( ref($data[0]) eq 'HASH' ) {
+        $vhost_files = $data[0];
+    } else {
+        return {}; # FIXME error, no vhost files parsed
+    }
 
     my $filename = getFileByHostid( $hostid );
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
@@ -67,6 +74,16 @@ sub ModifyHost {
     my $hostid = shift;
     my $data = shift;
 
+    # FIXME
+    # will read all vhost files, even if the vhost is found
+    # in the first file.
+    my @data = SCR::Read('.httpd.vhosts');
+    if( ref($data[0]) eq 'HASH' ) {
+        $vhost_files = $data[0];
+    } else {
+        return 0; # FIXME error, no vhost files parsed
+    }
+
     my $filename = getFileByHostid( $hostid );
     foreach ( @{$vhost_files->{$filename}} ) {
         if( $_->{HOSTID} eq $hostid ) {
@@ -74,6 +91,7 @@ sub ModifyHost {
             while( my ( $k,$v ) = each(%$data) ) {
                 push( @{$_->{'DATA'}}, { OVERHEAD => '', KEY => $k, VALUE => $v } );
             }
+            writeHost( $filename );
             return 1;
         }
     }
@@ -102,11 +120,21 @@ sub CreateHost {
                  VHOST         => $vhost,
                  DATA          => \@arrData
     };
+    # FIXME
+    # will read all vhost files, even if the vhost is found
+    # in the first file.
+    my @data = SCR::Read('.httpd.vhosts');
+    if( ref($data[0]) eq 'HASH' ) {
+        $vhost_files = $data[0];
+    } else {
+        return 0; # FIXME error, no vhost files parsed
+    }
     if( ref($vhost_files->{'yast2_vhosts.conf'}) eq 'ARRAY' ) {
         push( @{$vhost_files->{'yast2_vhosts.conf'}}, $entry );
     } else {
         $vhost_files->{'yast2_vhosts.conf'} = [ $entry ];
     }
+    writeHost( 'yast2_vhosts.conf' );
     return 1;
 }
 
@@ -115,6 +143,15 @@ BEGIN { $TYPEINFO{DeleteHost} = ["function", "boolean", "string"]; }
 sub DeleteHost {
     my $hostid = shift;
 
+    # FIXME
+    # will read all vhost files, even if the vhost is found
+    # in the first file.
+    my @data = SCR::Read('.httpd.vhosts');
+    if( ref($data[0]) eq 'HASH' ) {
+        $vhost_files = $data[0];
+    } else {
+        return 0; # FIXME error, no vhost files parsed
+    }
     my $filename = getFileByHostid( $hostid );
     my @newList = ();
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
@@ -125,20 +162,18 @@ sub DeleteHost {
     } else {
         delete($vhost_files->{$filename}); # drop empty file
     }
+    writeHost( $filename );
     return 1;
 }
 
-#boolean WriteHost( string hostid );
-BEGIN { $TYPEINFO{WriteHost} = ["function", "boolean", "string"]; }
-sub WriteHost {
-    my $hostid = shift;
+# internal only!
+sub writeHost {
+    my $filename = shift;
 
-    my $filename = getFileByHostid( $hostid );
     SCR::Write(".httpd.vhosts.setFile.$filename", $vhost_files->{$filename} );
     return 1;
 }
 
-BEGIN { $TYPEINFO{run} = ["function", "void"]; }
 sub run {
     my @data = SCR::Read('.httpd.vhosts');
     $vhost_files = $data[0];
@@ -184,7 +219,5 @@ sub run {
     }
     print "\n";
 
-    print "-------------- WriteHost\n";
-    WriteHost('192.168.1.1/createTest.suse.de');
 }
 1;
