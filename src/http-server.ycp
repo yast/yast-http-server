@@ -92,18 +92,123 @@ map cmdline_description = $[
 ];
 
 define boolean ConfigureHandler(map options) ``{
-    Report::Error( "This is not implemented yet." );
-    return false;
+
+    if( options["host"]:nil != "defaulthost" ) {
+	if( ! haskey( options, "host" ) ) {
+	    Report::Error( _("Configured host not specified") );
+	}
+	else 
+	{
+	    Report::Error( _("Only \"defaulthost\" can be specified as host to be configured") );
+	}
+	return false;
+    }
+
+    string host = options["host"]:nil;
+    
+    value = options["servername"]:nil;
+    if( value != nil ) {
+	HttpServer::settings[host, "servername"] = value;
+	HttpServer::modified = true;
+    }
+
+    value = options["serveradmin"]:nil;
+    if( value != nil ) {
+	HttpServer::settings[host, "serveradmin"] = value;
+	HttpServer::modified = true;
+    }
+
+    value = options["documentroot"]:nil;
+    if( value != nil ) {
+	HttpServer::settings[host, "documentroot"] = value;
+	HttpServer::modified = true;
+    }
+
+    return true;
 }
 
 define boolean ModulesHandler(map options) ``{
-    Report::Error( "This is not implemented yet." );
-    return false;
+    // check the command to be present exactly once
+    string command = CommandLine::UniqueOption( options,
+        ["enable", "disable", "list" ] );
+    if( command == nil ) return false;
+
+    if( command == "enable" ) {
+	list mods = splitstring( options["enable"]:"", "," );
+	
+	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod] = true; });
+	
+	HttpServer::modules_modified = true;
+	HttpServer::modified = true;
+    }
+    else if( command == "disable" ) {
+	list mods = splitstring( options["disable"]:"", "," );
+	
+	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod] = false; });
+
+	HttpServer::modules_modified = true;
+	HttpServer::modified = true;
+    }
+    else if( command == "list" ) {
+        // heading
+	CommandLine::Print( _("Status \tModule"));
+	CommandLine::Print( _("=================="));
+	
+	foreach( string mod, boolean status, HttpServer::settings["modules"]:[], ``{
+	    CommandLine::Print( sformat( "%1\t%2", status ? _("Enabled") : _("Disabled"), mod ) );
+	});
+    }
+
+    return true;
 }
 
 define boolean ListenHandler(map options) ``{
-    Report::Error( "This is not implemented yet." );
-    return false;
+
+    // check the command to be present exactly once
+    string command = CommandLine::UniqueOption( options,
+        ["add", "delete", "list" ] );
+    if( command == nil ) return false;
+    
+    if( command == "add" ) {
+	if( contains( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" ) )
+	{
+	    Report::Error( sformat( _("The listen statement '%1' is already configured.") , options["add"]:"") );
+	    return false;
+	}
+	
+	HttpServer::settings["defaulthost", "Listen"] = 
+	    add( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" );
+	HttpServer::modified = true;
+    }
+    else if( command == "delete" ) {
+	if( !contains( HttpServer::settings["defaulthost", "Listen"]:[], options["delete"]:"" ) )
+	{
+	    Report::Error( sformat( _("Cannot delete unconfigured listen statement '%1'") , options["delete"]:"") );
+	    return false;
+	}
+
+	HttpServer::settings["defaulthost", "Listen"] = 
+	    filter( string value, HttpServer::settings["defaulthost", "Listen"]:[], ``( value != options["delete"]:"" ) );
+	HttpServer::modified = true;
+    }
+    else if( command == "list" ) {
+        // heading
+	CommandLine::Print( _("Listen statements:"));
+	CommandLine::Print( _("=================="));
+	
+	foreach( string listen, HttpServer::settings["defaulthost", "Listen"]:[], ``{
+	    if( issubstring( listen, ":" ) ) {
+		CommandLine::Print( listen );
+	    }
+	    else
+	    {
+		CommandLine::Print( sformat( _("All interfaces: %1"), listen ) );
+	    }
+	});
+
+    }
+
+    return true;
 }
 
 /* The main () */

@@ -35,7 +35,7 @@ SortKey =
 Textdomain = http-server 
 
 ; Autoinstall features
-Autoinst = 
+Autoinst = all
 
 ; Resource in control file
 AutoinstResource =  http-server

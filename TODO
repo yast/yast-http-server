@@ -1,11 +1,11 @@
-testsuite
+9.0
+===
 docs
+firewall modification
+
+later
+=====
 different location for httpd.conf
 virtual hosts
 ssl
-autoyast
-commandline (fill implementation)
-firewall modification
-allow to select more logs
-logresolve
 recommended modules

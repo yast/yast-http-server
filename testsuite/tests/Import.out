@@ -1,0 +1,7 @@
+Dump	$["defaulthost":$["DocumentRoot":"/srv/www/htdocs", "Listen":["80"], "ServerAdmin":"webmaster@example.com", "ServerName":"www.example.com:80"], "modules":$[], "settings":$["enabled":false]]
+Dump	false
+Dump	false
+Return	true
+Dump	$["defaulthost":$["Listen":"3128", "ServerAdmin":"webadmin@haha.com"], "modules":$["negotiation":$["status":false], "ssl":$["status":false]], "settings":$["enabled":true]]
+Dump	true
+Dump	false
