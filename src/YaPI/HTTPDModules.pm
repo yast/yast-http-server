@@ -358,7 +358,8 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 450
+                    position  => 450,
+                    defines   => { SSLEngine => 'SSL' }
     },
     'unique_id' => {
                     summary   => 'Provides an environment variable with a unique identifier for each request',
