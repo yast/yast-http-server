@@ -273,9 +273,13 @@ sub write_listen_conf {
         foreach my $entry ( keys(%listen) ) {
             push( @file, "Listen $entry\n" );
         }
-        open( FILE, "> /etc/apache2/listen.conf" ); # FIXME catch ERRORs
-        print FILE @file;
-        close(FILE);
+        if( open( FILE, "> /etc/apache2/listen.conf" ) ) { # FIXME catch ERRORs
+            print FILE @file;
+            close(FILE);
+        } else {
+            return $class->SetError( summary => sprintf(_("open file /etc/apache2/listen.conf for writing failed with %s"),$!),
+                                     code    => 'OPEN_FAILED' );
+        }
     } else {
         return $class->SetError( summary => sprintf(_("open file /etc/apache2/listen.conf for reading failed with %s"),$!),
                                  code    => 'OPEN_FAILED'
@@ -337,11 +341,11 @@ sub Write {
                 $key .= $entry->{'PORT'};
                 $listen{$key} = 1;
             }
-            $class->write_listen_conf();
+            return $class->write_listen_conf();
         }
     } elsif( $path eq '.moduleselection' ) {
         if( ref($args[0]) eq 'ARRAY' ) {
-            $class->write_module_selection( $args[0] );
+            return $class->write_module_selection( $args[0] );
         }
     } else {
         # not implemented
