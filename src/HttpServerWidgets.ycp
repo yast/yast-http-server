@@ -261,11 +261,11 @@ global map widgets = $[
 	    "save" : true,
 	    "actions" : [
 		// menubutton entry, try to keep short
-		[ _("Restart HTTP server"),
+		[ _("&Reload HTTP server"),
 		    ``{SCR::Execute (.target.bash,
-			"rcapache2 restart");}],
+			"rcapache2 reload");}],
 		// menubutton entry, try to keep short
-		[ _("Save settings and restart HTTP server"),
+		[ _("Save settings and re&start HTTP server"),
 		    ``{HttpServer::Write ();} ],
 	    ],
 	]);
@@ -289,9 +289,9 @@ global map widgets = $[
 	    "save" : true,
 	    "actions" : [
 		// menubutton entry, try to keep short
-		[ _("Restart HTTP server"),
+		[ _("Reload HTTP server"),
 		    ``{SCR::Execute (.target.bash,
-			"rcapache2 restart");}],
+			"rcapache2 reload");}],
 		// menubutton entry, try to keep short
 		[ _("Save settings and restart HTTP server"),
 		    ``{HttpServer::Write ();} ],

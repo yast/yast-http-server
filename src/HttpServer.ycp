@@ -175,12 +175,13 @@ global define boolean Read() ``{
     list modules = splitstring( SCR::Read( .sysconfig.apache2."APACHE_MODULES" ), " " );
     settings["modules"] = listmap( string mod, modules, ``{
 	if( !haskey( all_modules, mod ) ) {
-	    // translators: error message
-	    Report::Error( sformat( _("The configuration file appear to load module '%1', but YaST2 does not know the module."), mod ) );
-	    return nil;
+	    y2error("The configuration file appear to load module '%1', but YaST2 does not know the module.", mod );
+	    // translators: default description of unknown Apache2 modules
+	    return [ mod, $[ "status" : true, "description": _("User-defined module") ] ];
+	} else {
+	    // translators: default name for an Apache2 module
+	    return [ mod, $[ "status" : true, "description": all_modules[mod,"description"]:_("Apache2 module") ] ];
 	}
-	// translators: default name for an Apache2 module
-	return [ mod, $[ "status" : true, "description": all_modules[mod,"description"]:_("Apache2 module") ] ];
     } );
     
     settings["apache_access_log"] = SCR::Read( .sysconfig.apache2."APACHE_ACCESS_LOG" );
