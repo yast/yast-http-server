@@ -83,9 +83,9 @@ global map settings = $[
 ];
 
 /**
- * Is status of modules modified?
+ * List of status of modules modified
  */
-global boolean modules_modified = false;
+global list modules_modified = [];
 
 /**
  * Mapping of IPs to network devices
@@ -349,13 +349,30 @@ global define boolean Write() ``{
     
     // write sysconfig
     list modlist = [];
-    list rpms = [];
     foreach( string mod, map status, settings["modules"]:$[], ``{
-	if( status["status"]:false ) {
+	if( status["status"]: false ) {
 	    modlist = add( modlist, mod );
-	    rpms = union( rpms, status["requires"]:[] );
 	}
     });
+
+    list rpms = [];
+    if( size(modules_modified)> 0 ) {
+	foreach( string mod, map status, settings["modules"]:$[], ``{
+	    if( status["status"]: false ) {
+		rpms = union( rpms, status["requires"]:[] );
+	    }
+	});
+    }
+
+/*    
+    // install rpms only for changed modules
+    list rpms = [];
+    foreach( string mod, modules_modified, ``{
+	if( settings[ "modules", mod, "status"]: false ) {
+	    rpms = union( rpms, settings[ "modules", mod, "requires"]:[] );
+	}
+    });
+*/
     
     SCR::Write( .sysconfig.apache2."APACHE_MODULES", mergestring( modlist, " " ) );
     if( !SCR::Write( .sysconfig.apache2, nil ) ) {

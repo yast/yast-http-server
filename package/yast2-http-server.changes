@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Thu Sep 18 18:05:28 CEST 2003 - visnov@suse.de
+
+- do not trigger package installation for modules, if
+  user didn't change module configuration. This way, default 
+  configuration can contain PHP4, but YaST2 will not ask to install
+  corresponding package until user changes module status.
+  (#31306)
+- 2.8.15
+
+-------------------------------------------------------------------
 Mon Sep 15 18:54:22 CEST 2003 - visnov@suse.de
 
 - setenvif should be on by default (#30689)

@@ -450,13 +450,17 @@ listen cannot be empty.
         {
 	    integer ci = UI::QueryWidget( `id( `modules ), `CurrentItem );
 	    string status = select( UI::QueryWidget( `id(`modules), `Item(ci) ), 2, _("Enabled") );
+	    string name = select( UI::QueryWidget( `id(`modules), `Item(ci) ), 1, nil );
+
 	    y2debug( "Status of module: %1", status );
 	    if( status == _("Enabled") ) status = _("Disabled");
 	    else status = _("Enabled");
 	    UI::ChangeWidget( `id( `modules ), `Item( ci , 1 ) , status );
 	    
+	    HttpServer::modules_modified = union( HttpServer::modules_modified, [name] );
+	    y2debug( "modified_modules now: %1", HttpServer::modules_modified );
+	    
 	    HttpServer::modified = true;
-	    HttpServer::modules_modified = true;
         }
 	else if (event["ID"]:nil == `add_user)
         {
@@ -492,7 +496,7 @@ listen cannot be empty.
 		    ];
 
 		    HttpServer::modified = true;
-		    HttpServer::modules_modified = true;
+		    HttpServer::modules_modified = union( HttpServer::modules_modified, [mod] );
 		    
 		    UI::CloseDialog();
 		    
