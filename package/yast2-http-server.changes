@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Mar 24 16:38:18 CET 2004 - visnov@suse.cz
+
+- allow to enter port as a part of IP spec for vhosts
+- validation of mixing IP-based and name-based vhosts
+- fixed configuration of VirtualByName
+- 2.9.12 
+
+-------------------------------------------------------------------
 Wed Mar 24 13:13:56 CET 2004 - visnov@suse.cz
 
 - enable/disable overview widget according to the service status 

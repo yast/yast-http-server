@@ -37,22 +37,25 @@ map<string, any> ssl_options = (map<string, any>)SCR::Read (.target.ycp, Directo
 
 string item2listen( string network, string port );
 
-global string get_host_value ( string keyword, list< map<string, any> > host, string default )
+global any get_host_value ( string keyword, list< map<string, any> > host, any default )
 {
-    string ret = default;
+    any res = default;
     
     foreach( map<string, any> option, host, ``{
 	if (option["KEY"]:nil == keyword)
 	{
-	    ret = option["VALUE"]:default;
+	    res = option["VALUE"]:default;
 	    break;
 	}
     });
     
-    // drop quotes, if exist
-    ret = regexpsub (ret, "\"?([^\"]*)\"?", "\\1");
+    if ( is( res, string) )
+    {
+	// drop quotes, if exist
+	res = regexpsub ( (string)res, "\"?([^\"]*)\"?", "\\1");
+    }
     
-    return ret;
+    return res;
 }
 
 global list< map<string,any> > set_host_value ( string keyword, list< map<string, any> > host, any value )
@@ -79,7 +82,8 @@ global list< map<string,any> > set_host_value ( string keyword, list< map<string
     return host;
 }
 
-global boolean validate_servername (string id, string key, map event) ``{
+global boolean validate_servername (string id, string key, map event) 
+{
     import "Hostname";
     string value = (string)UI::QueryWidget (`id (id), `Value);
     if (!Hostname::CheckFQ (value))
@@ -96,18 +100,78 @@ global boolean validate_servername (string id, string key, map event) ``{
 }
 
 
-global boolean validate_serverip (string id, string key, map event) ``{
+global boolean validate_serverip (string id, string key, map event) 
+{
     import "IP";
     string value = (string)UI::QueryWidget (`id (id), `Value);
+    
+    // check, if there is also a port, if yes, skip it
+    integer pos = find (value, ":");
+    if (pos != -1)
+    {
+	value = substring (value, 0, pos);
+    }
+    
+    // validate wildcard
+    if (value == "*")
+    {
+	return true;
+    }
+    
     if (!IP::Check (value))
     {
 	Popup::Error (_("Invalid IP address."));
 	return false;
     }
-    else
+    else 
     {
 	return true;
     }
+}
+
+global boolean validate_server (list < map<string,any> > server )
+{
+    list <string> hosts = YaST::HTTPDData::GetHostsList ();
+    
+    string servername = (string)get_host_value ( "ServerName", server, nil );
+    string ip = (string)get_host_value ( "HostIP", server, nil );
+    boolean namebased = ((string)get_host_value ( "VirtualByName", server, nil )) == "1";
+    
+    boolean res = true;
+    
+    foreach (string host, hosts, ``{
+	list< map<string,any> > desc = YaST::HTTPDData::GetHost (host);
+	
+	// find out the server name
+	string value = (string)get_host_value ( "ServerName", desc, nil );
+	
+	if (value == servername)
+	{
+	    // error message - the entered server name is already configured 
+	    // in another virtual host
+	    Report::Error (_("The server name is already in configured."));
+	    res = false;
+	    break;
+	}
+	
+	value = (string)get_host_value ("HostIP", desc, nil);
+	
+	if (value == ip)
+	{
+	    // this is valid only if both of them are name-based, not ip-based
+	    boolean based = ((string)get_host_value ( "VirtualByName", desc, nil )) == "1";
+	    if ( ! (based && namebased) )
+	    {
+		// error message - the entered ip address is already 
+		// configured for another virtual host
+		Report::Error (_("The IP address is already configured."));
+		res = false;
+		break;
+	    }
+	}
+    });
+    
+    return res;
 }
 
 /*********************************** inital overview table ********************************/
@@ -128,7 +192,7 @@ void OverviewInit (string widget)
 	    
     y2milestone ("Current listen: %1", YaST::HTTPDData::GetCurrentListen() );
 	    
-    string default_host = get_host_value( "ServerName", YaST::HTTPDData::GetHost ("default"), "");
+    string default_host = (string)get_host_value( "ServerName", YaST::HTTPDData::GetHost ("default"), "");
     if (default_host == "")
     {
 	// if the default host does not have a servername specified, use it's
@@ -138,11 +202,9 @@ void OverviewInit (string widget)
     
     host_ids = YaST::HTTPDData::GetHostsList ();
 
-    y2milestone ("Current listen: %1", host_ids );
-
     string hosts = mergestring (
 	maplist( string host, host_ids, ``{
-	    return get_host_value ( "ServerName", YaST::HTTPDData::GetHost (host), "" );
+	    return (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost (host), "" );
 	}), ", ");
 
     // limit the text to 50 chars
@@ -339,8 +401,8 @@ symbol HostsHandle (string table, map event)
 	y2milestone ("Changing default host to '%1'", host);
 	
 	list< map<string,any> > defhost_options = YaST::HTTPDData::GetHost("default");
-	string servername = get_host_value( "ServerName", defhost_options, "");
-	string ip = get_host_value( "HostIP", defhost_options, "");
+	string servername = (string) get_host_value( "ServerName", defhost_options, "");
+	string ip = (string) get_host_value( "HostIP", defhost_options, "");
 	if (ip == "" || servername != "")
 	{
 	    // we must set a new server name and ip for the old default host
@@ -395,7 +457,7 @@ boolean HostsDelete (any opt_id, string opt_key) {
 
 global string HostName (string id)
 {
-    string res = get_host_value ( "ServerName", YaST::HTTPDData::GetHost(id), id );
+    string res = (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost(id), id );
     // translators: human-readable "default host"
     if (id == "default" && res == "default" ) res = _("Default host");
     return res;
@@ -404,7 +466,7 @@ global string HostName (string id)
 
 global string HostDocumentRootSummary( string key, any id )
 {
-    return get_host_value ("DocumentRoot", YaST::HTTPDData::GetHost(key), "");
+    return (string) get_host_value ("DocumentRoot", YaST::HTTPDData::GetHost(key), "");
 }
 
 global boolean HostIsDefault( any widget, string key )
@@ -477,6 +539,15 @@ global map<string,map> popups = $[
 		    "label"  : _("Server Resolution"),
 		    "optional" : false,
 		],
+		"popup" : $[
+		    "widget" : `radio_buttons,
+		    "items" : [
+			// translators: radio button for name-based virtual hosts
+			[ "0", _("Determine Request Server by HTTP &Headers") ],
+			// translators: radio button for IP-based virtual hosts
+			[ "1", _("Determine Request Server by Server IP &Address") ],
+		    ],
+		]
 	    ],
 	    "HostIP" : $[
 		"table" : $[
@@ -863,7 +934,7 @@ define string item2listen( string network, string port ) ``{
       * @return value for wizard sequencer, always nil
       */
     global define symbol showErrorLogPopup (any key, map event) ``{
-	string log = get_host_value( "ErrorLog", YaST::HTTPDData::GetHost(currenthost), "/var/log/apache2/error_log");
+	string log = (string) get_host_value( "ErrorLog", YaST::HTTPDData::GetHost(currenthost), "/var/log/apache2/error_log");
 	
 	// strip the log format, if present
 	log = select( splitstring( log, " " ), 0, "/var/log/apache2/error_log" );
@@ -998,7 +1069,6 @@ define string item2listen( string network, string port ) ``{
     global define list<string> HostTableContents (map descr) ``{
     
 	list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
-	y2internal ("Host: %1", host );
 	list<string> ret = maplist (map<string, any> option, host, ``{
 	    string key = option["KEY"]: "unknown";
 	    if ( ! contains( ["_SECTION", currenthost == "default" ? "HostIP" : "" ], key ) && ! haskey( ssl_options, key ) )
@@ -1086,8 +1156,16 @@ define string item2listen( string network, string port ) ``{
       * @param opt_key any option key
       */
     global define void DefaultHostPopupInit (any opt_id, string opt_key) ``{
-	UI::ChangeWidget (`id (opt_key), `Value,
-	    get_host_value( opt_key, YaST::HTTPDData::GetHost(currenthost), "") );
+	any value = get_host_value( opt_key, YaST::HTTPDData::GetHost(currenthost), "");
+	
+	if (opt_key == "VirtualByName")
+	{
+	    UI::ChangeWidget (`id (opt_key), `CurrentButton, value);
+	}
+	else
+	{
+	    UI::ChangeWidget (`id (opt_key), `Value, value);
+	}
     }
 
     /**
@@ -1097,7 +1175,10 @@ define string item2listen( string network, string port ) ``{
       */
     global define void DefaultHostPopupStore (any opt_id, string opt_key) ``{
 	list< map<string, any> >options = YaST::HTTPDData::GetHost (currenthost);
-	options = set_host_value( opt_key, options, UI::QueryWidget (`id (opt_key), `Value) );
+	
+	symbol property = (opt_key == "VirtualByName") ? `CurrentButton : `Value;
+	
+	options = set_host_value( opt_key, options, UI::QueryWidget (`id (opt_key), property) );
 	YaST::HTTPDData::ModifyHost (currenthost, options);
 	HttpServer::modified = true;
     }
@@ -1109,7 +1190,7 @@ define string item2listen( string network, string port ) ``{
       * @return string table entry summary
       */
     global define string HostTableEntrySummary (string opt_id, string opt_key) ``{
-	string res = get_host_value( opt_key, YaST::HTTPDData::GetHost(currenthost), "");
+	string res = (string) get_host_value( opt_key, YaST::HTTPDData::GetHost(currenthost), "");
 	if (opt_key == "SSL")
 	{
 	    if (res == "0") 
@@ -1388,10 +1469,6 @@ listen cannot be empty.") );
 
 /* these are for future use: */
 
-// error message - the entered server name is already configured in another virtual host
-string __duplicate_servername = _("The server name is already in configured.");
-// error message - the entered ip address is already configured for another virtual host
-string __duplicate_ipaddress = _("The IP address is already configured.");
 // error message - the entered ip address is not found
 string __nonconfigured_ipaddress = _("The IP address is not configured
 on this machine.");
