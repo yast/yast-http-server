@@ -89,6 +89,8 @@ void OverviewInit (string widget)
 	maplist( map<string,any> listen, HTTPDData::GetCurrentListen(), 
 	    ``(item2listen (listen["ADDRESS"]:"",listen["PORT"]:"80"))), " ");
 	    
+    y2error ("Current listen: %1", HTTPDData::GetCurrentListen() );
+	    
     string default_host = get_host_value( "ServerName", HTTPDData::GetHost ("default"), "");
     if (default_host == "")
     {
@@ -196,8 +198,16 @@ map<string,string> AskNewInfo (string servername, string ip)
     import "Hostname";
     import "IP";
     
-    // TODO: suggest reasonable values for empty ones
-    // TODO: use IP address combo box
+    if (size (servername) == 0)
+    {
+	import "DNS";
+	// suggest reasonable value
+	servername = Hostname::MergeFQ (DNS::hostname, DNS::domain);
+	// maybe we should check, if there is such host already
+    }
+    
+    list ips = maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) ;
+
     UI::OpenDialog (
 	`VBox(
 	    `Label( _("The current default host will be replaced by 
@@ -211,7 +221,7 @@ and click OK to continue with the default host
 switch. Otherwise click Cancel not to change
 the default host.")),
 	    `TextEntry (`id (`name), _("Server &Name:"), servername),
-	    `TextEntry (`id (`ip), _("Server &IP address:"), ip),
+	    `Left( `ComboBox( `id(`ip), `opt(`editable), _("Server &IP address:"), ips, ip ) ),
 	    `VSpacing(0.5),
 	    `HBox( `PushButton (`id(`ok), `opt(`default), Label::ContinueButton ()),
 		`PushButton (`id(`cancel), Label::CancelButton ()) )
@@ -600,7 +610,7 @@ global symbol handleSSLTable( any key, map event )
 {
     if ( event["ID"]:nil == `generate_certificate )
     {
-	// FIXME: generate it
+	// SLES: generate it
 	return nil;
     }
     return TablePopup::TableHandle( sslwidget, key, event );
@@ -690,7 +700,7 @@ define string item2listen( string network, string port ) ``{
 	    // translators: text entry label
 	    `TextEntry( `id(`port), _("&Port:"), port ),
 	    // translators: combo box label for list of configured IPs
-	    `Left( `ComboBox( `id(`address), _("Network &Address:"), ips ) ),
+	    `Left( `ComboBox( `id(`address), `opt( `editable ), _("Network &Address:"), ips ) ),
 	    `VSpacing(),
 	    `HBox( 
 		`PushButton( `id(`ok), Label::OKButton() ),
@@ -772,7 +782,6 @@ define string item2listen( string network, string port ) ``{
       * @return value for wizard sequencer, always nil
       */
     global define symbol showErrorLogPopup (any key, map event) ``{
-	// FIXME: there are more possibilities where to look for the log file
 	string log = get_host_value( "ErrorLog", HTTPDData::GetHost(currenthost), "/var/log/apache2/error_log");
 	
 	// strip the log format, if present
@@ -806,7 +815,6 @@ define string item2listen( string network, string port ) ``{
 
 	// filter out unneeded options
 	ret = filter (string key, ret, ``( ! contains( ["_SECTION", currenthost == "default" ? "HostIP" : "" ], key ) && ! haskey( ssl_options, key ) ) );
-	// FIXME: replace VirtualByName
 	// required entries
 	ret = (list<string>)union (["ServerName", "ServerAdmin" ], ret);
 	return ret;
@@ -1026,12 +1034,12 @@ define string item2listen( string network, string port ) ``{
 	    // translators: all network addresses Listen type
 	    map<string,string> res = AskListen( _("All Addresses"), "" );
 	    if( res != nil ) {
-		// FIXME: if( contains( HttpServer::settings["Listen"]:[], res )  )
-#		{
-#		    // translators: error message for adding a new Listen statement
-#		    Popup::Error( sformat(_("The entry '%1' already exists."), res) );
-#		} 
-#		else
+		if (false) // FIXME: CreateListen error reporting
+		{
+		    // translators: error message for adding a new Listen statement
+		    Popup::Error( sformat(_("The entry '%1' already exists."), res) );
+		} 
+		else
 		{
 		    HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
 			res["ADDRESS"]:"" );
@@ -1040,7 +1048,6 @@ define string item2listen( string network, string port ) ``{
         }
 	else if( event["ID"]:nil == `delete )
 	{
-	    // FIXME: ensure there is at least one listen statement
 	    boolean validate = size( HTTPDData::GetCurrentListen() ) != 0;
 
 	    y2debug( "Validation result: %1", validate );
