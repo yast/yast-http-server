@@ -61,8 +61,8 @@ global define boolean Modified() ``{
 
 include "http-server/routines.ycp";
 
-global boolean firewall = false;
-global boolean firewall_started = false;
+global boolean firewall = true;
+global boolean firewall_started = true;
 
 /**
  * Mapping of IPs to network devices
