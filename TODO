@@ -4,7 +4,7 @@ docs
 
 later
 =====
-different location for httpd.conf
+generic mapping of options and their respective paths/files
 virtual hosts
 ssl
 recommended modules
