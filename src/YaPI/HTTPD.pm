@@ -73,6 +73,10 @@ SwitchService($state)
 
   $state is a boolean for turning on/off the apache2 service
 
+ReloadService()
+
+  function for reloading the apache2 service
+
 $serviceState = ReadService()
 
   returns the state of the apache2 runlevel script as a boolean
@@ -1003,6 +1007,22 @@ sub SwitchService {
 }
 
 =item *
+C<ReloadService($status)>
+
+with this function you can reload the apache2 service
+
+EXAMPLE
+
+ ReloadService();
+
+=cut
+
+sub ReloadService {
+    my $self = shift;
+    return Service->RunInitScript( "apache2", "reload");
+}
+
+=item *
 C<$status = ReadService()>
 
 with this function you can read out the state of the
@@ -1184,22 +1204,40 @@ sub GetCurrentListen {
 #######################################################
 
 =item *
-C<GetServicePackages()>
+C<$packList = GetServicePackages()>
 
-???
+this function returns a list of strings with the needed RPM
+packages for this service.
+
+EXAMPLE
+
+ my $packList = GetServicePackages();
+ foreach my $pack ( @$packList ) {
+     print "$pack needs to be installed to run this service\n";
+ }
+
 
 =cut
 
-BEGIN { $TYPEINFO{GetServicePackages} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
+BEGIN { $TYPEINFO{GetServicePackages} = ["function", ["list", "string" ] ]; }
 sub GetServicePackages {
     my $self = shift;
-    return 'apache2'; #???
+    return [ 'apache2' ];
 }
 
 =item *
-C<GetModulePackages()>
+C<$packList = GetModulePackages()>
 
-???
+this function returns a list of strings with the needed RPM
+pacakges for all activated apache2 modules.
+
+EXAMPLE
+
+ my $packList = GetModulePackages();
+ foreach my $pack ( @$packList ) {
+     print "$pack needs to be installed to run the selected modules\n";
+ }
+
 
 =cut
 
@@ -1212,7 +1250,7 @@ sub GetModulePackages {
     foreach my $mod ( @$mods ) {
         @uniq{@{$mod->{packages}}} = ();
     }
-    return keys(%uniq);
+    return [ keys(%uniq) ];
 }
 
 #######################################################
