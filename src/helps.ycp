@@ -39,6 +39,19 @@ Abort the save procedure by pressing <b>Abort</b>.
 An additional dialog informs you whether it is safe to do so.</p>
 "),
 
+	"open_port" : _("The <b>port</b> value defines on which Apache2 will listen. The default is 80.<p>"), 
+
+	"listen_interfaces" : _("Checked <b>ip addresses</b> defines on which Apache2 will listen.If you are ensure check all.<p>"),
+
+	"fw_open" : _("When firewall is enabled you are allowed to check whether you want to enable Apache2 port on firewall<p>"),
+
+	"script_modules" : _("Check which script languages you want to used.<p>"), 
+
+	"summary_text"	: _("Summary box displays some settings which will be writed to Apache2 configuration by pressing <b>finish</b> button.<p>"),
+
+	"expert_conf"	: _("By pressing <b>HTTP Server Expert Configuration</b> 
+		button more detailed configuration is allowed before writing configuration.<p>"),
+
 	// module dialog help 1/3
 	"modules" : _("<p><b><big>Editing HTTP Server Modules</big></b><br>
 The table contains a list of all available Apache2 modules.

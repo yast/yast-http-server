@@ -446,6 +446,7 @@ symbol HostsHandle (string table, map event)
 	list< map<string,any> > defhost_options = YaST::HTTPDData::GetHost("default");
 	string servername = (string) get_host_value( "ServerName", defhost_options, "");
 	string ip = (string) get_host_value( "HostIP", defhost_options, "");
+y2internal("servername : %1, ip : %2\n%3", servername, ip, defhost_options);
 	if (ip == "" || servername != "")
 	{
 	    // we must set a new server name and ip for the old default host
@@ -455,13 +456,16 @@ symbol HostsHandle (string table, map event)
 		// cancel the change
 		return nil;
 	    }
-	    
-	    defhost_options = set_host_value( "HostIP", defhost_options, res["ip"]:ip);
-	    defhost_options = set_host_value( "ServerName", defhost_options, res["name"]:ip);
+
+	ip =res["ip"]:ip;
+	servername = res["name"]:ip;
+	    defhost_options = set_host_value( "HostIP", defhost_options, ip);
+	    defhost_options = set_host_value( "ServerName", defhost_options, servername);
 	}
 	
 	// move the old default host elsewhere
 	YaST::HTTPDData::CreateHost ( ip+"/"+servername, defhost_options );
+//      YaST::HTTPDData::CreateHost ( res["ip"]:ip + "/" + res["name"]:ip, defhost_options );
 	// replace the values of the default host by the new one
 	YaST::HTTPDData::ModifyHost ("default", YaST::HTTPDData::GetHost(host) );
 	// remove the old non-default host
@@ -828,21 +832,23 @@ global map<string, map <string, any> > widgets = $[
 		"label"	 : _("&Port:"),
 		"init"	 : HttpServerWidgets::initOpenPort,
 		"validate_type" : `function, 
-		"validate_function" : HttpServerWidgets::validateOpenPort
+		"validate_function" : HttpServerWidgets::validateOpenPort,
+		"help" : HELPS["open_port"]:""
 		],
 	   "listen_interfaces" : $[
 		"widget" : `custom,
 		"custom_widget" : `ReplacePoint( `id(mode_replace_point_key),`MultiSelectionBox( _("&Listen on Interfaces"), [])),
 		"init"	 : HttpServerWidgets::initListenInterfaces,
                 "validate_type" : `function,
-                "validate_function" : HttpServerWidgets::validateListenInterfaces
-
+                "validate_function" : HttpServerWidgets::validateListenInterfaces,
+		"help" : HELPS["listen_interfaces"]:""
 		],
 	   "fw_open" : $[
 		"widget" : `checkbox,
 		"label"  : _("Open &Firewall for Selected Ports"),
 		"init"	 : HttpServerWidgets::initFwOpen,
-		"store"	 : HttpServerWidgets::storeFwOpen
+		"store"	 : HttpServerWidgets::storeFwOpen,
+		"help"   : HELPS["fw_open"]:""
 		],
 	  "booting" 	 : CWMServiceStart::CreateAutoStartWidget ($[
 		"get_service_auto_start" : HttpServerWidgets::getServiceAutoStart,
@@ -855,19 +861,22 @@ global map<string, map <string, any> > widgets = $[
 		"widget" : `push_button,
 		"label"  : _("HTTP Server Expert Configuration ..."),
 		"init"	 : HttpServerWidgets::initExpertConf,
-		"handle" : HttpServerWidgets::handleExpertConf
+		"handle" : HttpServerWidgets::handleExpertConf,
+		"help"	 : HELPS["expert_conf"]:""
 		],
 	  "script_modules" : $[
 		"widget" : `custom,
 			"custom_widget" : `ReplacePoint(`id(`scr_mod_replace), 
 			`Label("") 
 	                ),
-		"init"   : HttpServerWidgets::initScriptModules
+		"init"   : HttpServerWidgets::initScriptModules,
+		"help"	 : HELPS["script_modules"]:""
 		],
 	   "summary_text" : $[
 		"widget"  : `custom,
 		"custom_widget" : `ReplacePoint(`id(`summary_text_rp), `RichText("")),
-		"init"	  : HttpServerWidgets::initSummaryText
+		"init"	  : HttpServerWidgets::initSummaryText,
+		"help"	  : HELPS["summary_text"]:""
 		]
 	];
 
