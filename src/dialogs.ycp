@@ -48,6 +48,12 @@
       * @return symbol for wizard sequencer
       */
     global define symbol DefaultHostDialog () ``{
+	// fix the help for document root, it defined
+	if( size(HttpServer::document_root) > 0 ) {
+	    HttpServerWidgets::widgets["server_enable", "help" ] = HELPS[ "server_enable" ]:"" + sformat( _("<p>The documents served by
+the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
+	}
+	
 	list w = CWM::CreateWidgets (["server_enable", "firewall_adapt", "global_table" ],
 	    HttpServerWidgets::widgets);
 	term contents = `HBox (`HSpacing (1), `VBox (
