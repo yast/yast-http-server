@@ -251,12 +251,29 @@ if(size(args) > 0) {
 }
 
 // check rpms
+if( !Require::IsPackageAvailable( "apache2" ) ) {
+    Popup::Error( _("<p>The package <b>%1</b> is not available.<br>
+YaST2 cannot continue the configuration
+without installing the package.<p>") );
+}
+
 if( !Require::RequireAndConflictTarget( ["apache2"], [],
     // notification about package needed 1/2
     _("<p>To configure the HTTP server, the <b>%1</b> package must be installed.</p>") +
     // notification about package needed 2/2
     _("<p>Do you want to install it now?</p>")) )
 {
+    if( !Require::IsPackageAvailable( "apache2" ) ) {
+	// translators: error popup before aborting the module
+	Popup::Error( sformat( _("<p>The package <b>%1</b> is not available.<br>
+YaST2 cannot continue the configuration
+without installing the package.<p>"), "apache2" ) );
+    } else {
+	// translators: error popup before aborting the module
+	Popup::Error( sformat( _("YaST2 cannot continue the configuration
+without installing the required packages."), "apache2" ) );
+    }
+    
     return false;
 }
 
