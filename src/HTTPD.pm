@@ -847,8 +847,9 @@ sub selections2modules {
     my $list = shift;
     my @ret;
     foreach my $sel ( @$list ) {
-	print STDERR "$sel \n";
-        push( @ret, @{$HTTPDModules::selection{$sel}->{modules}} );
+        if( exists( $HTTPDModules::selection{$sel} ) ) {
+            push( @ret, @{$HTTPDModules::selection{$sel}->{modules}} );
+        }
     }
     return @ret;
 }
@@ -1184,15 +1185,79 @@ sub WriteServerCA {
 }
 
 sub ReadServerCert {
+    my $hostid = shift;
 
+    my $host = GetHost( $hostid );
+    my $file;
+    foreach my $k ( @$host ) {
+        next unless( $k->{KEY} eq 'SSLCertificateFile' );
+        $file = $k->{VALUE};
+        last;
+    }
+    unless( $file ) {
+        return SetError( summary => "no certificate file configured for this hostid" );
+    }
+    my $cert = SCR::Read( '.target.string', $file );
+    unless( $cert ) {
+        return SetError( summary => "error reading certificate: $file" );
+    }
+    $cert =~ /(-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----)/;
+    if( ! $1 ) {
+        return SetError( "parsing cert file failed" );
+    }
+    return $1;
 }
 
 sub ReadServerKey {
+    my $hostid = shift;
+
+    my $host = GetHost( $hostid );
+    my $file;
+    foreach my $k ( @$host ) {
+        next unless( $k->{KEY} eq 'SSLCertificateKeyFile' );
+        $file = $k->{VALUE};
+        last;
+    }
+    unless( $file ) {
+        foreach my $k ( @$host ) {
+            next unless( $k->{KEY} eq 'SSLCertificateFile' );
+            $file = $k->{VALUE};
+            last;
+        }
+        unless( $file ) {
+            return SetError( summary => "no certificate key file configured for this hostid" );
+        }
+    }
+    my $cert = SCR::Read( '.target.string', $file );
+    unless( $cert ) {
+        return SetError( summary => "error reading certificate: $file" );
+    }
+    $cert =~ /(-----BEGIN RSA PRIVATE KEY-----[^-]+-----END RSA PRIVATE KEY-----)/;
+    if( ! $1 ) {
+        return SetError( "parsing key file failed" );
+    }
+    return $1;
 
 }
 
 sub ReadServerCA {
+    my $hostid = shift;
 
+    my $host = GetHost( $hostid );
+    my $file;
+    foreach my $k ( @$host ) {
+        next unless( $k->{KEY} eq 'SSLCACertificateFile' );
+        $file = $k->{VALUE};
+        last;
+    }
+    unless( $file ) {
+        return SetError( summary => "no ca certificate file configured for this hostid" );
+    }
+    my $cert = SCR::Read( '.target.string', $file );
+    unless( $cert ) {
+        return SetError( summary => "error reading ca certificate: $file" );
+    }
+    return $cert;
 }
 
 #######################################################
