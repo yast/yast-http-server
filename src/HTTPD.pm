@@ -152,7 +152,26 @@ sub ModifyHost {
     return undef if( not checkHostmap( $newData ) );
     foreach my $entry ( @{$vhost_files->{$filename}} ) {
         if( $entry->{HOSTID} eq $hostid ) {
-            $entry->{DATA} = $newData;
+            my @tmp;
+            foreach my $tmp ( @$newData ) {
+                if( $tmp->{'KEY'} eq 'VirtualByName' ) {
+                    $entry->{VirtualByName} = $tmp->{'VALUE'};
+                    next;
+                } elsif( $tmp->{'KEY'} eq 'SSL' ) {
+                    if( $tmp->{'VALUE'} == 0 ) {
+                        push( @tmp, { KEY => 'SSLEngine', VALUE => 'off' } );
+                    } elsif( $tmp->{'VALUE'} == 1 ) {
+                        push( @tmp, { KEY => 'SSLEngine', VALUE => 'on' } );
+                    } elsif( $tmp->{'VALUE'} == 2 ) {
+                        push( @tmp, { KEY => 'SSLEngine', VALUE => 'on' } );
+                        push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
+                    }
+                    next;
+                } else {
+                    push( @tmp, $tmp );
+                }
+            }
+            $entry->{DATA} = \@tmp;
             writeHost( $filename );
             return 1;
         }
