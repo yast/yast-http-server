@@ -1,3 +1,10 @@
+-------------------------------------------------------------------
+Tue Aug  3 18:50:15 CEST 2004 - visnov@suse.cz
+
+- don't allow certificate management in simple mode
+- 2.10.0
+
+-------------------------------------------------------------------
 Thu May 20 09:46:18 CEST 2004 - visnov@suse.cz
 
 - validate the modified host before accepting (#40141) 
