@@ -69,7 +69,7 @@
 		  `item( `id( `modules ), "Server &modules" ),
 	    ] ) );
 
-	return CWM::Run (w, $[]);
+	return CWM::Run (w, $[ `abort: ``( !HttpServer::modified || Popup::ReallyAbort(true) ) ]);
     }
 
     /**
@@ -90,7 +90,7 @@
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 
-	return CWM::Run (w, $[]);
+	return CWM::Run (w, $[`abort: ``( !HttpServer::modified || Popup::ReallyAbort(true) )]);
     }
 
     /**
@@ -111,7 +111,7 @@
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 
-	return CWM::Run (w, $[]);
+	return CWM::Run (w, $[`abort: ``( !HttpServer::modified || Popup::ReallyAbort(true) )]);
     }
 
 /* EOF */

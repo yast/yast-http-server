@@ -6,8 +6,7 @@ yncludedir = @yncludedir@/http-server
 
 client_DATA =			\
 	http-server.ycp		\
-	http-server_auto.ycp	\
-	http-server_proposal.ycp
+	http-server_auto.ycp	
 
 ynclude_DATA =			\
 	helps.ycp		\

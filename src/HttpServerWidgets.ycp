@@ -203,7 +203,7 @@ global map widgets = $[
 		res = UI::QueryWidget( `id(`port), `Value );
 		
 		// validation
-		if( ! regexpmatch( res, "^[ \t]*[0-9]+[ \t]*$" ) {
+		if( ! regexpmatch( res, "^[ \t]*[0-9]+[ \t]*$" ) ) {
 		    Popup::Error( _("Invalid port number.") );
 		    ret = nil;
 		    continue;
