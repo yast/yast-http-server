@@ -41,8 +41,8 @@ my %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
 #bool ReadHosts();
 BEGIN { $TYPEINFO{ReadHosts} = ["function", "boolean" ]; }
 sub ReadHosts {
-    foreach my $hostid ( HTTPD::GetHostsList() ) {
-	$hosts{$hostid} = [ HTTPD::GetHost($hostid) ] if( $hostid );
+    foreach my $hostid ( @{HTTPD::GetHostsList()} ) {
+    	$hosts{$hostid} = HTTPD::GetHost($hostid) if( $hostid );
     }
     return 1;
 }
@@ -54,7 +54,7 @@ my %delListen = ();
 #bool ReadListen();
 BEGIN { $TYPEINFO{ReadListen} = ["function", "boolean" ]; }
 sub ReadListen {
-    @oldListen = HTTPD::GetCurrentListen();
+    @oldListen = @{HTTPD::GetCurrentListen()};
     return 1;
 }
 
@@ -71,14 +71,18 @@ my %delModules = ();
 BEGIN { $TYPEINFO{ReadModules} = ["function", "boolean" ]; }
 sub ReadModules {
     @oldModuleSelections = HTTPD::GetModuleSelectionsList();
-    @oldModules = HTTPD::GetModuleList();
-    foreach my $mod ( HTTPD::selections2modules([@oldModuleSelections]) ) {
+    @oldModules = @{HTTPD::GetModuleList()};
+    foreach my $mod ( @{HTTPD::selections2modules([@oldModuleSelections])} ) {
 	push(@oldModules, $mod) unless( grep/^$mod$/, @oldModules );
     }
     return 1;
 }
 
 my $serviceState;   # 1 = enable, 0=disable
+sub ReadService {
+    $serviceState = HTTPD::ReadService();
+}
+
 
 #list<string> GetHostList();
 BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
@@ -165,7 +169,7 @@ sub GetModuleList {
 BEGIN { $TYPEINFO{GetKnownModules} = ["function", [ "list", ["map","string","any"] ] ]; }
 sub GetKnownModules {
     # no state anyway, so we call the stateless API directly
-    return HTTPD::GetKnownModules(); 
+    return @{HTTPD::GetKnownModules()}; 
 }
 
 # bool ModifyModuleList( list<string>, bool )
@@ -192,14 +196,14 @@ sub WriteModuleList {
     HTTPD::ModifyModuleList( [ keys(%newModules) ], 1 );
     %delModules = ();
     %newModules = ();
-    @oldModules = HTTPD::GetModuleList();
+    @oldModules = @{HTTPD::GetModuleList()};
     return 1;
 }
 
 # map GetKnownModulSelections()
 BEGIN { $TYPEINFO{GetKnownModulSelections} = ["function", [ "map","string","any" ] ]; }
 sub GetKnownModulSelections {
-    return HTTPD::GetKnownModulSelections();
+    return @{HTTPD::GetKnownModulSelections()};
 }
 
 # list<string> GetModuleSelectionsList()
@@ -244,7 +248,7 @@ sub WriteModuleSelectionList {
     HTTPD::ModifyModuleSelectionList( [ keys(%newModuleSelections) ], 1 );
     %newModuleSelections = ();
     %delModuleSelections = ();
-    @oldModuleSelections = HTTPD::GetModuleSelectionsList();
+    @oldModuleSelections = @{HTTPD::GetModuleSelectionsList()};
     return 1;
 }
 
@@ -279,6 +283,10 @@ sub ModifyService {
 BEGIN { $TYPEINFO{WriteService} = ["function", "boolean", "boolean" ]; }
 sub WriteService {
     return HTTPD::ModifyService( $serviceState );
+}
+
+sub GetService {
+    return $serviceState;
 }
 
 #######################################################
@@ -366,7 +374,7 @@ sub WriteListen {
     }
     %delListen = ();
     %newListen = ();
-    @oldListen = HTTPD::GetCurrentListen();
+    @oldListen = @{HTTPD::GetCurrentListen()};
 }
 
 #######################################################
@@ -382,7 +390,7 @@ sub WriteListen {
 # list<string> GetServicePackages();
 BEGIN { $TYPEINFO{GetServicePackages} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetServicePackages {
-    return HTTP::GetServicePackages(); # no state here anyway
+    return @{HTTP::GetServicePackages()}; # no state here anyway
 }
 
 # list<string> GetModulePackages
