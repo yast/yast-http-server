@@ -82,7 +82,7 @@ global list< map<string,any> > set_host_value ( string keyword, list< map<string
     return host;
 }
 
-global boolean validate_servername (string id, string key, map event) 
+global boolean validate_servername (string id, map key) 
 {
     import "Hostname";
     string value = (string)UI::QueryWidget (`id (id), `Value);
@@ -215,7 +215,7 @@ void OverviewInit (string widget)
 	    // translators: table entry for Listen statements
 	    `item ( `id(`listen), _("Listen on"), listen_summary ),
 	    // translators: table entry for server modules
-	    `item ( `id(`modules), _("Modules"), "" ),
+	    `item ( `id(`modules), _("Modules"), "..." ),
 	    // translators: table entry for default host
 	    `item ( `id(`default), _("Default Host"), default_host ),
 	    // translators: table entry for all configured hosts
@@ -228,7 +228,7 @@ symbol OverviewHandle (string table, map event)
     if (event["ID"]:nil == `edit)
     {
 	symbol id = (symbol)UI::QueryWidget (`overview_table, `CurrentItem);
-#	currenthost = "default";	// ensure to edit the default host, if `default was selected
+	currenthost = "default";	// ensure to edit the default host, if `default was selected
 	return id;
     }
     // handle menu button entries
@@ -251,16 +251,17 @@ map<string, any> overview_widget = $[
 	    `Table (`id( `overview_table), `header( _("Settings")
 		// translators: table heading - column shows a summary of the settings
 		, _("Summary") )),
-	    `HBox(
+	    `HBox( 
 		`PushButton ( `id(`edit), Label::EditButton ()),
 		`HStretch(),
+		Mode::config ? `VSpacing(0) : (
 		// menu button label
         	`MenuButton( `id(`menu), _("&Log Files"),
             	    // menu button item
             	    [ `item( `id( `show_access_log ), _("Show &Access Log") ),
             	    // menu button item
             	    `item( `id( `show_error_log ), _("Show &Error Log") )
-        	] )
+        	] ) )
 	    )
 	),
     "init"		:  OverviewInit,
@@ -275,7 +276,7 @@ symbol HostsHandle (string table, map event);
 list HostsContents (map descr);
 boolean HostsDelete (any opt_id, string opt_key);
 global boolean HostIsDefault (any widget, string opt_key);
-global string HostsMapId2Key( map desc, string id );
+global string HostsMapId2Key( map desc, any id );
 global string HostDocumentRootSummary( string key, any id );
 global string HostName (string id);
 
@@ -353,7 +354,7 @@ the default host.")),
 	}
 	
 	// it must be `ok
-	if (! validate_servername("servername",nil,nil))
+	if (! validate_servername("servername",nil))
 	{
 	    continue;
 	}
@@ -480,10 +481,10 @@ global string summaryGenericList(string key, any id );
 global symbol handleHostTable(string key, map event );
 global list<string> HostTableContents (map descr);
 global void DefaultHostPopupInit (any opt_id, string opt_key);
-global void DefaultHostPopupStore (any opt_id, string opt_key);
+global void DefaultHostPopupStore (any opt_id, string opt_key, map event);
 global string HostTableEntrySummary (string opt_id, string opt_key);
-global boolean HostTableEntryDelete (string opt_id, string opt_key);
-global string HostId2Key( map desc, string id );
+global boolean HostTableEntryDelete (any opt_id, string opt_key);
+global string HostId2Key( map desc, any id );
 global void initModules (string key);
 global symbol handleModules (string key, map event);
 global void initListenSettings (string key);
@@ -673,7 +674,7 @@ global symbol handleSSLTable(string key, map event );
 global list<string> SSLTableContents (map descr);
 global void SSLInit (string key);
 global void SSLTypeInit (any widget);
-global void SSLTypeStore (any widget);
+global void SSLTypeStore (any widget, map event);
 
 map<string, map> edit_ssl = $[
     "table" : $[
@@ -787,7 +788,7 @@ global void SSLTypeInit (any widget)
 }
 
 
-global void SSLTypeStore (any widget)
+global void SSLTypeStore (any widget, map event)
 {
     // it is a radio button group
     YaST::HTTPDData::ModifyHost( currenthost, set_host_value ("SSL", YaST::HTTPDData::GetHost(currenthost), UI::QueryWidget( `id(widget), `CurrentButton ) ) );
@@ -965,9 +966,9 @@ define string item2listen( string network, string port ) ``{
 
 // ************************************ default host table ********************
 
-    global string HostId2Key( map desc, string id )
+    global string HostId2Key( map desc, any id )
     {
-	if (regexpmatch (id, directory_param_regexp) )
+	if (regexpmatch ((string)id, directory_param_regexp) )
 	{
 	    return "Directory";
 	}
@@ -1079,7 +1080,9 @@ define string item2listen( string network, string port ) ``{
 	list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
 	list<string> ret = maplist (map<string, any> option, host, ``{
 	    string key = option["KEY"]: "unknown";
-	    if ( ! contains( ["_SECTION", currenthost == "default" ? "HostIP" : "" ], key ) && ! haskey( ssl_options, key ) )
+	    if ( ! contains( ["_SECTION"
+		, currenthost == "default" ? "HostIP" : ""
+		, currenthost == "default" ? "VirtualByName" : "" ], key ) && ! haskey( ssl_options, key ) )
 	    {
 		return key;
 	    }
@@ -1094,7 +1097,7 @@ define string item2listen( string network, string port ) ``{
 	ret = filter (string key, ret, ``( size(key) > 0 ));
 
 	// required entries
-	ret = (list<string>)union (["ServerName", "ServerAdmin" ], ret);
+	ret = (list<string>)union (["ServerName", "ServerAdmin", "DocumentRoot" ], ret);
 	return ret;
     }
     
@@ -1104,16 +1107,16 @@ define string item2listen( string network, string port ) ``{
       * @param opt_key any option key of selected option
       * @return boolean true if was really deleted
       */
-    global define boolean HostTableEntryDelete (string opt_id, string opt_key) ``{
+    global define boolean HostTableEntryDelete (any opt_id, string opt_key) ``{
 	// message popup
 	if (! Popup::YesNo (_("Delete selected entry?")))
 	    return false;
 	list< map<string, any> > options = YaST::HTTPDData::GetHost (currenthost);
 	
-	if ( regexpmatch (opt_id, directory_param_regexp) )
+	if ( regexpmatch ((string)opt_id, directory_param_regexp) )
 	{
 	    // it's directory, handle differently
-	    string dirname = regexpsub (opt_id, directory_param_regexp, "\"\\1\"");
+	    string dirname = regexpsub ((string)opt_id, directory_param_regexp, "\"\\1\"");
 
 	    YaST::HTTPDData::ModifyHost (currenthost
 		, filter (map<string,any> opt, options
@@ -1180,7 +1183,7 @@ define string item2listen( string network, string port ) ``{
       * @param opt_id any option id
       * @param opt_key any option key
       */
-    global define void DefaultHostPopupStore (any opt_id, string opt_key) ``{
+    global define void DefaultHostPopupStore (any opt_id, string opt_key, map event) ``{
 	list< map<string, any> >options = YaST::HTTPDData::GetHost (currenthost);
 	
 	symbol property = (opt_key == "VirtualByName") ? `CurrentButton : `Value;
@@ -1231,7 +1234,7 @@ define string item2listen( string network, string port ) ``{
 	}
 	else if (regexpmatch (opt_id, directory_param_regexp))
 	{
-	    res = regexpsub (opt_id, directory_param_regexp, "\\1");
+	    res = regexpsub (opt_id, directory_param_regexp, "\\1 ...");
 	}
 	return res;
     }
@@ -1284,6 +1287,9 @@ define string item2listen( string network, string port ) ``{
         }
 	else if (event["ID"]:nil == `add_user)
         {
+	    list<string> existing = maplist (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), ``(
+		mod["name"]:_("unknown")));
+
 	   UI::OpenDialog(
             `VBox(
 		// translators: text entry label for adding a user-defined module
@@ -1296,9 +1302,6 @@ define string item2listen( string network, string port ) ``{
     	    );
 	    
 	    UI::SetFocus( `id( `mod ) );
-
-	    list<string> existing = maplist (term item, (list<term>) UI::QueryWidget( `id(`modules), `Items )
-		, ``(item[1]:""));
 
 	    symbol ret = (symbol) UI::UserInput();
 	    
@@ -1331,7 +1334,7 @@ define string item2listen( string network, string port ) ``{
 
 	integer id = -1;
 	list< map<string,any> > listen = YaST::HTTPDData::GetCurrentListen();
-	y2error ("Listen: %1", listen);
+	y2milestone ("Listen: %1", listen);
 	list<term> items = maplist( map<string,any> litem, listen, ``{ id = id+1; return listen2item(litem, id); } );
 	UI::ChangeWidget (`id (`listen), `Items, items);
 	
@@ -1417,7 +1420,7 @@ listen cannot be empty.") );
       * @param key any widget key of widget that is processed
       */
     global define void initServiceStatus (string key) ``{
-	if( YaST::HTTPDData::GetService()  ) {
+	if( YaST::HTTPDData::GetService()!=nil && YaST::HTTPDData::GetService()  ) {
 	    UI::ChangeWidget (`id ("enabled"), `Value, true);
 	}
 	else 

@@ -229,7 +229,12 @@ Install them now?
 
     // write hosts
     YaST::HTTPDData::WriteHosts ();
-    YaST::HTTPDData::WriteListen (firewall && firewall_started);
+    if (YaST::HTTPDData::WriteListen (firewall && firewall_started) == nil)
+    {
+	// FIXME: show popup
+	
+	y2error ("Writing listen failed, firewall problems?");
+    }
     YaST::HTTPDData::WriteModuleList ();
 
     Progress::NextStage();
@@ -300,7 +305,7 @@ global define boolean Import (map s) ``{
 	string change_string = desc["change"]:"nochange";
 
 	// get the default
-	boolean default = (boolean)desc["default"]:nil;
+	string default = (string)desc["default"]:nil;
 	
 	if (change_string != "nochange")
 	{
@@ -374,7 +379,7 @@ global define map Export () ``{
     // walk over the known modules    
     list <map <string,any> > modules = maplist (map<string, any> desc, known_modules, ``(
 	$[  "name" : desc["name"]:"", 
-	    "change" : desc["default"]:nil == true ? 
+	    "change" : desc["default"]:nil == "1" ? 
 	    // default is true
 	    (
 		contains (enabled_modules, desc["name"]:"") ? "nochange" : "enable"
@@ -384,7 +389,7 @@ global define map Export () ``{
 	    (
 		contains (enabled_modules, desc["name"]:"") ? "disable" : "nochange"
 	    ),
-	    "default" : desc["default"]: false
+	    "default" : desc["default"]: "1"
 	] ));
     // store the user defined ones
     foreach (string mod, enabled_modules, ``{
@@ -403,6 +408,8 @@ global define map Export () ``{
     map <string, list< map<string,any> > > hosts = listmap (string host, YaST::HTTPDData::GetHostsList(), ``(
 	$[ host : YaST::HTTPDData::GetHost(host) ]
     ));
+    
+    y2milestone ("Hosts: %1", hosts);
 
     map result = $[
 	"version" : "2.9",
@@ -430,7 +437,7 @@ global define list Summary() ``{
 
     if( configured ) {
         // summary item: an option is turned on
-        if( YaST::HTTPDData::GetService() )
+        if( YaST::HTTPDData::GetService()!=nil && YaST::HTTPDData::GetService() )
 	    // translators: autoyast summary text, server status
             summary = Summary::AddLine(summary, _("Apache2 server is <i>enabled</i>") );
         else
