@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Mar 16 17:52:36 CET 2004 - visnov@suse.cz
+
+- validate ServerName (#35017) 
+
+-------------------------------------------------------------------
 Mon Mar 15 08:17:20 CET 2004 - visnov@suse.cz
 
 - added yast2-perl-bindings to requires 
