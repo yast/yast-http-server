@@ -46,13 +46,17 @@ my @oldListen = HTTPD::GetCurrentListen();
 my %newListen = ();
 my %delListen = ();
 
-my @oldModules = HTTPD::GetModuleList();
-my %newModules = ();
-my %delModules = ();
-
 my @oldModuleSelections = HTTPD::GetModuleSelectionsList();
 my %newModuleSelections = ();
 my %delModuleSelections = ();
+
+my @oldModules = HTTPD::GetModuleList();
+foreach my $mod ( HTTPD::selections2modules([@oldModuleSelections]) ) {
+    push(@oldModules, $mod) unless( grep/^$mod$/, @oldModules );
+}
+my %newModules = ();
+my %delModules = ();
+
 
 my $serviceState;   # 1 = enable, 0=disable
 
@@ -193,6 +197,15 @@ BEGIN { $TYPEINFO{ModifyModuleSelectionList} = ["function", "boolean", ["list","
 sub ModifyModuleSelectionList {
     my $newModules = shift;
     my $enable = shift;
+
+    my @mods2sel = HTTPD::selections2modules($newModules);
+    if( not $enable ) {
+        delete(@newModules{@mods2sel});
+        @delModules{@mods2sel} = ();
+    } else {
+        delete(@delModules{@mods2sel});
+        @newModules{@mods2sel} = ();
+    }
 
     foreach my $mod ( @$newModules ) {
         if( not $enable ) {
@@ -344,7 +357,6 @@ sub GetServicePackages {
 # list<string> GetModulePackages
 BEGIN { $TYPEINFO{GetModulePackages} = ["function", ["list", "string"] ]; }
 sub GetModulePackages {
-    
 }
 
 #######################################################
@@ -443,6 +455,11 @@ sub run {
         print "ACTIVE SEL: $sel\n";
     }
 
+    print "-------------- show module list\n";
+    foreach my $mod ( GetModuleList() ) {
+        print "MOD: $mod\n";
+    }
+
     print "-------------- modify active selections\n";
     ModifyModuleSelectionList( [ 'TestSel' ], 0 );
 
@@ -451,7 +468,14 @@ sub run {
         print "ACTIVE SEL: $sel\n";
     }
 
+    print "-------------- show module list\n";
+    foreach my $mod ( GetModuleList() ) {
+        print "MOD: $mod\n";
+    }
+
+
     ModifyModuleSelectionList( [ 'TestSel' ], 1 );
+
 
     print "-------------- activate apache2\n";
     #ModifyService(1);
