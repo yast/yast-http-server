@@ -67,13 +67,14 @@ my @oldModules = ();
 my %newModules = ();
 my %delModules = ();
 
+ReadModules();
+
 #bool ReadModules();
 BEGIN { $TYPEINFO{ReadModules} = ["function", "boolean" ]; }
 sub ReadModules {
-    @oldModuleSelections = HTTPD::GetModuleSelectionsList();
-    
+    @oldModuleSelections = @{HTTPD::GetModuleSelectionsList()};
     @oldModules = @{HTTPD::GetModuleList()};
-    foreach my $mod ( @{HTTPD::selections2modules([@oldModuleSelections])} ) {
+    foreach my $mod ( HTTPD::selections2modules([@oldModuleSelections]) ) {
 	push(@oldModules, $mod) unless( grep/^$mod$/, @oldModules );
     }
     return 1;
