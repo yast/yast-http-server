@@ -15,6 +15,8 @@
 module "HttpServer";
 textdomain "http-server";
 
+import "SuSEFirewall";
+import "Lan";
 import "Progress";
 import "Report";
 import "Summary";
@@ -56,8 +58,7 @@ global define boolean Modified() ``{
  * HTTP server settings
  */
 global map settings = $[
-    "modules" : $[
-    ],
+    "modules" : GetModules(),
     "defaulthost" : $[
 	"ServerName" : "www.example.com:80",
 	"DocumentRoot" : "/srv/www/htdocs",
@@ -67,7 +68,8 @@ global map settings = $[
 // ErrorLog - no defaults
     ],
     "settings" : $[
-	"enabled" : false
+	"enabled" : false,// should be the service started?
+	"firewall" : true // should we adapt firewall?
     ]
 ];
 
@@ -77,9 +79,16 @@ global map settings = $[
 global boolean modules_modified = false;
 
 /**
- * Description of all known modules
+ * Mapping of IPs to network devices
  */
-global map all_modules = $[];
+global map ip2device = $[];
+
+/**
+ * List of maps $[ "port": port, "interface": "all" | "eth0", ... ] containing
+ * description of listen statement already configured in firewall. Read in
+ * Read, used in Write.
+ */
+global list listen4firewall = [];
 
 /****************************** local data ************************************/
 
@@ -110,15 +119,20 @@ global define boolean Read() ``{
     // We do not set help text here, because it was set outside
     Progress::New( caption, " ", steps, [
 	    // translators: progress stage
-	    _("&Check the environment"),
+	    _("Check the environment"),
 	    // translators: progress stage
-	    _("&Read Apache2 configuration")
+	    _("Read Apache2 configuration"),
+	    // translators: progress stage
+	    _("Read network configuration")
+	    
 	], [
 	    // translators: progress step
 	    _("Checking the environment..."),
 	    // translators: progress step
 	    _("Reading Apache2 configuration..."),
 	    // translators: progress step
+	    _("Reading network configuration..."),
+	    // translators: progress finished
 	    _("Finished")
 	],
 	""
@@ -145,15 +159,6 @@ global define boolean Read() ``{
 	}
     }
 
-    // read module descriptions
-    all_modules = GetModules();
-    
-    if(all_modules == nil) {
-	// translators:: error message
-	Report::Error(_("Cannot read the Apache2 modules descriptions."));
-	all_modules = $[];
-    }
-
     // read current settings from httpd.conf and sysconfig
     Progress::NextStage();
 
@@ -161,7 +166,14 @@ global define boolean Read() ``{
     list toplevel_opts = SCR::Dir( .etc.httpd );
     foreach( string opt, toplevel_opts, ``{
 	any res = SCR::Read( add( .etc.httpd, opt ) );
-	if( contains( multiple_settings, opt ) && ! is( res, list ) ) res = [ res ];
+	
+	if( contains( multiple_settings, opt ) && ! is( res, list ) ) 
+	{
+	    if( res == nil ) res = [];
+	    else res = [ res ];
+	}
+	
+	if( res == nil ) res = "";
 
 	// server settings to "settings", rest to "defaulthost"
 	if( contains( server_settings, opt ) ) 
@@ -171,16 +183,14 @@ global define boolean Read() ``{
     });
     
     // read modules from sysconfig
-    // TODO: find out all installed modules
     list modules = splitstring( SCR::Read( .sysconfig.apache2."APACHE_MODULES" ), " " );
-    settings["modules"] = listmap( string mod, modules, ``{
-	if( !haskey( all_modules, mod ) ) {
-	    y2error("The configuration file appear to load module '%1', but YaST2 does not know the module.", mod );
+    foreach( string mod, modules, ``{
+	if( !haskey( settings["modules"]:$[], mod ) ) {
+	    y2warning("The configuration file appear to load module '%1', but YaST2 does not know the module.", mod );
 	    // translators: default description of unknown Apache2 modules
-	    return [ mod, $[ "status" : true, "description": _("User-defined module") ] ];
+	    settings["modules", mod ] = $[ "status" : true, "description": _("User-defined module") ];
 	} else {
-	    // translators: default name for an Apache2 module
-	    return [ mod, $[ "status" : true, "description": all_modules[mod,"description"]:_("Apache2 module") ] ];
+	    settings["modules", mod, "status" ] = true;
 	}
     } );
     
@@ -190,6 +200,44 @@ global define boolean Read() ``{
     settings["settings", "enabled" ] = Runlevel::ServiceEnabled( "apache2" );
     
     if(Abort()) return false;
+
+    Progress::NextStage();
+
+    // read current settings for firewall and network
+    Progress::off();
+    SuSEFirewall::Read();
+    
+    Lan::Read();
+    
+    // generate the map: static IP -> device
+    
+    // ask Michal Svec, why using export :-)
+    // TODO: IP aliases
+    map devices = Lan::Export();
+    ip2device = $[];
+    foreach( string type, map devs,  devices["devices"]:$[], ``{
+	foreach( string num, map settings, devs, ``{
+	    if( settings["BOOTPROTO"]:"" == "static" && haskey( settings, "IPADDR") ) {
+		ip2device[ settings["IPADDR" ]:"127.0.0.1" ] = type+num;
+	    }
+	});
+    });
+    
+
+    // generate the map of our settings in firewall
+    listen4firewall = maplist( string listen, settings["defaulthost", "Listen"]:[], ``{
+	map l = listen2map( listen );
+	if( l["address"]: nil != nil ) {
+	    string ni = ip2device["address"]:nil;
+	    if( ni != nil ) {
+		return $[ "port": l["port"]:"80", "interface": ni ];
+	    } else {
+		return $[ "port": l["port"]:"80", "interface": "all" ];
+	    }
+	}
+    });
+    
+    Progress::on();
     
     // translators: progress step
     ProgressNextStage(_("Finished"));
@@ -211,29 +259,38 @@ global define boolean Write() ``{
     /* HttpServer read dialog caption */
     string caption = _("Saving HTTP server configuration");
 
-    integer steps = 3;
+    integer steps = 4;
 
     // We do not set help text here, because it was set outside
     Progress::New(caption, " ", steps, [
-	    // translators: progress stage 1/3
+	    // translators: progress stage 1/4
 	    _("Write the Apache2 settings"),
-	    // translators: progress stage 2/3
+	    // translators: progress stage 2/4
+	    settings[ "settings", "firewall"]:false ?_("Modify firewall") : 
+		// translators: progress stage 2/4
+		_("Modify firewall (to be skipped)"),
+	    // translators: progress stage 3/4
 	    _("Run SuSEconfig"),
 	    settings["settings", "enabled"]:false ? 
-		// translators: progress stage 3/3
+		// translators: progress stage 4/4
 		_("Enable Apache2 service") 
-		// translators: progress stage 3/3
+		// translators: progress stage 4/4
 		: _("Disable Apache2 service")
 	], [
-	    // translators: progress step 1/3
+	    // translators: progress step 1/4
 	    _("Writing the settings..."),
-	    // translators: progress step 2/3
+	    // translators: progress step 2/4
+	    settings[ "settings", "firewall"]:false ?_("Modifying firewall...") : 
+		// translators: progress step 2/4
+		_("Skipping firewall modification..."),
+	    _("Modifing firewall..."),
+	    // translators: progress step 3/4
 	    _("Running SuSEconfig..."),
 	    settings["settings", "enabled"]:false ? 
-		// translators: progress step 3/3
-		_("Enabling Apache2 service") 
-		// translators: progress step 3/3
-		: _("Disabling Apache2 service"),
+		// translators: progress step 4/4
+		_("Enabling Apache2 service...") 
+		// translators: progress step 4/4
+		: _("Disabling Apache2 service..."),
 	    // translators: progress finished
 	    _("Finished")
 	],
@@ -247,6 +304,7 @@ global define boolean Write() ``{
     foreach( string mod, map status, settings["modules"]:$[], ``{
 	if( status["status"]:false ) modlist = add( modlist, mod );
     });
+
     SCR::Write( .sysconfig.apache2."APACHE_MODULES", mergestring( modlist, " " ) );
     if( !SCR::Write( .sysconfig.apache2, nil ) ) {
 	// translators: error message
@@ -256,7 +314,8 @@ global define boolean Write() ``{
     // write httpd.conf
     // default host
     foreach( string key, any value, settings["defaulthost"]:$[], ``{
-	SCR::Write( add(.etc.httpd, key), value );
+	if( size(key) > 0 )
+	    SCR::Write( add(.etc.httpd, key), value );
     });
     // global settings
     foreach( string key, any value, settings["settings"]:$[], ``{
@@ -272,6 +331,31 @@ global define boolean Write() ``{
     
     Progress::NextStage();
 
+    // modify firewall
+    if( settings["settings", "firewall"]: false ) {
+    
+	// delete all our firewall settings
+	foreach( map listen, listen4firewall, ``{
+	    SuSEFirewall::RemoveService( listen["port"]:"www", "TCP", listen["interface"]:"all" );
+	});
+    
+	// setup the new firewall settings
+	y2debug( "Writing Listen settings to firewall: %1", settings["defaulthost", "Listen"]:[] );
+	foreach( string listen, settings["defaulthost", "Listen"]:[], ``{
+	    map l = listen2map( listen ) ;
+	    SuSEFirewall::AddService( l["port"]:"www", "TCP", l["interface"]:"all" );
+	});
+    
+	Progress::off();
+	SuSEFirewall::Write();
+	Progress::on();
+    }
+        
+    Progress::NextStage();
+
+    // in autoyast, quit here    
+    if( write_only ) return true;
+    
     // run SuSEconfig
     if( SCR::Execute( .target.bash, "/sbin/SuSEconfig --module apache2" ) != 0 ) {
 	// translators: error message
@@ -279,7 +363,7 @@ global define boolean Write() ``{
     }
 
     Progress::NextStage();
-    
+        
     // service enable or disable
     boolean res = true;
     if( settings["settings", "enabled"]:false ) {

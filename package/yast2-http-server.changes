@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Mon Aug  4 17:31:43 CEST 2003 - visnov@suse.de
+
+- adapt firewall if asked for
+- 2.8.2 
+
+-------------------------------------------------------------------
+Thu Jul 31 16:38:20 CEST 2003 - visnov@suse.de
+
+- allow to add user-defined modules
+- show all known modules 
+ 
+-------------------------------------------------------------------
 Wed Jul 30 17:38:52 CEST 2003 - visnov@suse.de
 
 - do not complain about unknown modules 
