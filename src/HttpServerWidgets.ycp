@@ -123,7 +123,7 @@ symbol OverviewHandle (string table, map event)
     if (event["ID"]:nil == `edit)
     {
 	symbol id = (symbol)UI::QueryWidget (`overview_table, `CurrentItem);
-	currenthost = "default";	// ensure to edit the default host, if `default was selected
+#	currenthost = "default";	// ensure to edit the default host, if `default was selected
 	return id;
     }
     // handle menu button entries
@@ -400,7 +400,7 @@ boolean validate_servername (string key, map event) ``{
 	return true;
     }
 }
-													        }
+
 /**
  * Map of popups for CWM
  */
