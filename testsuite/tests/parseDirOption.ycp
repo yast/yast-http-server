@@ -1,0 +1,7 @@
+{
+	include "testsuite.ycp";
+
+	import "YaST::HTTPDData";
+
+	TEST( ``{ return YaST::HTTPDData::ParseDirOption( "/usr/share/YaST2/modules/\nYaST2/modules\n" ); }, [ $[], $[], $[] ], nil );
+}
