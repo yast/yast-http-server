@@ -277,11 +277,11 @@ global define boolean Read() ``{
     // generate the map: static IP -> device
     // TODO: IP aliases
     ip2device = $[];
-    list devs = NetworkDevices::Locate("BOOTPROTO", "static");
-    foreach(string dev, devs, {
-	string ip = NetworkDevices::GetValue(dev, "IPADDR");
-	if(ip != nil && ip != "") ip2device[ip] = dev;
-    });
+#    list devs = NetworkDevices::Locate("BOOTPROTO", "static");
+#    foreach(string dev, devs, {
+#	string ip = NetworkDevices::GetValue(dev, "IPADDR");
+#	if(ip != nil && ip != "") ip2device[ip] = dev;
+#    });
 
     // generate the map of our settings in firewall
     listen4firewall = maplist( map<string,string> l, settings["Listen"]:[], ``{
