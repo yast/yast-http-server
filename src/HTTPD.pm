@@ -5,6 +5,11 @@ BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
 use HTTPDModules;
 YaST::YCP::Import ("SCR");
 YaST::YCP::Import ("Service");
+YaST::YCP::Import ("SuSEFirewall");
+YaST::YCP::Import ("Lan");
+YaST::YCP::Import ("Label");
+YaST::YCP::Import ("Arch");
+YaST::YCP::Import ("Progress");
 
 #######################################################
 # temoprary solution start
@@ -360,26 +365,56 @@ sub ModifyService {
 #######################################################
 # apache2 listen ports
 #######################################################
+# internal only
+sub ip2device {
+    my %ip2device;
+    Progress::off();
+    SuSEFirewall::Read();
+    Lan::Read();
+    my $devices = Lan::Export();
+    Progress::on();
+    foreach my $k ( keys(%{$devices->{'devices'}}) ) {
+        foreach my $kk ( keys(%{$devices->{'devices'}->{$k}}) ) {
+            if( $devices->{'devices'}->{$k}->{$kk}->{"BOOTPROTO"} eq 'static' and
+                exists($devices->{'devices'}->{$k}->{$kk}->{"IPADDR"} ) ) {
+                $ip2device{$devices->{'devices'}->{$k}->{$kk}->{"IPADDR"}} = $k.$kk;
+            }
+        }
+    }
+    Progress::on();
+    return \%ip2device;
+}
+
+# boolean CreateListen( int, int, list<string>, boolean )
 # boolean CreateListen( int, int, list<string> )
-BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ] ] ; }
+BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ], "boolean" ] ; }
 sub CreateListen {
     my $fromPort = shift;
     my $toPort = shift;
     my $ip = shift; #FIXME: this is a list
+    my $doFirewall = shift;
 
     my @listenEntries = GetCurrentListen();
     my %newEntry;
     $newEntry{ADDRESS} = $ip if ($ip);
     $newEntry{PORT} = ($fromPort eq $toPort)?($fromPort):($fromPort.'-'.$toPort);
     SCR::Write( ".http_server.listen", [ @listenEntries, \%newEntry ] );
+
+    if( $doFirewall ) {
+        my $ip2device = ip2device();
+        my $if = exists($newEntry{ADDRESS})?$ip2device->{$newEntry{ADDRESS}}:'all';
+        SuSEFirewall::AddService( $newEntry{PORT}, "TCP", $if );
+    }
+    return 1;
 }
 
 # boolean CreateListen( int, int, list<string> )
-BEGIN { $TYPEINFO{DeleteListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ] ] ; }
+BEGIN { $TYPEINFO{DeleteListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ], 'boolean' ] ; }
 sub DeleteListen {
     my $fromPort = shift;
     my $toPort = shift;
     my $ip = shift; #FIXME: this is a list
+    my $doFirewall = shift;
 
     my @listenEntries = GetCurrentListen();
     my @newListenEntries = ();
@@ -393,6 +428,12 @@ sub DeleteListen {
         push( @newListenEntries, $listen );
     }
     SCR::Write( ".http_server.listen", \@newListenEntries );
+    if( $doFirewall ) {
+        my $ip2device = ip2device();
+        my $if = $ip?$ip2device->{$ip}:'all';
+        my $port = ($fromPort eq $toPort)?($fromPort):("$fromPort-$toPort");
+        SuSEFirewall::RemoveService( $port, "TCP", $if );
+    }
     return 1;
 }
 
@@ -444,15 +485,32 @@ sub GetModulePackages {
 #######################################################
 
 
-#######################################################
-# apache2 firewall
-#######################################################
 
 #######################################################
-# apache2 firewall end
+# apache2 logs
 #######################################################
 
+# list<string> GetErrorLogFiles( list<string> );
+BEGIN { $TYPEINFO{GetErrorLogFiles} = ["function", ["list", "string" ], [ "list", "string" ] ]; }
+sub GetErrorLogFiles {
 
+}
+
+# list<string> GetAccessLogFiles( list<string> );
+BEGIN { $TYPEINFO{GetAccessLogFiles} = ["function", ["list", "string" ], [ "list", "string" ] ]; }
+sub GetAccessLogFiles {
+
+}
+
+# list<string> GetTransferLogFiles( list<string> );
+BEGIN { $TYPEINFO{GetTransferLogFiles} = ["function", ["list", "string"], [ "list", "string" ] ]; }
+sub GetTransferLogFiles {
+
+}
+
+#######################################################
+# apache2 logs end
+#######################################################
 
 sub run {
     print "-------------- GetHostsList\n";
@@ -474,7 +532,7 @@ sub run {
     CreateHost( '192.168.1.2/createTest2.suse.de', \@temp );
 
     print "-------------- GetHost created host\n";
-    @hostArr = GetHost( '192.168.1.2/createTest2.suse.de' );
+    @hostArr = GetHost( '*:80/dummy-host.example.com' );
     use Data::Dumper;
     print Data::Dumper->Dump( [ \@hostArr ] );
 
@@ -511,8 +569,8 @@ sub run {
     }
 
     print "-------------- del listen\n";
-    DeleteListen( 443,443 );
-    DeleteListen( 80,80,"12.34.56.78" );
+    DeleteListen( 443,443,'',1 );
+    DeleteListen( 80,80,"12.34.56.78",1 );
     print "-------------- get listen\n";
     foreach my $l ( GetCurrentListen() ) {
         print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
@@ -520,8 +578,8 @@ sub run {
     }
 
     print "-------------- create listen\n";
-    CreateListen( 443,443 );
-    CreateListen( 80,80,"12.34.56.78" );
+    CreateListen( 443,443,'',1 );
+    CreateListen( 80,80,"12.34.56.78",1 );
 
     print "--------------set ModuleSelections\n";
     ModifyModuleSelectionList( [ 'mod_test1', 'mod_test2', 'mod_test3' ], 1 );
@@ -531,8 +589,6 @@ sub run {
     foreach my $sel ( GetModuleSelectionsList() ) {
         print "SEL: $sel\n";
     }
-
-
 
     print "--------------trigger error\n";
     my @host = GetHost( 'will.not.be.found' );
