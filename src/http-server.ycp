@@ -18,7 +18,7 @@
 textdomain "http-server";
 
 import "CommandLine";
-import "HTTPD";
+import "YaPI::HTTPD";
 import "Popup";
 import "Require";
 import "Report";
@@ -49,7 +49,7 @@ define boolean ConfigureHandler(map<string, any> options) ``{
 
     string host = "default";
 
-    list< map<string,any> > hostconfig = HTTPD::GetHost (host);
+    list< map<string,any> > hostconfig = YaPI::HTTPD::GetHost (host);
     
     string value = options["servername"]:"";
     if( value != "" ) {
@@ -66,7 +66,7 @@ define boolean ConfigureHandler(map<string, any> options) ``{
 	hostconfig = HttpServerWidgets::set_host_value ( "DocumentRoot", hostconfig, value );
     }
     
-    HTTPD::ModifyHost (host, hostconfig);
+    YaPI::HTTPD::ModifyHost (host, hostconfig);
 
     return true;
 }
@@ -85,11 +85,11 @@ define boolean ModulesHandler(map<string, string> options) ``{
 
     if( command == "enable" ) {
 	list<string> mods = splitstring( options["enable"]:"", "," );
-	HTTPD::ModifyModuleList (mods, true);	
+	YaPI::HTTPD::ModifyModuleList (mods, true);	
     }
     else if( command == "disable" ) {
 	list<string> mods = splitstring( options["disable"]:"", "," );
-	HTTPD::ModifyModuleList (mods, false);	
+	YaPI::HTTPD::ModifyModuleList (mods, false);	
     }
     else if( command == "list" ) {
         // translators: heading for the "modules list" command line action output
@@ -97,9 +97,9 @@ define boolean ModulesHandler(map<string, string> options) ``{
 	CommandLine::Print( _("Status \tModule
 =================="));
 
-	list<string> enabled = HTTPD::GetModuleList();
+	list<string> enabled = YaPI::HTTPD::GetModuleList();
 	
-	foreach( map<string,any> mod, HTTPD::GetKnownModules(), ``{
+	foreach( map<string,any> mod, YaPI::HTTPD::GetKnownModules(), ``{
 	    // translators: status of a module
 	    CommandLine::Print( sformat( "%1\t%2", 
 		contains( enabled, mod["name"]:"" ) ? _("Enabled") : _("Disabled"), mod["name"]:_("unknown") ) );

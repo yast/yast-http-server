@@ -15,7 +15,7 @@ import "Wizard";
 import "Wizard_hw";
 
 import "HttpServer";
-import "HTTPDData";
+import "YaST::HTTPDData";
 
 import "Label";
 import "Popup";
