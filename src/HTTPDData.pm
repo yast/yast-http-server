@@ -71,6 +71,7 @@ my %delModules = ();
 BEGIN { $TYPEINFO{ReadModules} = ["function", "boolean" ]; }
 sub ReadModules {
     @oldModuleSelections = HTTPD::GetModuleSelectionsList();
+    
     @oldModules = @{HTTPD::GetModuleList()};
     foreach my $mod ( @{HTTPD::selections2modules([@oldModuleSelections])} ) {
 	push(@oldModules, $mod) unless( grep/^$mod$/, @oldModules );
@@ -110,7 +111,7 @@ sub ModifyHost {
 }
 
 #bool CreateHost( string hostid, list hostdata );
-BEGIN { $TYPEINFO{CreateHost} = ["function", "boolean", "string", [ "map", "string", "any" ] ]; }
+BEGIN { $TYPEINFO{CreateHost} = ["function", "boolean", "string", [ "list", [ "map", "string", "any" ] ] ]; }
 sub CreateHost {
     my $hostid = shift;
     my $hostdata = shift;
