@@ -426,7 +426,7 @@ by the API.
 
 =cut
 
-BEGIN { $TYPEINFO{ModifyHost} = ["function", "boolean", "string", [ "map", "string", "any" ] ]; }
+BEGIN { $TYPEINFO{ModifyHost} = ["function", "boolean", "string", [ "list", [ "map", "string", "any" ] ] ]; }
 sub ModifyHost {
     my $hostid = shift;
     my $newData = shift;
