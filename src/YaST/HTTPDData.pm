@@ -70,6 +70,7 @@ sub addDir {
     my $dir = shift;
     $dir =~ s/\/+/\//g;
     $self->delDir( $dir ); # avoid double entries
+    if( $dir =~ s/^"// ) { $dir =~s /"$// };
 
     my $dirEntry = {
         'OVERHEAD'     => "# YaST created entry\n",
