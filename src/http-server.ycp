@@ -51,12 +51,12 @@ map cmdline_description = $[
     ],
     "options"		: $[
 	"servername"	: $[
-	    "type"	: "hostname",
+	    "type"	: "fullhostname",
 	    // translators: help text for servername option (configure command line action)
 	    "help"	: _("Server name, for example, www.example.com")
 	],
 	"serveradmin"	: $[
-	    "type"	: "email",
+	    "type"	: "string",
 	    // translators: help text for serveradmin option (configure command line action)
 	    "help"	: _("E-mail address of the server administrator")
 	],
@@ -123,7 +123,7 @@ define boolean ConfigureHandler(map options) ``{
 
     string host = options["host"]:nil;
     
-    value = options["servername"]:nil;
+    string value = options["servername"]:nil;
     if( value != nil ) {
 	HttpServer::settings[host, "servername"] = value;
 	HttpServer::modified = true;
@@ -153,7 +153,7 @@ define boolean ModulesHandler(map options) ``{
     if( command == "enable" ) {
 	list mods = splitstring( options["enable"]:"", "," );
 	
-	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod] = true; });
+	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = true; });
 	
 	HttpServer::modules_modified = true;
 	HttpServer::modified = true;
@@ -161,7 +161,7 @@ define boolean ModulesHandler(map options) ``{
     else if( command == "disable" ) {
 	list mods = splitstring( options["disable"]:"", "," );
 	
-	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod] = false; });
+	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = false; });
 
 	HttpServer::modules_modified = true;
 	HttpServer::modified = true;
@@ -172,9 +172,9 @@ define boolean ModulesHandler(map options) ``{
 	CommandLine::Print( _("Status \tModule
 =================="));
 	
-	foreach( string mod, boolean status, HttpServer::settings["modules"]:[], ``{
+	foreach( string mod, map status, HttpServer::settings["modules"]:[], ``{
 	    // translators: status of a module
-	    CommandLine::Print( sformat( "%1\t%2", status ? _("Enabled") : _("Disabled"), mod ) );
+	    CommandLine::Print( sformat( "%1\t%2", status["status"]:false ? _("Enabled") : _("Disabled"), mod ) );
 	});
     }
 

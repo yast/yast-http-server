@@ -23,7 +23,8 @@ Read	.target.ycp "/usr/share/YaST2/data/all-apache2-modules.ycp" nil
 Dump	$["defaulthost":$["DocumentRoot":"/srv/www/htdocs", "Listen":["80"], "ServerAdmin":"webmaster@example.com", "ServerName":"www.example.com:80"], "modules":nil, "settings":$["enabled":false, "firewall":true, "firewall_started":false]]
 Dump	false
 Dump	false
+Read	.target.ycp "/usr/share/YaST2/data/all-apache2-modules.ycp" nil
 Return	true
-Dump	$["defaulthost":$["Listen":"3128", "ServerAdmin":"webadmin@haha.com"], "modules":$["negotiation":$["status":false], "ssl":$["status":false]], "settings":$["enabled":true]]
+Dump	$["defaulthost":$["Listen":"3128", "ServerAdmin":"webadmin@haha.com"], "modules":$["negotiation":$["description":"", "status":false], "ssl":$["description":"", "status":false]], "settings":$["enabled":true]]
 Dump	true
 Dump	false

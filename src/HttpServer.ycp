@@ -461,11 +461,22 @@ Do you want to install them now?"), mergestring( rpms, ", " ) ) );
 global define boolean Import (map s) ``{
 
     if( size( s ) == 0 ) return false;
+    
+    map old_modules = GetModules();
 
     settings[ "settings" ] = s[ "settings" ]: $[ "enabled" : false ];
     
     settings[ "modules" ] = listmap( map value, s["modules"]:[], 
-	``( [ value["name"]:nil, $[ "status": value["state"]:false ] ] ) );
+	``{ string n = value["name"]:nil;
+	    if( n != nil ) {
+		string old_desc = eval(old_modules[ n, "description" ]:"");
+		return [ n, 
+		    $[ "status": value["state"]:false,
+		       "description": old_desc
+		    ] 
+		];
+	    } else return nil;
+	   } );
 	
     settings[ "defaulthost" ] = s[ "defaulthost" ]: $[
 	"ServerName" : "www.example.com:80",
