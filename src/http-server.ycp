@@ -252,15 +252,9 @@ if(size(args) > 0) {
 }
 
 // check rpms
-if( !Require::IsPackageAvailable( "apache2" ) ) {
-    Popup::Error( _("<p>The package <b>%1</b> is not available.<br>
-YaST2 cannot continue the configuration
-without installing the package.</p>") );
-}
-
-if( !Require::RequireAndConflictTarget( ["apache2"], [],
+if( !Require::RequireAndConflictTarget( ["apache2", "apache2-prefork", "apache2-metuxmpm", "apache2-worker"], [],
     // notification about package needed 1/2
-    _("<p>To configure the HTTP server, the <b>%1</b> package must be installed.</p>") +
+    _("<p>To configure the HTTP server, the <b>%1</b> packages must be installed.</p>") +
     // notification about package needed 2/2
     _("<p>Do you want to install it now?</p>")) )
 {
