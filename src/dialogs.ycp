@@ -60,8 +60,9 @@
 	    w[0, "widget"]:`VSpacing (1)
 	), `HSpacing (1));
 
-	// dialog caption
+	// translators: dialog caption
 	string caption = sformat(_("Host '%1' Configuration"), 
+	    // translators: human-readable "default host"
 	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") 
 		: HttpServerWidgets::get_host_value ( "ServerName"
 		, YaST::HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ));
@@ -144,28 +145,37 @@
     symbol AddHost () {
 	term contents = `HBox( `HSpacing(0.5), `VBox (
 	    `Frame(
+		// translators: frame title for new hsot identification details
 		_("Server Identification"),
 		`VBox(
+		    // translators: textentry, new host server name
 		    `TextEntry( `id( `servername ), _("Server Name:") ),
 		    `HBox(
+			// translators: textentry, document root for the new host
 			`TextEntry( `id( `documentroot ), _("Server Contents Root:") ),
 			`PushButton( `id( `browse ), Label::BrowseButton () )
 		    ),
+		    // translators: textentry, administrator's e-mail for the new host
 		    `TextEntry( `id( `admin ), _("Administrator E-mail:") )
 		)),
 	    `VSpacing (1),
 	    `Frame(
+		// translators: frame title for method of incoming request resolution
 		_("Server Resolution"),
 		`VBox(
+		// translators: IP address for the new host
 		`Left( `ComboBox( `id( `ipaddress ), _("IP Address:"), maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) ) ),
 		`RadioButtonGroup(
 		    `id ( `resolution ),
 		    `VBox (
+			// translators: radio button for name-based virtual hosts
 			`Left(`RadioButton ( `id ( `name_based ), _("Determine Request Server by HTTP Headers"), true ) ),
+			// translators: radio button for IP-based virtual hosts
 			`Left(`RadioButton ( `id ( `ip_based ), _("Determine Request Server by Server IP Address") ) )
 		    )
 		)))), `HSpacing (0.5)
 	);
+	// translators: dialog caption
 	string caption = _("New Host Information");
 
 	string help = HELPS ["add_host_general"]:"";
@@ -209,6 +219,7 @@
 		
     		if (size(servername) == 0)
     		{
+		    // translators: error message - entered server name is not valid
         	    Popup::Error (_("Server name cannot be empty."));
         	    continue;
     		}
@@ -218,18 +229,21 @@
 
     		if (!Hostname::CheckFQ (servername))
     		{
+		    // translators: error message - entered server name is not valid
         	    Popup::Error (_("Invalid server name."));
         	    continue;
     		}
 
     		if (size(ip) == 0)
     		{
+		    // translators: error message - entered server IP is not valid
         	    Popup::Error (_("Server IP address cannot be empty."));
         	    continue;
     		}
 
     		if (!IP::Check (ip))
     		{
+		    // translators: error message - entered server IP is not valid
         	    Popup::Error (_("Invalid IP address."));
         	    continue;
     		}
@@ -262,9 +276,9 @@
 	    `VSpacing (1)
 	), `HSpacing (1));
 
-	// dialog caption
-	// dialog caption, %1 is the host name
+	// translators: dialog caption, %1 is the host name
 	string caption = sformat( _("SSL Configuration for '%1'"),
+	    // translators: human-readable "default host"
 	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") 
 		: HttpServerWidgets::get_host_value ( "ServerName"
 		, YaST::HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ) );

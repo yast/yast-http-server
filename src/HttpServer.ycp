@@ -290,6 +290,7 @@ global define boolean Import (map s) ``{
 	
 	if ( size(mod) == 0 )
 	{
+	    // translators: warning in autoyast loading the configuration description.
 	    Report::Warning( _("Module description does not have a name specified, ignoring.") );
 	    continue;
 	}
@@ -303,6 +304,7 @@ global define boolean Import (map s) ``{
 	{
 	    if (! contains ([ "enable", "disable" ], change_string  ) )
 	    {
+		// translators: warning in autoyast loading the configuration description.
 		Report::Warning (sformat(_("Unknown change of a module for autoinstallation: %1"), change_string));
 		continue;
 	    }
@@ -315,6 +317,7 @@ global define boolean Import (map s) ``{
 	    // check against the current default
 	    if (default != nil && lookup( find_known_module(known_modules, mod), "default", nil) != default)
 	    {
+		// translators: warning in autoyast loading the configuration description.
 		Report::Warning (sformat(_("Default value for module %1 does not match.
 This can cause inconsistent module configuration."), mod));
 	    }
@@ -326,6 +329,7 @@ This can cause inconsistent module configuration."), mod));
     foreach (map<string, any> l, listen, ``{ 
 	if ( !haskey(l, "PORT") )
 	{
+	    // translators: error in autoyast loading the configuration description.
 	    Report::Error (_("Listen statement without port found."));
 	}
 	else
