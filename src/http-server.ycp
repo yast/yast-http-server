@@ -155,7 +155,6 @@ define boolean ModulesHandler(map options) ``{
 	
 	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = true; });
 	
-	HttpServer::modules_modified = true;
 	HttpServer::modified = true;
     }
     else if( command == "disable" ) {
@@ -163,7 +162,6 @@ define boolean ModulesHandler(map options) ``{
 	
 	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = false; });
 
-	HttpServer::modules_modified = true;
 	HttpServer::modified = true;
     }
     else if( command == "list" ) {
