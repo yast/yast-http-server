@@ -801,6 +801,8 @@ global map<string, map <string, any> > widgets = $[
 
 /******************************** SSL widget ****************************/
 
+map<integer, map<string, any> > host_options = nil;
+
 global symbol handleSSLTable( string key, map event )
 {
     if ( event["ID"]:nil == `import_certificate )
@@ -853,9 +855,15 @@ global symbol handleSSLTable( string key, map event )
 	    host = set_host_value( "SSLCertificateKeyFile", host, "/etc/ssl/servercerts/serverkey.pem");
 	    YaST::HTTPDData::ModifyHost (currenthost, host);
 	}
+
 	TablePopup::TableInitWrapper(key);
 	return nil;
     }
+    else if (event["ID"]:nil == `back )
+    {
+        host_options = nil;
+    }
+
     return TablePopup::TableHandle( sslwidget, key, event );
 }
 
@@ -1039,7 +1047,7 @@ define string item2listen( string network, string port ) ``{
 // ************************************ default host table ********************
 
     integer option_counter = 0;
-    map<integer, map<string, any> > host_options = nil;
+#    map<integer, map<string, any> > host_options = nil;
     list<integer> deleted_options = [];
 
     global boolean validate_server_fnc (string id, map key) 
