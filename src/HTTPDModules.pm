@@ -422,7 +422,7 @@ package HTTPDModules;
 %selection = (
     TestSel => {
                 summary => 'A test selection',
-                modules => [ "perl", "php4", "ruby" ],
+                modules => [ "m1", "m2", "m3" ],
                 default => 0
     }
 );

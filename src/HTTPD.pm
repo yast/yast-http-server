@@ -64,7 +64,7 @@ ModifyService($state)
 
 $serviceState = ReadService()
 
-  returnin the state of the apache2 runlevel script as a boolean
+  returns the state of the apache2 runlevel script as a boolean
 
 CreateListen($fromPort,$toPort,$address,$doFirewall)
 
@@ -105,10 +105,17 @@ GetTransferLogFiles()
 
   not implemented yet
 
+$params = GetServerFlags()
+
+  returns a string with the apache2 startparameter
+
+SetServerFlags($param)
+
+  sets the apache2 startparameter to $param
+
 B<Host Data array>
 
-This function returns a list of hashes. Each hash has at least the following
-keys:
+Each hash has at least the following keys:
 
  KEY   => apache2 configuration directive like 'ServerAdmin'
  VALUE => the value of the configuration directive like 'admin@mydom.de'
@@ -131,8 +138,11 @@ turns on/off SSL for the host.
 
 2 = SSL is turned on and SSL is required for every connection
 
-KEY   = VirtualByName
-VALUE = 0,1
+ KEY   = VirtualByName
+ VALUE = 0,1
+
+indicates if this is a virtual by name host. If this is 0, it's an
+IP based virtual host.
 
 B<Host id>
 
@@ -238,13 +248,23 @@ sub checkHostmap {
         # more to go
     );
 
+    my $ssl = 0;
+    my $nb_vh = 0;
+    my $dr = 0;
+    my $sn = 0;
     foreach my $entry ( @$host ) {
         next unless( exists($checkMap{$entry->{KEY}}) );
         my $re = $checkMap{$entry->{KEY}};
         if( $entry->{VALUE} !~ /$re/ ) {
             return SetError( summary => "illegal '$entry->{KEY}' parameter" );
         }
+        $ssl = $entry->{VALUE} if( $entry->{KEY} eq 'SSL' );
+        $nb_vh = $entry->{VALUE} if( $entry->{KEY} eq 'VirtualByName' );
+        $dr = 1 if(  $entry->{KEY} eq 'DocumentRoot' );
+        $sn = 1 if(  $entry->{KEY} eq 'ServerName' );
     }
+    return 0 if( $ssl and $nb_vh ); # ssl + virtual by name is not possible
+
     return 1;
 }
 
@@ -576,6 +596,9 @@ BEGIN { $TYPEINFO{DeleteHost} = ["function", "boolean", "string"]; }
 sub DeleteHost {
     my $hostid = shift;
 
+    if( $hostid eq 'default' ) {
+        return SetError( summary => 'can not delete default host' );
+    }
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
@@ -638,7 +661,7 @@ sub GetModuleList {
     my $data = SCR::Read('.sysconfig.apache2.APACHE_MODULES'); # FIXME: Error handling
     $data =~ s/mod_//g;
 
-    return split(/\s+/, $data);
+    return [ split(/\s+/, $data) ];
 }
 
 =item *
@@ -704,12 +727,12 @@ sub ModifyModuleList {
 
     my @newList = ();
     if( not $enable ) {
-        foreach my $mod ( GetModuleList() ) {
+        foreach my $mod ( @{GetModuleList()} ) {
             next if( grep( /^$mod$/, @$newModules ) );
             push( @newList, $mod );
         }
     } else {
-        my @oldList = ( @{GetModuleList()}, selections2modules( [ GetModuleSelectionsList() ] ) );
+        my @oldList = ( @{GetModuleList()}, selections2modules( GetModuleSelectionsList() ) );
         my %uniq;
         @uniq{@oldList} = ();
         @oldList = keys( %uniq );
@@ -810,8 +833,10 @@ sub ModifyModuleSelectionList {
         }
     } else {
         delete(@uniq{@$newSelection});
-        ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 0 );
-        ModifyModuleList( [], 1 );
+        foreach my $ns ( @$newSelection ) {
+            ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 0 );
+            ModifyModuleList( [], 1 );
+        }
     }
 
     SCR::Write('.http_server.moduleselection', [keys(%uniq)]);
@@ -997,6 +1022,7 @@ this function returns a list of hashes with the current listen data.
 Each hash has the following keys:
 
 ADDRESS => the listen address like 127.0.0.1
+
 PORT    => the listen port like "80", "443", "80-81"
 
 it's not possible to get the firewall settings.
@@ -1095,6 +1121,83 @@ sub GetTransferLogFiles {
 #######################################################
 # apache2 logs end
 #######################################################
+
+#######################################################
+# apache2 start parameter
+#######################################################
+
+=item *
+C<$params = GetServerFlags()>
+
+returns a string with the apache2 server flags like
+"-DSSL"
+
+EXAMPLE
+
+print GetServerFlags();
+
+=cut
+
+sub GetServerFlags {
+    return SCR::Read('.sysconfig.apache2.APACHE_SERVER_FLAGS');
+}
+
+=item *
+C<SetServerFlags($params)>
+
+Put into $params any server flags ("Defines") that you want to hand over to
+httpd at start time, or other command line flags.
+This could be -D SSL, for example. Or -DSTATUS.
+
+EXAMPLE
+
+SetServerFlags("-DReverseProxy");
+
+=cut
+
+sub SetServerFlags {
+    my $param = shift;
+
+    SCR::Write('.sysconfig.apache2.APACHE_SERVER_FLAGS', $param);
+}
+
+#######################################################
+# apache2 start parameter end
+#######################################################
+
+
+#######################################################
+# apache2 ssl certificates
+#######################################################
+
+sub WriteServerCert {
+
+}
+
+sub WriteServerKey {
+
+}
+
+sub WriteServerCA {
+
+}
+
+sub ReadServerCert {
+
+}
+
+sub ReadServerKey {
+
+}
+
+sub ReadServerCA {
+
+}
+
+#######################################################
+# apache2 ssl certificates end
+#######################################################
+
 
 sub run {
     print "-------------- GetHostsList\n";
