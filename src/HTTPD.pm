@@ -1,7 +1,10 @@
+#package YaPI::HTTPD::System;
 package HTTPD;
-
 use YaST::YCP;
+BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
+use HTTPDModules;
 YaST::YCP::Import ("SCR");
+YaST::YCP::Import ("Service");
 
 #######################################################
 # temoprary solution start
@@ -263,7 +266,11 @@ sub GetModuleList {
 
 # list<map> GetKnownModules()
 sub GetKnownModules {
-
+    my @ret = ();
+    foreach my $mod ( keys(%HTTPDModules::modules) ) {
+        push( @ret, { name => $mod, %{$HTTPDModules::modules{$mod}} } );
+    }
+    return \@ret;
 }
 
 # bool ModifyModuleList( list<string>, bool )
@@ -276,21 +283,81 @@ sub ModifyModuleList {
 
 # map GetKnownModulSelections()
 sub GetKnownModulSelections {
-
+    my @ret = ();
+    foreach my $sel ( keys(%HTTPDModules::selection) ) {
+        push( @ret, { id => $sel, %{$HTTPDModules::selection{$sel}} } );
+    }
+    return \@ret;
 }
 
 # list<string> GetModuleSelectionsList()
 sub GetModuleSelectionsList {
+    my $activeModules = GetModuleList();
+    my $knowSelections = GetKnownModulSelections();
+    my @ret;
+
+    foreach my $selection ( @$knowSelections ) {
+        my $active = 1;
+        foreach my $selMod ( @{$selection->{'modules'}} ) {
+            unless( grep( { $selMod eq $_ } @$activeModules ) ) {
+                $active = 0;
+                last;
+            }
+        }
+        push( @ret, $selection->{id} ) if( $active );
+    }
+    return \@ret;
 }
 
 # bool ModifyModuleSelectionList( list<string>, bool )
 sub ModifyModuleSelectionList {
+    my $list = shift;
+    my $enable = shift;
+    my $activeMods = GetModuleList();
+    my %modCounter = ();
 
+    foreach my $mod ( @$activeMods ) {
+        $modCounter{$mod} = 1;
+    }
+
+    foreach my $workSel ( @$list ) {
+        if( $enable ) {
+            foreach my $mod ( @{$HTTPDModules::selection{$workSel}->{modules}} ) {
+                $modCounter{$mod} = 1;
+            }
+        } else {
+
+        }
+    }
+    ModifyModuleList( [ keys(%modCounter) ] );
 }
 
 #######################################################
 # apache2 modules API end
 #######################################################
+
+
+
+#######################################################
+# apache2 modify service
+#######################################################
+
+sub ModifyService {
+    my $enable = shift;
+
+    if( $enable ) {
+        Service::Adjust( "apache2", "enable" );
+        Service::RunInitScript( "apache2", "restart");
+    } else {
+        Service::Adjust( "apache2", "disable" );
+        Service::RunInitScript( "apache2", "stop" );
+    }
+}
+
+#######################################################
+# apache2 modify service end
+#######################################################
+
 
 sub run {
     print "-------------- GetHostList\n";
@@ -325,6 +392,19 @@ sub run {
     foreach my $mod ( @{GetModuleList()} ) {
         print "MOD: $mod\n";
     }
+
+    print "-------------- show known modules\n";
+    foreach my $mod ( @{GetKnownModules()} ) {
+        print "KNOWN MOD: $mod->{name}\n";
+    }
+
+    print "-------------- show known modules\n";
+    foreach my $mod ( @{GetKnownModulSelections()} ) {
+        print "KNOWN SEL: $mod->{id}\n";
+    }
+
+    print "-------------- activate apache2";
+    ModifyService(1);
 
     print "--------------trigger error\n";
     $hostid = GetHost( 'will.not.be.found' );
