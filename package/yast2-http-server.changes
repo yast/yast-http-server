@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Mon Sep 22 10:24:28 CEST 2003 - visnov@suse.de
+
+- fix #31438 - if user adds its own options to the
+  configuration, write them to the httpd.conf without 
+  any changes
+- show only packages, which are not installed, not
+  all packages required be the enabled modules.
+- 2.8.17 
+
+-------------------------------------------------------------------
 Fri Sep 19 12:28:00 CEST 2003 - visnov@suse.de
 
 - refix #31306 - handle PHP as a special case.
