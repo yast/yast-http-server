@@ -369,8 +369,6 @@ sub GetHost {
     return $self->SetError( summary => 'hostid not found' ) unless( $filename );
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
         if( $hostHash->{HOSTID} eq $hostid ) {
-            use Data::Dumper;
-            print Data::Dumper->Dump( [ $hostHash ] );
             my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
             my $sslHash = { KEY => 'SSL', VALUE => 0 };
             my $overheadHash = { KEY => 'OVERHEAD', VALUE => $hostHash->{'OVERHEAD'} };
@@ -472,7 +470,7 @@ sub ModifyHost {
             my @tmp;
             foreach my $tmp ( @{$entry->{DATA}} ) {
                 next unless( $tmp->{KEY} eq 'DocumentRoot' );
-                $self->delDir( $tmp->{VALUE} );
+#                $self->delDir( $tmp->{VALUE} );
                 last;
             }
             foreach my $tmp ( @$newData ) {
@@ -493,7 +491,7 @@ sub ModifyHost {
                     # illegal keys in vhost
                     return $self->SetError( "illegal key in vhost '$tmp->{KEY}'" );
                 } elsif( $tmp->{'KEY'} eq 'DocumentRoot' ) {
-                    $self->addDir( $tmp->{'VALUE'} );
+#                    $self->addDir( $tmp->{'VALUE'} );
                     push( @tmp, $tmp );
                 } else {
                     push( @tmp, $tmp );
@@ -555,7 +553,7 @@ sub addDir {
     my $self = shift;
     my $dir = shift;
     $dir =~ s/\/+/\//g;
-    $self->delDir( $dir ); # avoid double entries
+#    $self->delDir( $dir ); # avoid double entries
 
     my $filename = $self->getFileByHostid( "default" );
     my $dirEntry = {
@@ -672,7 +670,7 @@ sub CreateHost {
         # create new yast2_vhosts.conf
         $vhost_files->{'yast2_vhosts.conf'} = [ $entry ];
     }
-    $self->addDir( $docRoot );
+#    $self->addDir( $docRoot );
     $self->writeHost( 'yast2_vhosts.conf' );
     return 1;
 }
@@ -713,7 +711,7 @@ sub DeleteHost {
         } else {
             foreach my $dat ( @{$hostHash->{DATA}} ) {
                 if( $dat->{KEY} eq 'DocumentRoot' ) {
-                    $self->delDir( $dat->{VALUE} );
+#                    $self->delDir( $dat->{VALUE} );
                     last;
                 }
             }
@@ -759,12 +757,16 @@ sub writeHost {
     foreach my $host ( @{$vhost_files->{$filename}} ) {
         my @newData = ();
         foreach my $data ( @{$host->{DATA}} ) {
-            my $define = $self->define4keyword( $data->{KEY} );
-            if( $define ) {
+            my $define = $self->define4keyword( $data->{KEY}, 'defines' );
+            my $module = $self->define4keyword( $data->{KEY}, 'module' );
+            if( $define || $module ) {
+                # either IfDefine or IfModule is possible. Not both at the same time
+                my $secName = ($define)?('IfDefined'):('IfModule');
+                my $param   = ($define)?($define):($module);
                 my %h = %$data;
                 push( @newData, { 'OVERHEAD'     => "# YaST auto define section\n",
-                          'SECTIONNAME'  => 'IfDefine',
-                          'SECTIONPARAM' => $define,
+                          'SECTIONNAME'  => $secName,
+                          'SECTIONPARAM' => $param,
                           'KEY'          => '_SECTION',
                           'VALUE'        => [ \%h ]
                 } );
@@ -785,10 +787,11 @@ sub writeHost {
 sub define4keyword {
     my $self = shift;
     my $keyword = shift;
+    my $what = shift;
     foreach my $mod ( keys( %YaPI::HTTPDModules::modules ) ) {
-        if( exists( $YaPI::HTTPDModules::modules{$mod}->{defines} ) ) {
-            if( exists( $YaPI::HTTPDModules::modules{$mod}->{defines}->{$keyword} ) ) {
-                return $YaPI::HTTPDModules::modules{$mod}->{defines}->{$keyword};
+        if( exists( $YaPI::HTTPDModules::modules{$mod}->{$what} ) ) {
+            if( exists( $YaPI::HTTPDModules::modules{$mod}->{$what}->{$keyword} ) ) {
+                return $YaPI::HTTPDModules::modules{$mod}->{$what}->{$keyword};
             } else {
                 return undef;
             }
