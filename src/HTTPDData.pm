@@ -1,8 +1,8 @@
-package HTTPDData;
+package YaST::HTTPDData;
 use YaST::YCP;
 BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
-use HTTPDModules;
-use HTTPD;
+use YaPI::HTTPDModules;
+use YaPI::HTTPD;
 
 #######################################################
 # temoprary solution start
@@ -41,8 +41,8 @@ my %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
 #bool ReadHosts();
 BEGIN { $TYPEINFO{ReadHosts} = ["function", "boolean" ]; }
 sub ReadHosts {
-    foreach my $hostid ( @{HTTPD::GetHostsList()} ) {
-    	$hosts{$hostid} = HTTPD::GetHost($hostid) if( $hostid );
+    foreach my $hostid ( @{YaPI::HTTPD::GetHostsList()} ) {
+    	$hosts{$hostid} = YaPI::HTTPD::GetHost($hostid) if( $hostid );
     }
     return 1;
 }
@@ -54,7 +54,7 @@ my %delListen = ();
 #bool ReadListen();
 BEGIN { $TYPEINFO{ReadListen} = ["function", "boolean" ]; }
 sub ReadListen {
-    @oldListen = @{HTTPD::GetCurrentListen()};
+    @oldListen = @{YaPI::HTTPD::GetCurrentListen()};
     return 1;
 }
 
@@ -70,9 +70,9 @@ my %delModules = ();
 #bool ReadModules();
 BEGIN { $TYPEINFO{ReadModules} = ["function", "boolean" ]; }
 sub ReadModules {
-    @oldModuleSelections = @{HTTPD::GetModuleSelectionsList()};
-    @oldModules = @{HTTPD::GetModuleList()};
-    foreach my $mod ( HTTPD::selections2modules([@oldModuleSelections]) ) {
+    @oldModuleSelections = @{YaPI::HTTPD::GetModuleSelectionsList()};
+    @oldModules = @{YaPI::HTTPD::GetModuleList()};
+    foreach my $mod ( YaPI::HTTPD::selections2modules([@oldModuleSelections]) ) {
 	push(@oldModules, $mod) unless( grep/^$mod$/, @oldModules );
     }
     return 1;
@@ -81,7 +81,7 @@ sub ReadModules {
 my $serviceState;   # 1 = enable, 0=disable
 BEGIN { $TYPEINFO{ReadService} = ["function", "boolean" ]; }
 sub ReadService {
-    $serviceState = HTTPD::ReadService();
+    $serviceState = YaPI::HTTPD::ReadService();
 }
 
 
@@ -135,13 +135,13 @@ sub DeleteHost {
 
 sub WriteHosts {
     foreach my $hostid( keys( %{$dirty{DEL}} ) ) {
-        HTTPD::DeleteHost( $hostid );
+        YaPI::HTTPD::DeleteHost( $hostid );
     }
     foreach my $hostid( keys( %{$dirty{NEW}} ) ) {
-        HTTPD::CreateHost( $hostid, $hosts{$hostid} );
+        YaPI::HTTPD::CreateHost( $hostid, $hosts{$hostid} );
     }
     foreach my $hostid( keys( %{$dirty{MODIFIED}} ) ) {
-        HTTPD::ModifyHost( $hostid, $hosts{$hostid} );
+        YaPI::HTTPD::ModifyHost( $hostid, $hosts{$hostid} );
     }
     %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
     return 1;
@@ -170,7 +170,7 @@ sub GetModuleList {
 BEGIN { $TYPEINFO{GetKnownModules} = ["function", [ "list", ["map","string","any"] ] ]; }
 sub GetKnownModules {
     # no state anyway, so we call the stateless API directly
-    return \@{HTTPD::GetKnownModules()}; 
+    return \@{YaPI::HTTPD::GetKnownModules()}; 
 }
 
 # bool ModifyModuleList( list<string>, bool )
@@ -193,18 +193,18 @@ sub ModifyModuleList {
 }
 BEGIN { $TYPEINFO{WriteModuleList} = ["function", "boolean"]; }
 sub WriteModuleList {
-    HTTPD::ModifyModuleList( [ keys(%delModules) ], 0 ) if(keys(%delModules));
-    HTTPD::ModifyModuleList( [ keys(%newModules) ], 1 ) if(keys(%newModules));
+    YaPI::HTTPD::ModifyModuleList( [ keys(%delModules) ], 0 ) if(keys(%delModules));
+    YaPI::HTTPD::ModifyModuleList( [ keys(%newModules) ], 1 ) if(keys(%newModules));
     %delModules = ();
     %newModules = ();
-    @oldModules = @{HTTPD::GetModuleList()};
+    @oldModules = @{YaPI::HTTPD::GetModuleList()};
     return 1;
 }
 
 # map GetKnownModulSelections()
 BEGIN { $TYPEINFO{GetKnownModulSelections} = ["function", [ "map","string","any" ] ]; }
 sub GetKnownModulSelections {
-    return @{HTTPD::GetKnownModulSelections()};
+    return @{YaPI::HTTPD::GetKnownModulSelections()};
 }
 
 # list<string> GetModuleSelectionsList()
@@ -223,7 +223,7 @@ sub ModifyModuleSelectionList {
     my $newModules = shift;
     my $enable = shift;
 
-    my @mods2sel = HTTPD::selections2modules($newModules);
+    my @mods2sel = YaPI::HTTPD::selections2modules($newModules);
     if( not $enable ) {
         delete(@newModules{@mods2sel});
         @delModules{@mods2sel} = ();
@@ -245,11 +245,11 @@ sub ModifyModuleSelectionList {
 }
 
 sub WriteModuleSelectionList {
-    HTTPD::ModifyModuleSelectionList( [ keys(%delModuleSelections) ], 0 );
-    HTTPD::ModifyModuleSelectionList( [ keys(%newModuleSelections) ], 1 );
+    YaPI::HTTPD::ModifyModuleSelectionList( [ keys(%delModuleSelections) ], 0 );
+    YaPI::HTTPD::ModifyModuleSelectionList( [ keys(%newModuleSelections) ], 1 );
     %newModuleSelections = ();
     %delModuleSelections = ();
-    @oldModuleSelections = @{HTTPD::GetModuleSelectionsList()};
+    @oldModuleSelections = @{YaPI::HTTPD::GetModuleSelectionsList()};
     return 1;
 }
 
@@ -277,7 +277,7 @@ sub ModifyService {
 
 BEGIN { $TYPEINFO{WriteService} = ["function", "boolean", "boolean" ]; }
 sub WriteService {
-    return HTTPD::ModifyService( $serviceState );
+    return YaPI::HTTPD::ModifyService( $serviceState );
 }
 
 #######################################################
@@ -359,15 +359,15 @@ sub WriteListen {
 
     foreach my $toDel ( keys(%delListen) ) {
         my ($ip,$fp,$tp) = split(/:/, $toDel);
-        HTTPD::DeleteListen( $fp, $tp, $ip, $doFirewall );
+        YaPI::HTTPD::DeleteListen( $fp, $tp, $ip, $doFirewall );
     }
     foreach my $toCreate ( keys(%newListen) ) {
         my ($ip,$fp,$tp) = split(/:/, $toCreate);
-        HTTPD::CreateListen( $fp, $tp, $ip, $doFirewall );
+        YaPI::HTTPD::CreateListen( $fp, $tp, $ip, $doFirewall );
     }
     %delListen = ();
     %newListen = ();
-    @oldListen = @{HTTPD::GetCurrentListen()};
+    @oldListen = @{YaPI::HTTPD::GetCurrentListen()};
 }
 
 #######################################################
