@@ -136,6 +136,11 @@ global define boolean Read() ``{
 	}
     }
     
+    import "SuSEFirewall";
+    Progress::off();
+    SuSEFirewall::Read();
+    Progress::on();
+    
     firewall_started = Service::Enabled( "SuSEfirewall2_final" );
 
     // read current settings from httpd.conf and sysconfig
@@ -196,7 +201,28 @@ global define boolean Read() ``{
     y2milestone ("Mapping of IP addresses and network devices: %1", ip2device);    
     
     // now, check the firewall status to set up the original status correctly
-    // FIXME:
+    firewall = true;
+    
+    foreach (map<string,any> listen, YaST::HTTPDData::GetCurrentListen (),
+    {
+	// find out the port and host
+	string port = listen["PORT"]:"";
+	string ip = listen["ADDRESS"]:"";
+	
+	firewall = SuSEFirewall::HaveService ( port, "TCP", ip2device[ip]:"any");
+	
+	if (!firewall && port == "80")
+	{
+	    // also try http name
+	    firewall = SuSEFirewall::HaveService ( "http", "TCP", ip2device[ip]:"any");
+	}
+
+	y2milestone ("Status of firewall for %2:%1: %3", ip, port, firewall);
+	
+	// the firewall is not properly opened
+	if (! firewall)
+	    break;
+    });
 
     Progress::on();
 
@@ -264,12 +290,43 @@ Install them now?
 
     // write hosts
     YaST::HTTPDData::WriteHosts ();
-    if (YaST::HTTPDData::WriteListen (firewall && firewall_started) == nil)
+    
+    import "SuSEFirewall";
+    
+    Progress::off ();
+
+    // always adapt firewall
+    if (YaST::HTTPDData::WriteListen (true) == nil)
     {
 	// FIXME: show popup
 	
 	y2error ("Writing listen failed, firewall problems?");
     }
+
+    // firewall should not be open, close all ports still open
+    // the ones from deleted Listen statements were closed in WriteListen    
+    foreach (map<string,any> listen, YaST::HTTPDData::GetCurrentListen (),
+    {
+	// find out the port and host
+	string port = listen["PORT"]:"";
+	string ip = listen["ADDRESS"]:"";
+	
+	if (!firewall)
+	{
+	    y2milestone ("Removing service %1:%2", ip, port);
+	    SuSEFirewall::RemoveService ( port, "TCP", ip2device[ip]:"all");
+	}
+	else
+	{
+	    y2milestone ("Adding service %1:%2", ip, port);
+	    SuSEFirewall::AddService ( port, "TCP", ip2device[ip]:"all");
+	}
+    });
+    
+    SuSEFirewall::Write ();
+
+    Progress::on ();
+
     YaST::HTTPDData::WriteModuleList ();
 
     Progress::NextStage();
