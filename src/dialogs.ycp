@@ -153,7 +153,10 @@
 		    `HBox(
 			// translators: textentry, document root for the new host
 			`TextEntry( `id( `documentroot ), _("Server &Contents Root:") ),
-			`PushButton( `id( `browse ), Label::BrowseButton () )
+			`VBox(
+                	    `Label(""),
+			    `PushButton( `id( `browse ), Label::BrowseButton () )
+			)
 		    ),
 		    // translators: textentry, administrator's e-mail for the new host
 		    `TextEntry( `id( `admin ), _("&Administrator E-mail:") )
@@ -164,7 +167,7 @@
 		_("Server Resolution"),
 		`VBox(
 		// translators: IP address for the new host
-		`Left( `ComboBox( `id( "ipaddress" ), _("&IP Address:"), maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) ) ),
+		`Left( `ComboBox( `id( "ipaddress" ), `opt(`editable), _("&IP Address:"), maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) ) ),
 		`RadioButtonGroup(
 		    `id ( `resolution ),
 		    `VBox (
@@ -183,7 +186,7 @@
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 	    
-	UI::SetFocus (`servernam);
+	UI::SetFocus (`id("servername"));
 
 	symbol ret = nil;
 
@@ -210,7 +213,6 @@
 	    if (ret == `next )
 	    {
 		// FIXME: Do checks about the IP address availability
-		// FIXME: check for duplicate hosts
 		string ip = (string) UI::QueryWidget ( `id("ipaddress"), `Value );
 		string servername = (string) UI::QueryWidget( `id("servername"), `Value );
 		string documentroot = (string) UI::QueryWidget( `documentroot, `Value );
@@ -219,23 +221,32 @@
 		
     		if (! HttpServerWidgets::validate_servername("servername",nil,nil))
     		{
+		    ret = nil;
         	    continue;
     		}
 
     		if (! HttpServerWidgets::validate_serverip("ipaddress",nil,nil))
     		{
+		    ret = nil;
         	    continue;
     		}
-
-		YaST::HTTPDData::CreateHost ( ip+"/"+servername, 
-		    [
+		
+		list< map<string,any> > descr = [
 			$[ "KEY": "DocumentRoot", "VALUE" : documentroot ],
 			$[ "KEY": "ServerName", "VALUE" : servername ],
 			$[ "KEY": "ServerAdmin", "VALUE" : admin ],
-			$[ "KEY": "VirtualByName", "VALUE" : virtualbyname ],
+			$[ "KEY": "VirtualByName", "VALUE" : virtualbyname ? "1" : "0" ],
 			$[ "KEY": "HostIP", "VALUE" : ip ],
 			$[ "KEY": "SSL", "VALUE" : 0 ],	// No SSL
-		    ]);
+		    ];
+		    
+		if ( !HttpServerWidgets::validate_server (descr) )
+		{
+		    ret = nil;
+		    continue;
+		}
+
+		YaST::HTTPDData::CreateHost ( ip+"/"+servername, descr );
 		    
 		HttpServer::modified = true;
 	    }
