@@ -15,14 +15,14 @@
 module "HttpServer";
 textdomain "http-server";
 
-import "SuSEFirewall";
-import "Lan";
+import "HTTPD";
+import "NetworkDevices";
 import "Progress";
 import "Report";
 import "Require";
-import "Summary";
 import "Runlevel";
-import "HTTPD";
+import "SuSEFirewall";
+import "Summary";
 
 /**
  * Abort function
@@ -153,7 +153,7 @@ global define boolean Read() ``{
 	    _("Read Apache2 configuration"),
 	    // translators: progress stage
 	    _("Read network configuration")
-	    
+
 	], [
 	    // translators: progress step
 	    _("Checking the environment..."),
@@ -177,7 +177,7 @@ global define boolean Read() ``{
 	Report::Error( sformat( _("The configuration file '%1' does not exist."), "/etc/apache2/httpd.conf" )  );
 	return false;
     }
-    
+
     // check sysconfig
     if( SCR::Read( .target.lstat, "/etc/sysconfig/apache2" ) == $[] ) {
 	if( SCR::Execute( .target.bash, "cp /var/adm/fillup-templates/sysconfig.apache2 /etc/sysconfig/apache2" )
@@ -200,7 +200,7 @@ global define boolean Read() ``{
 	    return false;
 	}
     }
-    
+
     // read current settings from httpd.conf and sysconfig
     Progress::NextStage();
 
@@ -208,25 +208,25 @@ global define boolean Read() ``{
     list toplevel_opts = SCR::Dir( .etc.httpd );
     foreach( string opt, toplevel_opts, ``{
 	any res = SCR::Read( add( .etc.httpd, opt ) );
-	
-	if( contains( multiple_settings, opt ) && ! is( res, list ) ) 
+
+	if( contains( multiple_settings, opt ) && ! is( res, list ) )
 	{
 	    if( res == nil ) res = [];
 	    else res = [ res ];
 	}
-	
+
 	if( res == nil ) res = "";
 
 	// server settings to "settings", rest to "default"
-	if( contains( server_settings, opt ) ) 
+	if( contains( server_settings, opt ) )
 	    settings["settings", opt] = res;
 	else
 	    settings["default", opt] = res;
     });
-    
+
     // now, read Listen statements from listen.conf
     settings["Listen"] = HTTPD::GetCurrentListen();
-    
+
     // read modules from sysconfig
     list modules = splitstring( (string) SCR::Read( .sysconfig.apache2."APACHE_MODULES" ), " " );
     foreach( string mod, modules, ``{
@@ -238,7 +238,7 @@ global define boolean Read() ``{
 	    settings["modules", mod, "status" ] = true;
 	}
     } );
-    
+
     // FIXME: special handling of PHP
     if( settings["modules", "php4", "status"]:false == true &&
 	! Require::AreAllPackagesInstalled(["apache2-mod_php4"]) )
@@ -246,7 +246,7 @@ global define boolean Read() ``{
 	php_hack = true;
 	settings["modules", "php4", "status"] = false;
     }
-    
+
     // read the rest of the configuration from sysconfig
     settings["apache_access_log"] = SCR::Read( .sysconfig.apache2."APACHE_ACCESS_LOG" );
     string value = (string) SCR::Read( .sysconfig.apache2."APACHE_SERVERADMIN" );
@@ -261,10 +261,10 @@ global define boolean Read() ``{
 	value = (string) SCR::Read( .etc.apachedefault.DocumentRoot );
 	if( value != nil ) document_root = value;
     }
-    
+
     // check the service status
     settings["settings", "enabled" ] = Runlevel::ServiceEnabled( "apache2" );
-    
+
     if(Abort()) return false;
 
     Progress::NextStage();
@@ -272,23 +272,16 @@ global define boolean Read() ``{
     // read current settings for firewall and network
     Progress::off();
     SuSEFirewall::Read();
-    
-    Lan::Read();
-    
+    NetworkDevices::Read();
+
     // generate the map: static IP -> device
-    
-    // ask Michal Svec, why using export :-)
     // TODO: IP aliases
-    map devices = Lan::Export();
     ip2device = $[];
-    foreach( string type, map devs,  devices["devices"]:$[], ``{
-	foreach( string num, map settings, devs, ``{
-	    if( settings["BOOTPROTO"]:"" == "static" && haskey( settings, "IPADDR") ) {
-		ip2device[ settings["IPADDR" ]:"127.0.0.1" ] = type+num;
-	    }
-	});
+    list devs = NetworkDevices::Locate("BOOTPROTO", "static");
+    foreach(string dev, devs, {
+	string ip = NetworkDevices::GetValue(dev, "IPADDR");
+	if(ip != nil && ip != "") ip2device[ip] = dev;
     });
-    
 
     // generate the map of our settings in firewall
     listen4firewall = maplist( map<string,string> l, settings["Listen"]:[], ``{
@@ -301,19 +294,19 @@ global define boolean Read() ``{
 	    }
 	}
     });
-    
+
     settings["settings", "firewall_started"] = lookup( SuSEFirewall::Export(), "start_firewall", false );
-    
+
     Progress::on();
-    
+
     // translators: progress step
     ProgressNextStage(_("Finished"));
 
     if(Abort()) return false;
     modified = false;
-    
+
     configured = true;
-    
+
     return true;
 }
 
@@ -333,28 +326,28 @@ global define boolean Write() ``{
 	    // translators: progress stage 1/4
 	    _("Write the Apache2 settings"),
 	    // translators: progress stage 2/4
-	    settings[ "settings", "firewall"]:false ?_("Modify firewall") : 
+	    settings[ "settings", "firewall"]:false ?_("Modify firewall") :
 		// translators: progress stage 2/4
 		_("Modify firewall (skipped)"),
 	    // translators: progress stage 3/4
 	    _("Run SuSEconfig"),
-	    settings["settings", "enabled"]:false ? 
+	    settings["settings", "enabled"]:false ?
 		// translators: progress stage 4/4
-		_("Enable Apache2 service") 
+		_("Enable Apache2 service")
 		// translators: progress stage 4/4
 		: _("Disable Apache2 service")
 	], [
 	    // translators: progress step 1/4
 	    _("Writing the settings..."),
 	    // translators: progress step 2/4
-	    settings[ "settings", "firewall"]:false ?_("Modifying firewall...") : 
+	    settings[ "settings", "firewall"]:false ?_("Modifying firewall...") :
 		// translators: progress step 2/4
 		_("Skipping firewall modification..."),
 	    // translators: progress step 3/4
 	    _("Running SuSEconfig..."),
-	    settings["settings", "enabled"]:false ? 
+	    settings["settings", "enabled"]:false ?
 		// translators: progress step 4/4
-		_("Enabling Apache2 service...") 
+		_("Enabling Apache2 service...")
 		// translators: progress step 4/4
 		: _("Disabling Apache2 service..."),
 	    // translators: progress finished
@@ -364,7 +357,7 @@ global define boolean Write() ``{
     );
 
     // write Apache2 settings
-    
+
     // write sysconfig
     list<string> modlist = [];
     foreach( string mod, map status, settings["modules"]:$[], ``{
@@ -374,12 +367,12 @@ global define boolean Write() ``{
     });
 
     list<string> rpms = HTTPD::GetModulePackages();
-    
+
     if( php_hack ) {
 	settings[ "modules", "php4", "status" ] = true;
     }
 
-/*    
+/*
     // install rpms only for changed modules
     list rpms = [];
     foreach( string mod, modules_modified, ``{
@@ -388,13 +381,13 @@ global define boolean Write() ``{
 	}
     });
 */
-    
+
     SCR::Write( .sysconfig.apache2."APACHE_MODULES", mergestring( modlist, " " ) );
     if( !SCR::Write( .sysconfig.apache2, nil ) ) {
 	// translators: error message
 	Report::Error( sformat(_("Cannot write '%1'."), "/etc/sysconfig/apache2" ) );
     }
-    
+
     // install required RPMs for modules
     // TODO: php4 does not work with thread-based apache2 config
     Require::RequireAndConflictTarget( rpms, [], _("The enabled modules require
@@ -402,7 +395,7 @@ installation of some of these additional packages:
 %1
 Install them now?
 ") );
-    
+
     // write httpd.conf
     // default host, some of the values are in sysconfig
     foreach( string key, any value, settings["default"]:$[], ``{
@@ -418,18 +411,18 @@ Install them now?
 	    }
 	}
     });
-    
+
     // write listen
     if( /*FIXME: ! HTTPD::WriteListen (settings["Listen"]:[])*/ false ) {
 	// TODO: configuration file placing can change
 	Report::Error( sformat(_("Cannot write '%1'."), "/etc/apache2/listen.conf" ) );
     }
 
-    
+
     // global settings
     foreach( string key, any value, settings["settings"]:$[], ``{
 	// filter internal and other options
-	if( !contains( ["enabled", "firewall", "firewall_started" ], key ) ) 
+	if( !contains( ["enabled", "firewall", "firewall_started" ], key ) )
 	    SCR::Write( add(.etc.httpd, key), value );
     });
     // TODO: virtual hosts, SSL etc
@@ -442,36 +435,36 @@ Install them now?
 	// translators: error message
 	Report::Error( sformat(_("Cannot write '%1'."), "/etc/sysconfig/apache2" ) );
     }
-    
-    
+
+
     Progress::NextStage();
 
     // modify firewall
     if( settings["settings", "firewall"]: false && settings["settings", "firewall_started"]:false ) {
-    
+
 	// delete all our firewall settings
 	foreach( map listen, listen4firewall, ``{
 	    SuSEFirewall::RemoveService( listen["port"]:"www", "TCP", listen["interface"]:"all" );
 	});
-    
+
 	// setup the new firewall settings
 	y2debug( "Writing Listen settings to firewall: %1", settings["Listen"]:[] );
 	foreach( map<string,string> l, settings["Listen"]:[], ``{
 	    // FIXME: interface handling
 	    SuSEFirewall::AddService( l["PORT"]:"www", "TCP", l["interface"]:"all" );
 	});
-    
+
 	Progress::off();
 	SuSEFirewall::Write();
 	Progress::on();
     }
-        
+
     Progress::NextStage();
 
     // in autoyast, quit here
     // Wrong, service still has to be enabled...
     // if( write_only ) return true;
-    
+
     // run SuSEconfig
 	if (!write_only) {
     if( SCR::Execute( .target.bash, "/sbin/SuSEconfig --module apache2" ) != 0 ) {
@@ -481,7 +474,7 @@ Install them now?
 	}
 
     Progress::NextStage();
-        
+
     // service enable or disable
     boolean res = true;
     if( settings["settings", "enabled"]:false ) {
@@ -495,7 +488,7 @@ Install them now?
     }
     // translators: error message
     if( !res ) Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
-    
+
     // translators: progress finished
     ProgressNextStage(_("Finished"));
 
@@ -514,31 +507,31 @@ global define boolean Import (map s) ``{
     map old_modules = GetModules();
 
     settings[ "settings" ] = s[ "settings" ]: $[ "enabled" : false ];
-    
-    settings[ "modules" ] = listmap( map value, s["modules"]:[], 
+
+    settings[ "modules" ] = listmap( map value, s["modules"]:[],
 	``{ string n = value["name"]:"";
 	    if( n != "" ) {
 		string old_desc = (string) eval(old_modules[ n, "description" ]:"");
 		return $[ n :
 		    $[ "status": value["state"]:false,
 		       "description": old_desc
-		    ] 
+		    ]
 		];
 	    } else return (map)nil;
 	   } );
-	
+
     settings[ "default" ] = s[ "default" ]: $[
 	"ServerName" : "www.example.com:80",
 //	"DocumentRoot" : "/srv/www/htdocs",
 	"ServerAdmin" : "webmaster@example.com",
     ];
-    
+
     // FIXME: do a transformation from 9.0
     settings["Listen"] = s[ "defaulthost", "Listen" ]: [ $["PORT":"80"] ];
-    
+
     modified = false;
     configured = true;
-    
+
     return true;
 }
 
@@ -556,9 +549,9 @@ global define map Export () ``{
 	"settings": settings["settings"]:$[],
 	"Listen": settings["Listen"]:$[]
     ];
-    
+
     configured = true;
-    
+
     return result;
 }
 
@@ -569,18 +562,18 @@ global define map Export () ``{
 global define list Summary() ``{
 
     string nc = Summary::NotConfigured ();
-    
+
     string summary = "";
 
     if( configured ) {
         // summary item: an option is turned on
-        if( settings["settings", "enabled"]:false ) 
+        if( settings["settings", "enabled"]:false )
 	    // translators: autoyast summary text, server status
             summary = Summary::AddLine(summary, _("Apache2 server is <i>enabled</i>") );
         else
 	    // translators: autoyast summary text, server status
             summary = Summary::AddLine(summary, _("Apache2 server is <i>disabled</i>") );
-	    
+
 	// translators: autoyast summary text, %1 is path for default host document root
 //	summary = Summary::AddLine(summary, sformat( _("Default host stored in %1"), settings["defaul", "DocumentRoot"]:
 //	    "/srv/www/htdocs" ) );

@@ -20,9 +20,9 @@
     import "Label";
     import "CWM";
     import "Wizard";
-    
+
     boolean Abort () {
-	return ( !(HttpServer::modified) || Popup::ReallyAbort(true) );    
+	return ( !(HttpServer::modified) || Popup::ReallyAbort(true) );
     }
 
     /**
@@ -35,7 +35,7 @@
 	    HttpServerWidgets::widgets["server_enable", "help" ] = HELPS[ "server_enable" ]:"" + sformat( _("<p>The documents served by
 the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	}
-	
+
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
 	    "server_enable",
@@ -49,7 +49,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 
 	return CWM::ShowAndRun (["server_enable", "firewall_adapt", "overview_widget" ]
 	    ,HttpServerWidgets::widgets
-	    ,contents, caption, 
+	    ,contents, caption,
 	    Label::BackButton (), Label::FinishButton (), $[`abort : Abort]);
     }
 
@@ -71,7 +71,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
-	    
+
 	return CWM::Run (w, $[`abort : Abort]);
     }
 
@@ -112,8 +112,8 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
-	    
-	UI::ReplaceWidget( `id(`_tp_table_repl), 
+
+	UI::ReplaceWidget( `id(`_tp_table_repl),
 	    // menu button label
 	    `PushButton( `id( `set_default ), _("Set as De&fault") ) );
 
@@ -133,7 +133,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	    `VSpacing (1)
 	), `HSpacing (1));
 	// dialog caption for Listen statements configuration
-	string caption = sformat(_("Listen for '%1'"), 
+	string caption = sformat(_("Listen for '%1'"),
 	    // translators: default host label
 	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") : HttpServerWidgets::currenthost );
 	string help = CWM::MergeHelps (w);
@@ -143,7 +143,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 
 	return CWM::Run (w, $[`abort : Abort]);
     }
-    
+
     symbol AddHost () {
 	term contents = `HBox( `HSpacing(0.5), `VBox (
 	    `Frame(
@@ -170,17 +170,17 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 		)))), `HSpacing (0.5)
 	);
 	string caption = _("New Host Information");
-	
+
 	string help = HELPS ["add_host_general"]:"";
 
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::NextButton ());
-	    
+
 	symbol ret = nil;
-	
+
 	do {
 	    ret = (symbol)UI::UserInput ();
-	    
+
 	    if (ret == `browse)
 	    {
 		// Allow to choose a directory
@@ -189,18 +189,19 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 		{
 		    UI::ChangeWidget (`documentroot, `Value, dir );
 		}
-		
+
 		ret = nil;
 	    }
-	    
+
 	    if (ret == `next )
 	    {
 		// FIXME: Do checks about the IP address availability
+		y2debug("");
 	    }
 	} while (ret == nil);
-	
+
 	return ret;
     }
-    
+
 /* EOF */
 }
