@@ -45,10 +45,9 @@ my $vhost_files;
 # internal only
 sub getFileByHostid {
     my $hostid = shift;
-
     foreach my $k ( keys(%$vhost_files) ) {
         foreach my $hostHash ( @{$vhost_files->{$k}} ) {
-            return $k if( $hostHash->{HOSTID} eq $hostid );
+            return $k if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} eq $hostid );
         }
     }
     return SetError( summary => 'host not found' );
@@ -58,12 +57,19 @@ sub getFileByHostid {
 sub checkHostmap {
     my $host = shift;
 
-    foreach my $entry ( @$host ) {
-        if( ($entry->{KEY} eq 'ServerAdmin') and 
-            ($entry->{VALUE} !~ /.+\@.+/) ) {
-            return SetError( summary => 'illegal ServerAdmin parameter' );
-        }
+    my %checkMap = (
+        ServerAdmin  => qr/^[^@]$/,
+        ServerName   => qr/^[a-zA-Z\d.-]+$/,
+        SSL          => qr/^[012]$/,
         # more to go
+    );
+
+    foreach my $entry ( @$host ) {
+        next unless( exists($checkMap{$entry->{KEY}}) );
+        my $re = $checkMap{$entry->{KEY}};
+        if( $entry->{VALUE} =~ /$re/ ) {
+            return SetError( summary => "illegal '$entry->{KEY}' parameter" );
+        }
     }
     return 1;
 }
@@ -120,7 +126,7 @@ sub GetHost {
                 }
             }
             $hostHash->{'DATA'} = \@newHH;
-            if( $sslEngine eq 'on' and exists($hostHash->{'DATA'}->{'SSLRequireSSL'}) ) {
+            if( $sslEngine eq 'on' and grep( { $_->{KEY} eq 'SSLRequireSSL' } @{$hostHash->{'DATA'}} ) ) {
                 delete($hostHash->{'DATA'}->{'SSLRequireSSL'});
                 $sslHash->{'VALUE'} = 2;
             } elsif( $sslEngine eq 'on' ) {
@@ -167,12 +173,41 @@ sub ModifyHost {
                         push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
                     }
                     next;
+                } elsif( $hostid ne 'default' and $tmp->{KEY} =~ /ServerTokens|TimeOu|tExtendedStatus/ ) {
+                    # illegal keys in vhost
+                    return SetError( "illegal key in vhost '$tmp->{KEY}'" );
                 } else {
                     push( @tmp, $tmp );
                 }
             }
             $entry->{DATA} = \@tmp;
             writeHost( $filename );
+
+            # write sysconfig variables for default host
+            # don't know why but we are safe then.
+            if( $hostid eq 'default' ) {
+                foreach my $tmp ( @tmp ) {
+                    if( $tmp->{KEY} eq 'ServerAdmin' ) {
+                        SCR::Write('.sysconfig.apache2.APACHE_SERVERADMIN', $tmp->{'VALUE'});
+                    } elsif( $tmp->{KEY} eq 'ServerName' ) {
+                        SCR::Write('.sysconfig.apache2.APACHE_SERVERNAME', $tmp->{'VALUE'} );
+                    } elsif( $tmp->{KEY} eq 'DocumentRoot' ) {
+                        SCR::Write('.sysconfig.apache2.APACHE_DOCUMENT_ROOT', $tmp->{'VALUE'} );
+                    } elsif( $tmp->{KEY} eq 'ServerSignature' ) {
+                        SCR::Write('.sysconfig.apache2.APACHE_SERVERSIGNATURE', $tmp->{'VALUE'} );
+                    } elsif( $tmp->{KEY} eq 'LogLevel' ) {
+                        SCR::Write('.sysconfig.apache2.APACHE_LOGLEVEL', $tmp->{'VALUE'} );
+                    } elsif( $tmp->{KEY} eq 'UseCanonicalName' ) {
+                        SCR::Write('.sysconfig.apache2.APACHE_USE_CANONICAL_NAME', $tmp->{'VALUE'} );
+                    } elsif( $tmp->{KEY} eq 'ServerTokens' ) {
+                        SCR::Write('.sysconfig.apache2.APACHE_SERVERTOKENS', $tmp->{'VALUE'} );
+                    } elsif( $tmp->{KEY} eq 'ExtendedStatus' ) {
+                        SCR::Write('.sysconfig.apache2.APACHE_EXTENDED_STATUS', $tmp->{'VALUE'} );
+                    } elsif( $tmp->{KEY} eq 'TimeOut' ) {
+                        SCR::Write('.sysconfig.apache2.APACHE_TIMEOUT', $tmp->{'VALUE'} );
+                    }
+                }
+            }
             return 1;
         }
     }
@@ -197,6 +232,10 @@ sub CreateHost {
         } elsif( $key->{KEY} eq 'SSL' and $key->{VALUE} == 2 ) {
             $sslHash->{'VALUE'} = 'on';
             push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
+#        } 
+#elsif( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
+#            # illegal keys in vhost
+#            return SetError( "illegal key in vhost '$key->{KEY}'" );
         } else {
             push( @tmp, $key );
         }
