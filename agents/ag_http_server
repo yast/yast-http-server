@@ -71,7 +71,7 @@ sub parse_vhost_files {
             my $vhostData = {};
             $vhostData->{'VHOST'}    = $vhost->{'SECTIONPARAM'};
             $vhostData->{'HOSTID'}   = $vhost->{'SECTIONPARAM'};
-            $vhostData->{'OVERHEAD'} = $tmpOverhead.$vhost->{'OVERHEAD'};
+            $vhostData->{'OVERHEAD'} = $tmpOverhead.$vhost->{'OVERHEAD'} if( exists($vhostData->{'OVERHEAD'}) );
             $tmpOverhead = "";
             if( grep( { $vhost eq $_ } keys(%vhost_by_name) ) ) {
                 $vhostData->{'VirtualByName'} = 1;
