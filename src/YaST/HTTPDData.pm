@@ -349,7 +349,6 @@ sub GetCurrentListen {
         }
         push( @new, $old );
     }
-    print STDERR join (' ', @new);
     return \@new;
 }
 
