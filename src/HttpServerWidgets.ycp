@@ -184,14 +184,14 @@ global map widgets = $[
 		"label"	 : _("HTTP &Service"),
 		"items"	 : [
 		    // translators: service status radio button label
-		    [ `disabled, _("Disabled") ],
+		    [ "disabled", _("Disabled") ],
 		    // translators: service status radio button label
-		    [ `enabled, _("Enabled") ]
+		    [ "enabled", _("Enabled") ]
 		],
 		"init"	: HttpServerWidgets::initServiceStatus,
 		"handle" : HttpServerWidgets::handleServiceStatus,
 		"store"	 : HttpServerWidgets::storeServiceStatus,
-		"handle_events" : [ `enabled, `disabled ],
+		"handle_events" : [ "enabled", "disabled" ],
 		"opt" : [ `notify ],
 		"help" : HELPS["server_enable"]:"",
 	    ],
@@ -729,11 +729,11 @@ listen cannot be empty.
       */
     global define void initServiceStatus (any key) ``{
 	if( HttpServer::settings["settings", "enabled"]:false  ) {
-	    UI::ChangeWidget (`id (`enabled), `Value, true);
+	    UI::ChangeWidget (`id ("enabled"), `Value, true);
 	}
 	else 
 	{
-	    UI::ChangeWidget (`id (`disabled), `Value, true);
+	    UI::ChangeWidget (`id ("disabled"), `Value, true);
 	}
     }
 
@@ -743,7 +743,7 @@ listen cannot be empty.
       * @param event map event that occured
       */
     global define void storeServiceStatus (any key, map event) ``{
-	HttpServer::enableService( (boolean) UI::QueryWidget ( `id(`enabled), `Value ) );
+	HttpServer::enableService( (boolean) UI::QueryWidget ( `id("enabled"), `Value ) );
     }
 
     /**
@@ -753,7 +753,7 @@ listen cannot be empty.
       * @return symbol symbol for WS or nil
       */
     global define symbol handleServiceStatus (any key, map event) ``{
-	boolean current = (boolean) UI::QueryWidget (`id (`enabled), `Value);
+	boolean current = (boolean) UI::QueryWidget (`id ("enabled"), `Value);
 	HttpServer::settings["enabled"] = current;
     }
 // *********************************** Listen widget ***************************
