@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Apr  5 10:53:55 CEST 2004 - ug@suse.de
+
+- order of mod_ldap and mod_auth_ldap fixed
+
+-------------------------------------------------------------------
 Fri Apr  2 16:26:05 CEST 2004 - visnov@suse.cz
 
 - YaST2 is now GPL 
