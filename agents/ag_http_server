@@ -2,9 +2,8 @@
 package ag_http_server;
 use ycp;
 use YaST::SCRAgent;
-use YaST::YCP;
+use YaPI;
 our @ISA = ("YaST::SCRAgent");
-YaST::YCP::Import ("Directory");
 
 use strict;
 
@@ -26,7 +25,6 @@ use strict;
 
 my %vhost_files = ();
 # %vhost_by_name is just a uniq array
-my %vhost_by_name = ();
 
 
 # %listen ist just a uniq array
@@ -35,6 +33,7 @@ my %listen;
 
 sub parse_vhost_files {
     my $class = shift;
+    my %vhost_by_name = ();
 
     if( open( FILE, "< /etc/apache2/default-server.conf" ) ) {
         while( my $line = <FILE> ) {
@@ -44,12 +43,17 @@ sub parse_vhost_files {
             $vhost_by_name{$vhost} = 1;
         }
         close(FILE);
+    } else {
+        return $class->SetError(summary => sprintf( _("opening /etc/apache2/default-server.conf failed: %s"),$!),
+                                code    => "OPEN_FAILED"
+        );
     }
 
     for my $file ( </etc/apache2/vhosts.d/*.conf> ) {
         open( FILE, "< $file" ) or do {
-            y2error("unable to open file $file for reading.$!");
-            return 0;
+            return $class->SetError( summary => sprintf( _("unable to open file %s for reading: %s"),$file,$!),
+                                     code    => "OPEN_FAILED"
+            );
         };
         $file =~ /([^\/]+\.conf)$/;
         $file = $1;
@@ -92,8 +96,9 @@ sub parse_vhost_files {
 
     my $entry = {};
     open( FILE, "< /etc/apache2/default-server.conf" ) or do {
-        y2error("unable to open file /etc/apache2/default-server.conf for reading.$!");
-        return 0;
+        return $class->SetError( summary => sprintf(_("unable to open file /etc/apache2/default-server.conf for reading: %s"),$!),
+                                 code    => "OPEN_FAILED"
+        );
     };
     $entry->{DATA} = sectionParser();
     close(FILE);
@@ -115,10 +120,15 @@ sub parse_listen_conf {
             $listen{$1} = 1;
         }
         close(FILE);
+    } else {
+        return $class->SetError( summary => sprintf(_("unable to open file /etc/apache2/listen.conf for reading: %s"),$!),
+                                 code    => "OPEN_FAILED"
+        );
     }
 }
 
 sub parse_module_selection() {
+    my $class = shift;
 #    my $dir = Directory::vardir();
     my $dir = "/var/lib/YaST2/"; # FIXME: calling Directory::vardir later
     my @ret = ();
@@ -127,11 +137,17 @@ sub parse_module_selection() {
         @ret = <FILE>;
         chomp(@ret);
         close(FILE);
+    } else {
+        return $class->SetError( summary => sprintf(_("unable to open file %s/httpd_active_module_selections.conf for reading: %s"),$dir,$!),
+                                 code    => "OPEN_FAILED"
+        );
     }
+
     return \@ret;
 }
 
 sub write_module_selection {
+    my $class = shift;
     my $newSelection = shift;
     my $dir = "/var/lib/YaST2/"; # FIXME: calling Directory::vardir later
 
@@ -139,7 +155,9 @@ sub write_module_selection {
         print FILE join("\n",@$newSelection);
         close(FILE);
     } else {
-        # FIXME: Error handling
+        return $class->SetError( summary => sprintf(_("unable to open file %s/httpd_active_module_selections.conf for writing: %s"),$dir,$!),
+                                 code    => "OPEN_FAILED"
+        );
     }
     return 1;
 }
@@ -196,8 +214,9 @@ sub write_vhost_files {
     foreach my $file ( keys(%vhost_files) ) {
         next if( $file eq 'default-server.conf' ); # skip the default server here
         open( FILE, "> /etc/apache2/vhosts.d/$file" ) or do {
-            y2error("open for /etc/apache2/vhosts.d/$file failed with $!");
-            return 0;
+            return $class->SetError( summary => sprintf(_("open file /etc/apache2/vhosts.d/%s for writing failed with: %s"),$file,$!),
+                                     code    => 'OPEN_FAILED'
+            );
         };
         foreach my $entry ( @{$vhost_files{$file}} ) {
             print FILE $entry->{OVERHEAD} if($entry->{OVERHEAD});
@@ -220,8 +239,9 @@ sub write_vhost_files {
 
     # save the default-server.conf
     open( FILE, "> /etc/apache2/default-server.conf" ) or do {
-        y2error("open for /etc/apache2/default-server.conf failed with $!");
-        return 0;
+        return $class->SetError( summary => sprintf(_("open file /etc/apache2/default-server.conf for writing failed with %s"),$!),
+                                 code    => 'OPEN_FAILED'
+        );
     };
     foreach my $entry ( @{$vhost_files{'default-server.conf'}} ) {
         print FILE section2string( $entry->{DATA} );
@@ -232,6 +252,7 @@ sub write_vhost_files {
 }
 
 sub write_listen_conf {
+    my $class = shift;
     if( open( FILE, "< /etc/apache2/listen.conf" ) ) {
         my @file = <FILE>;
         close(FILE);
@@ -249,6 +270,10 @@ sub write_listen_conf {
         open( FILE, "> /etc/apache2/listen.conf" ); # FIXME catch ERRORs
         print FILE @file;
         close(FILE);
+    } else {
+        return $class->SetError( summary => sprintf(_("open file /etc/apache2/listen.conf for reading failed with %s"),$!),
+                                 code    => 'OPEN_FAILED'
+        );
     }
 }
 
@@ -271,7 +296,7 @@ sub Read {
         parse_listen_conf();
         return [ keys(%listen) ];
     } elsif( $path eq '.moduleselection' ) {
-        return [ parse_module_selection() ];
+        return [ $class->parse_module_selection() ];
     }
 }
 
@@ -306,11 +331,11 @@ sub Write {
                 $key .= $entry->{'PORT'};
                 $listen{$key} = 1;
             }
-            write_listen_conf();
+            $class->write_listen_conf();
         }
     } elsif( $path eq '.moduleselection' ) {
         if( ref($args[0]) eq 'ARRAY' ) {
-            write_module_selection( $args[0] );
+            $class->write_module_selection( $args[0] );
         }
     } else {
         # not implemented

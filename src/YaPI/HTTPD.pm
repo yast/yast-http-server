@@ -67,6 +67,11 @@ ModifyModuleSelectionList($selectionList,$state)
 ModifyService($state)
 
   $state is a boolean for enable/disable the apache2 runlevel script
+  at boot time
+
+SwitchService($state)
+
+  $state is a boolean for turning on/off the apache2 service
 
 $serviceState = ReadService()
 
@@ -208,7 +213,11 @@ will look like this:
 
 there is just one host id that breaks this nameing schema and
 that is the "default" host. Everything in the default host
-will not end in a VirtualHost section.
+will not end in a VirtualHost section but in the global definitions
+in /etc/apache2/default-server.conf. Because of this, the default host
+is more than just a simple host. It can also contain server directives
+that aims for all vhosts too and for which no API function exists at
+the moment (like alias creation for example).
 You can not create or delete the default host id.
 
 =head1 DESCRIPTION
@@ -252,7 +261,8 @@ sub getFileByHostid {
             return $k if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} eq $hostid );
         }
     }
-    return $self->SetError( summary => 'host not found' );
+    return $self->SetError( summary => _('host not found'),
+                            code => 'PARAM_CHECK_FAILED' );
 }
 
 # internal only
@@ -275,14 +285,16 @@ sub checkHostmap {
         next unless( exists($checkMap{$entry->{KEY}}) );
         my $re = $checkMap{$entry->{KEY}};
         if( $entry->{VALUE} !~ /$re/ ) {
-            return $self->SetError( summary => "illegal '$entry->{KEY}' parameter" );
+            return $self->SetError( summary => sprintf( _("illegal '%s' parameter"), $entry->{KEY} ), 
+                                    code    => "PARAM_CHECK_FAILED" );
         }
         $ssl = $entry->{VALUE} if( $entry->{KEY} eq 'SSL' );
         $nb_vh = $entry->{VALUE} if( $entry->{KEY} eq 'VirtualByName' );
         $dr = 1 if(  $entry->{KEY} eq 'DocumentRoot' );
         $sn = 1 if(  $entry->{KEY} eq 'ServerName' );
     }
-    return 0 if( $ssl and $nb_vh ); # ssl + virtual by name is not possible
+    return SetError( summary => _('ssl together with "virtual by name" is not possible'),
+                     code    => 'PARAM_CHECK_FAILED' ) if( $ssl and $nb_vh );
 
     return 1;
 }
@@ -321,7 +333,7 @@ sub GetHostsList {
             }
         }
     } else {
-        return $self->SetError( summary => 'SCR Agent parsing failed' );
+        return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
     }
     return \@ret;
 }
@@ -329,7 +341,10 @@ sub GetHostsList {
 =item *
 C<$hostData = GetHost($hostid);>
 
-This function returns a host data list.
+This function returns a reference to a host data list.
+The format of the Host data list is described above.
+In case of an error (for example, if there is no host
+with such an id) undef is returned.
 
 EXAMPLE
 
@@ -362,11 +377,11 @@ sub GetHost {
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return $self->SetError( summary => 'SCR Agent parsing failed' );
+        return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
     }
 
     my $filename = $self->getFileByHostid( $hostid );
-    return $self->SetError( summary => 'hostid not found' ) unless( $filename );
+    return $self->SetError( summary => _('hostid not found'),code => 'HOSTID_NOT_FOUND' ) unless( $filename );
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
         if( $hostHash->{HOSTID} eq $hostid ) {
             my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
@@ -388,10 +403,11 @@ sub GetHost {
             } elsif( $sslEngine eq 'on' ) {
                 $sslHash->{'VALUE'} = 1;
             }
+#            print Data::Dumper->Dump( [@{$hostHash->{'DATA'}}, $sslHash, $vbnHash] );
             return [ @{$hostHash->{'DATA'}}, $sslHash, $vbnHash ];
         }
     }
-    return $self->SetError( summary => 'hostid not found' );
+    return $self->SetError( summary => _('hostid not found'),code => 'HOSTID_NOT_FOUND' );
 }
 
 =item *
@@ -432,7 +448,7 @@ by the API.
      my $new      = shift;
      my $hostData = shift;
      my $found = 0;
- 
+
      foreach( @$hostData ) {
          if( $_->{KEY} eq $new->{KEY} ) {
              $new->{OVERHEAD} = $_ ->{OVERHEAD} unless( exists($new->{OVERHEAD}) );
@@ -460,10 +476,10 @@ sub ModifyHost {
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return $self->SetError( summary => 'SCR Agent parsing failed' );
+        return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
     }
 use Data::Dumper;
-print Data::Dumper->Dump( [ $newData ] );
+#print Data::Dumper->Dump( [ $newData ] );
 
     my $filename = $self->getFileByHostid( $hostid );
     return undef if( not $self->checkHostmap( $newData ) );
@@ -491,7 +507,8 @@ print Data::Dumper->Dump( [ $newData ] );
                     next;
                 } elsif( $hostid ne 'default' and $tmp->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
                     # illegal keys in vhost
-                    return $self->SetError( "illegal key in vhost '$tmp->{KEY}'" );
+                    return $self->SetError( summary => sprintf( _("illegal key in vhost '%s'"),$tmp->{KEY}),
+                                            code    => "CHECK_PARAM_FAILED" );
                 } elsif( $tmp->{'KEY'} eq 'DocumentRoot' ) {
 #                    $self->addDir( $tmp->{'VALUE'} );
                     push( @tmp, $tmp );
@@ -560,10 +577,11 @@ sub CreateHost {
     my $data = shift;
 
     if( ref($data) ne 'ARRAY' ) {
-        return $self->SetError( summary => "data must be an array ref and not ".ref($data) );
+        return $self->SetError( summary => sprintf(_("data must be an array ref and not %s"),ref($data)), 
+                                code => "CHECK_PARAM_FAILED" );
     }
 use Data::Dumper;
-print Data::Dumper->Dump( [ $data ] );
+#print Data::Dumper->Dump( [ $data ] );
     my $sslHash = { KEY => 'SSLEngine' , VALUE => 'off' };
     my @tmp = ( $sslHash );
     my $VirtualByName = 0;
@@ -584,7 +602,8 @@ print Data::Dumper->Dump( [ $data ] );
             push( @tmp, $key );
         } elsif( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
             # illegal keys in vhost
-            return $self->SetError( "illegal key in vhost '$key->{KEY}'" );
+            return $self->SetError( summary => sprintf(_("illegal key in vhost '%s'"), $key->{KEY}),
+                                    code    => "CHECK_PARAM_FAILED" );
         } else {
             push( @tmp, $key );
         }
@@ -594,7 +613,8 @@ print Data::Dumper->Dump( [ $data ] );
 
     $hostid =~ /^([^\/]+)/;
     my $vhost = $1;
-    return $self->SetError( "illegal hostid" ) unless( $vhost );
+    return $self->SetError( summary => _("illegal hostid"),
+                            code    => "CHECK_PARAM_FAILED" ) unless( $vhost );
     my $entry = {
                  OVERHEAD      => "# YaST generated vhost entry\n",
                  VirtualByName => $VirtualByName,
@@ -609,8 +629,16 @@ print Data::Dumper->Dump( [ $data ] );
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return $self->SetError( summary => 'SCR Agent parsing failed' );
+        return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
     }
+
+    # already exists check
+    foreach my $hostHash ( @{$vhost_files->{'yast2_vhosts.conf'}} ) {
+        if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} eq $hostid ) {
+            return $self->SetError( summary => _('hostid already exists'), code => "CHECK_PARAM_FAILED" );
+        }
+    }
+
     if( ref($vhost_files->{'yast2_vhosts.conf'}) eq 'ARRAY' ) {
         # merge new entry with existing entries in yast2_vhosts.conf
         push( @{$vhost_files->{'yast2_vhosts.conf'}}, $entry );
@@ -626,7 +654,8 @@ print Data::Dumper->Dump( [ $data ] );
 =item *
 C<DeleteHost($hostid)>
 
-This function removes the host with $hostid
+This function removes the host with $hostid.
+If the hostid is not found, undef is returned.
 
 EXAMPLE
  DeleteHost( '192.168.1.2/createTest2.suse.de' );
@@ -640,7 +669,7 @@ sub DeleteHost {
     my $hostid = shift;
 
     if( $hostid eq 'default' ) {
-        return $self->SetError( summary => 'can not delete default host' );
+        return $self->SetError( summary => _('can not delete default host'), code => "CHECK_PARAM_FAILED" );
     }
     # FIXME
     # will read all vhost files, even if the vhost is found
@@ -649,10 +678,11 @@ sub DeleteHost {
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return $self->SetError( summary => 'SCR Agent parsing failed' );
+        return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
     }
     my $filename = $self->getFileByHostid( $hostid );
     my @newList = ();
+    my $found = 0;
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
         if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} ne $hostid ) {
             push( @newList, $hostHash );
@@ -660,11 +690,13 @@ sub DeleteHost {
             foreach my $dat ( @{$hostHash->{DATA}} ) {
                 if( $dat->{KEY} eq 'DocumentRoot' ) {
 #                    $self->delDir( $dat->{VALUE} );
+                    $found = 1;
                     last;
                 }
             }
         }
     }
+    return $self->SetError( summary => _('hostid not found'), code => "CHECK_PARAM_FAILED" ) unless( $found );
     if( @newList ) {
         $vhost_files->{$filename} = \@newList;
     } else {
@@ -727,8 +759,9 @@ sub writeHost {
     SCR->Write(".http_server.vhosts.setFile.$filename", $vhost_files->{$filename} );
 
     # write default-server.conf always because of Directory Entries
-    my $def = $self->getFileByHostid( 'default' );
-    SCR->Write(".http_server.vhosts.setFile.$def", $vhost_files->{$def} );
+    unless( $filename eq 'default-server.conf' ) {
+        $self->writeHost( 'default-server.conf' );
+    }
     return 1;
 }
 
@@ -761,6 +794,8 @@ C<$moduleList = GetModuleList()>
 
 this function returns a reference to an array of strings.
 The list contains all active apache2 module names.
+This is more or less just the content of the sysconfig
+variable "APACHE_MODULES" from /etc/sysconfig/apache2.
 
 EXAMPLE
 
@@ -795,6 +830,12 @@ default   => a boolean that shows if this module is active by default
 required  => a boolean that shows if this module is required
 suggested => a boolean that shows if this module is suggested by SUSE
 position  => a number that shows the position in the loading order
+
+optional keys are:
+module    => a hash reference like: { SSLEngine => 'SSL' } which means, that
+the SSLEngine keyword will be wrapped in a <IfModule SSL> block.
+
+define    => like the module keyword, but it's a <IfDefine SSL> block
 
 EXAMPLE
 
@@ -832,8 +873,13 @@ C<ModifyModuleList($moduleList, $state)>
 
 with this function you can turn on and off modules of the apache2
 $modulelist is an array reference to a list of modulenames.
+This modifes more or less just the content of the sysconfig
+variable "APACHE_MODULES" from /etc/sysconfig/apache2.
+Unknown modules are allowed too but they will be appendet to
+the end of the list.
 
 EXAMPLE
+
  ModifyModuleList( [ 'perl' ], 1 );
  ModifyModuleList( [ 'php4' ], 0 );
 
@@ -908,9 +954,9 @@ sub GetKnownModuleSelections {
 =item *
 C<$selList = GetModuleSelectionsList()>
 
-this functions returns a reference to an array that
+this function returns a reference to an array that
 contains strings with the names of the active module
-seletcions.
+selections.
 
 EXAMPLE
 
@@ -998,8 +1044,8 @@ Turning off means, no apache2 start at boot time.
 
 EXAMPLE
 
- ModifyService(0); # turn apache2 off
- ModifyService(1); # turn apache2 on
+ ModifyService(0); # turn apache2 off at boot time
+ ModifyService(1); # turn apache2 on at boot time
 
 =cut
 
@@ -1010,12 +1056,34 @@ sub ModifyService {
 
     if( $enable ) {
         Service->Adjust( "apache2", "enable" );
-        Service->RunInitScript( "apache2", "restart");
     } else {
         Service->Adjust( "apache2", "disable" );
-        Service->RunInitScript( "apache2", "stop" );
     }
     return 1;
+}
+
+=item *
+C<SwitchService($status)>
+
+with this function you can start and stop the apache2
+service.
+
+EXAMPLE
+
+ SwitchService( 0 ); # turning off the apache2 service
+ SwitchService( 1 ); # turning on the apache2 service
+
+=cut
+
+sub SwitchService {
+    my $self = shift;
+    my $enable = shift;
+
+    if( $enable ) {
+        Service->RunInitScript( "apache2", "restart");
+    } else {
+        Service->RunInitScript( "apache2", "stop" );
+    }
 }
 
 =item *
@@ -1080,12 +1148,17 @@ EXAMPLE
 
 BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ], "boolean" ] ; }
 sub CreateListen {
-    my $self = shift;
-    my $fromPort = shift;
-    my $toPort = shift;
-    my $ip = shift; #FIXME: this is a list
+    my $self       = shift;
+    my $fromPort   = shift;
+    my $toPort     = shift;
+    my $ip         = shift; #FIXME: this is a list
     my $doFirewall = shift;
 
+    if( $fromPort < 0 or $fromPort > 65535 or
+        $toPort   < 0 or $toPort   > 65535 or
+        $fromPort > $toPort ) {
+        return $self->SetError( summary => _('illegal port'), code => "CHECK_PARAM_FAILED" );
+    }
     my @listenEntries = @{$self->GetCurrentListen()};
     my %newEntry;
     $newEntry{ADDRESS} = $ip if ($ip);
@@ -1107,6 +1180,7 @@ with this function you can delete an address and port
 the webserver is listening on. $fromPort and $toPort can have
 the same value. $listen must be a network interface of the
 host but can be an empty string for 'all' interfaces.
+If the listen parameter can't be found, undef is returned.
 The $doFirewall boolean indicates if the SuSEFirewall2 shall
 be configured for the settings.
 
@@ -1137,6 +1211,10 @@ sub DeleteListen {
         next if( ($fromPort eq $toPort) and $listen->{'PORT'} eq $fromPort );
         push( @newListenEntries, $listen );
     }
+    if( @listenEntries == @newListenEntries ) {
+        return SetError( summary => _('listen value to delete not found'), code => "CHECK_PARAM_FAILED" );
+    }
+
     SCR->Write( ".http_server.listen", \@newListenEntries );
     if( $doFirewall ) {
         my $ip2device = $self->ip2device();
@@ -1158,6 +1236,7 @@ ADDRESS => the listen address like 127.0.0.1
 PORT    => the listen port like "80", "443", "80-81"
 
 it is not possible to get the firewall settings.
+On error, undef is returned
 
 EXAMPLE
 
@@ -1174,7 +1253,7 @@ sub GetCurrentListen {
     my @data = SCR->Read('.http_server.listen');
     my @ret;
     if( not ref($data[0]) ) {
-        return $self->SetError( summary => 'read listen in agent failed' );
+        return $self->SetError( %{SCR->Error(".http_server.listen")} );
     }
     foreach my $listen ( @{$data[0]} ) {
         if( $listen =~ /^([^:]+):([^:]+)/ ) {
@@ -1343,12 +1422,13 @@ sub WriteServerCert {
     my $key = ($pemData =~ /PRIVATE KEY/)?(1):(0);
 
     if( not $pemData or $pemData !~ /BEGIN CERTIFICATE/ ) {
-        return $self->SetError( summary => "corrupt PEM data" );
+        return $self->SetError( summary => _("corrupt PEM data"), code => 'CERT_ERROR' );
     }
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => _("unable to fetch host with id"),
+                                code    => "PARAM_CHECK_FAILED" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1401,13 +1481,13 @@ sub WriteServerKey {
     my $hostid = shift;
     my $pemData = shift;
     if( not $pemData or $pemData !~ /PRIVATE KEY/ ) {
-        return $self->SetError( summary => "corrupt PEM data" );
+        return $self->SetError( summary => _("corrupt PEM data"), code => 'CERT_ERROR' );
     }
     my $cert = ($pemData =~ /BEGIN CERTIFICATE/)?(1):(0);
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => _("unable to fetch host with id"), code => "PARAM_CHECK_FAILED" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1454,12 +1534,12 @@ sub WriteServerCA {
     my $hostid = shift;
     my $pemData = shift;
     if( not $pemData or $pemData !~ /BEGIN CERTIFICATE/ ) {
-        return $self->SetError( summary => "corrupt PEM data" );
+        return $self->SetError( summary => _("corrupt PEM data"), code => 'CERT_ERROR' );
     }
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => _("unable to fetch host with id"), code => "PARAM_CHECK_FAILED" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1507,7 +1587,7 @@ sub ReadServerCert {
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => _("unable to fetch host with id"), code => "PARAM_CHECK_FAILED" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1516,15 +1596,15 @@ sub ReadServerCert {
         last;
     }
     unless( $file ) {
-        return $self->SetError( summary => "no certificate file configured for this hostid" );
+        return $self->SetError( summary => _("no certificate file configured for this hostid"), code => "CERT_ERROR" );
     }
     my $cert = SCR->Read( '.target.string', $file );
     unless( $cert ) {
-        return $self->SetError( summary => "error reading certificate: $file" );
+        return $self->SetError( %{SCR->Error(".target.string")} );
     }
     $cert =~ /(-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----)/;
     if( ! $1 ) {
-        return $self->SetError( "parsing cert file failed" );
+        return $self->SetError( summary => _("parsing cert file failed"), code => "CERT_ERROR" );
     }
     return $1;
 }
@@ -1550,7 +1630,7 @@ sub ReadServerKey {
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => _("unable to fetch host with id"), code => "PARAM_CHECK_FAILED" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1565,16 +1645,16 @@ sub ReadServerKey {
             last;
         }
         unless( $file ) {
-            return $self->SetError( summary => "no certificate key file configured for this hostid" );
+            return $self->SetError( summary => _("no certificate key file configured for this hostid"), code => 'CERT_ERROR' );
         }
     }
     my $cert = SCR->Read( '.target.string', $file );
     unless( $cert ) {
-        return $self->SetError( summary => "error reading certificate: $file" );
+        return $self->SetError( %{SCR->Error(".target.string")} );
     }
     $cert =~ /(-----BEGIN RSA PRIVATE KEY-----[^-]+-----END RSA PRIVATE KEY-----)/;
     if( ! $1 ) {
-        return $self->SetError( "parsing key file failed" );
+        return $self->SetError( summary => _("parsing key file failed"), code => 'CERT_ERROR' );
     }
     return $1;
 
@@ -1602,7 +1682,7 @@ sub ReadServerCA {
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => "unable to fetch host with id: $hostid" );
+        return $self->SetError( summary => _("unable to fetch host with id"), code => "PARAM_CHECK_FAILED" );
     }
     my $file;
     foreach my $k ( @$host ) {
@@ -1611,11 +1691,11 @@ sub ReadServerCA {
         last;
     }
     unless( $file ) {
-        return $self->SetError( summary => "no ca certificate file configured for this hostid" );
+        return $self->SetError( summary => _("no ca certificate file configured for this hostid"), code => 'CERT_ERROR' );
     }
     my $cert = SCR->Read( '.target.string', $file );
     unless( $cert ) {
-        return $self->SetError( summary => "error reading ca certificate: $file" );
+        return $self->SetError( %{SCR->Error(".target.string")} );
     }
     return $cert;
 }
@@ -1648,7 +1728,7 @@ sub run {
     print "-------------- GetHost created host\n";
     @hostArr = @{$self->GetHost( '*:80/dummy-host.example.com' )};
     use Data::Dumper;
-    print Data::Dumper->Dump( [ \@hostArr ] );
+#    print Data::Dumper->Dump( [ \@hostArr ] );
 
     system("cat /etc/apache2/vhosts.d/yast2_vhosts.conf");
 
