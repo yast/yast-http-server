@@ -141,6 +141,18 @@ symbol WizardSequence3(){
             Label::BackButton (), Label::NextButton ());
         Wizard::SetAbortButton ( `abort, Label::CancelButton() );
 
+string servername = (string) HttpServerWidgets::get_host_value("ServerName", YaST::HTTPDData::GetHost("default"), "");
+y2internal("servername - %1", servername);
+
+string serveradmin = (string) HttpServerWidgets::get_host_value("ServerAdmin", YaST::HTTPDData::GetHost("default"), "");
+y2internal("serveradmin - %1", serveradmin);
+
+if (size(servername) ==0) 
+	YaST::HTTPDData::ModifyHost ("default", HttpServerWidgets::set_host_value("ServerName", YaST::HTTPDData::GetHost("default"), "localhost"));
+if (size(serveradmin) ==0) 
+	YaST::HTTPDData::ModifyHost ("default", HttpServerWidgets::set_host_value("ServerAdmin", YaST::HTTPDData::GetHost("default"), "root@localhost"));
+
+
         return CWM::Run (w, $[`abort : Abort]);
 }
 
