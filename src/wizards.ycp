@@ -102,7 +102,7 @@ symbol MainSequence() {
  * Whole configuration of http-server
  * @return sequence result
  */
-symbol HttpServerSequence() {
+boolean HttpServerSequence() {
 
     map aliases = $[
 	"read"	: [ ``( ReadDialog() ), true ],
@@ -132,7 +132,7 @@ symbol HttpServerSequence() {
     symbol ret = Sequencer::Run(aliases, sequence);
 
     UI::CloseDialog();
-    return ret;
+    return ret == `next;
 }
 
 /**
