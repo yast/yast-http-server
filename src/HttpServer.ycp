@@ -310,7 +310,7 @@ global define boolean Write() ``{
 	    // translators: progress stage 2/4
 	    settings[ "settings", "firewall"]:false ?_("Modify firewall") : 
 		// translators: progress stage 2/4
-		_("Modify firewall (to be skipped)"),
+		_("Modify firewall (skipped)"),
 	    // translators: progress stage 3/4
 	    _("Run SuSEconfig"),
 	    settings["settings", "enabled"]:false ? 
@@ -361,7 +361,8 @@ global define boolean Write() ``{
     Require::RequireAndConflictTarget( rpms, [], sformat( _("The enabled modules require
 installation of some of these additional packages:
 %1
-Do you want to install them now?"), mergestring( rpms, ", " ) ) );
+Install them now?
+"), mergestring( rpms, ", " ) ) );
     
     // write httpd.conf
     // default host, some of the values are in sysconfig

@@ -12,7 +12,7 @@ $[
 	    "status": true,
 	    "default": true,
 	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Provides access control based on client hostname, IP address, etc.")
+	    "description" : _("Provides access control based on client host name, IP address, etc.")
 	],
 	"actions" : $[
 	    "status": true,
@@ -24,7 +24,7 @@ $[
 	    "status": true,
 	    "default": true,
 	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Mapping different parts of the host filesystem in the document tree and for URL redirection")
+	    "description" : _("Mapping different parts of the host file system in the document tree and for URL redirection")
 	],
 	"auth" : $[
 	    "status": true,
@@ -42,7 +42,7 @@ $[
 	    "status": true,
 	    "default": true,
 	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Generates directory indexes, automatically, similar to the Unix ls command")
+	    "description" : _("Generates directory indices, automatically, similar to the Unix ls command")
 	],
 	"cgi" : $[
 	    "status": true,
@@ -60,7 +60,7 @@ $[
 	    "status": true,
 	    "default": true,
 	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Modifies the environment which is passed to CGI scripts and SSI pages")
+	    "description" : _("Modifies the environment passed to CGI scripts and SSI pages")
 	],
 	"expires" : $[
 	    "status": true,
@@ -72,7 +72,7 @@ $[
 	    "status": true,
 	    "default": true,
 	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Server-parsed html documents (Server Side Includes)")
+	    "description" : _("Server-parsed HTML documents (Server Side Includes)")
 	],
 	"log_config" : $[
 	    "status": true,
@@ -84,7 +84,7 @@ $[
 	    "status": true,
 	    "default": true,
 	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Associates the requested filename's extensions with the file's behavior and content")
+	    "description" : _("Associates the requested file name's extensions with the file's behavior and content")
 	],
 	"negotiation" : $[
 	    "status": true,
@@ -102,13 +102,13 @@ $[
 	    "status": false,
 	    "default": false,
 	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Provides information on server activity and performance")
+	    "description" : _("Provides information about server activity and performance")
 	],
 	"suexec" : $[
 	    "status": true,
 	    "default": true,
 	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Allows CGI scripts to run as a specified user and Group")
+	    "description" : _("Allows CGI scripts to run as a specified user and group")
 	],
 	"userdir" : $[
 	    "status": true,
@@ -162,7 +162,7 @@ $[
 	    "status": false,
 	    "default": false,
 	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Filesystem provider for mod_dav")
+	    "description" : _("File system provider for mod_dav")
 	],
 	"deflate"  : $[
 	    "status": false,
@@ -204,7 +204,7 @@ $[
 	    "status": false,
 	    "default": false,
 	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Server-side imagemap processing")
+	    "description" : _("Server-side image map processing")
 	],
 	"info"  : $[
 	    "status": false,
