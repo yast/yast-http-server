@@ -25,6 +25,13 @@ import "Runlevel";
 
 include "http-server/routines.ycp";
 
+
+
+/**
+ * Required packages
+ */
+global list required_packages = ["apache2", "apache2-prefork", "apache2-metuxmpm", "apache2-worker"];
+
 /**
  * Abort function
  * return boolean return true if abort
@@ -554,6 +561,16 @@ global define void enableService(boolean on) ``{
     if( settings["settings", "enabled"]:false == on ) return;
     settings["settings", "enabled"] = on;
     modified = true;
+}
+
+
+/**
+ * Return required packages for auto-installation
+ * @return map of packages to be installed and to be removed
+ */
+global define map AutoPackages() ``{
+	return ($["install": required_packages, "remove": []]);
+
 }
 
 /* EOF */

@@ -60,6 +60,10 @@ else if (func == "Change") {
 else if (func == "Import") {
     ret = HttpServer::Import(param);
 }
+/* Return required packages */
+else if (func == "Packages") {
+    ret = HttpServer::AutoPackages();
+}
 /* Return actual state */
 else if (func == "Export") {
     ret = HttpServer::Export();
