@@ -76,6 +76,37 @@ global list< map<string,any> > set_host_value ( string keyword, list< map<string
     return host;
 }
 
+global boolean validate_servername (string id, string key, map event) ``{
+    import "Hostname";
+    string value = (string)UI::QueryWidget (`id (id), `Value);
+    if (!Hostname::CheckFQ (value))
+    {
+	Popup::Error (_("Invalid server name.") 
+	    + "\n\n" 
+	    + Hostname::ValidFQ ());
+	return false;
+    }
+    else
+    {
+	return true;
+    }
+}
+
+
+global boolean validate_serverip (string id, string key, map event) ``{
+    import "IP";
+    string value = (string)UI::QueryWidget (`id (id), `Value);
+    if (!IP::Check (value))
+    {
+	Popup::Error (_("Invalid IP address."));
+	return false;
+    }
+    else
+    {
+	return true;
+    }
+}
+
 /*********************************** inital overview table ********************************/
 
 global symbol showAccessLogPopup (any key, map event);
@@ -87,9 +118,12 @@ void OverviewInit (string widget)
 {
     string listen_summary = mergestring ( 
 	maplist( map<string,any> listen, YaST::HTTPDData::GetCurrentListen(), 
-	    ``(item2listen (listen["ADDRESS"]:"",listen["PORT"]:"80"))), " ");
+	    ``(item2listen (listen["ADDRESS"]:"",listen["PORT"]:"80"))), ", ");
 	    
-    y2error ("Current listen: %1", YaST::HTTPDData::GetCurrentListen() );
+    // limit the text to 50 chars
+    if (size (listen_summary) > 50) listen_summary = substring (listen_summary, 0, 50) + "...";
+	    
+    y2milestone ("Current listen: %1", YaST::HTTPDData::GetCurrentListen() );
 	    
     string default_host = get_host_value( "ServerName", YaST::HTTPDData::GetHost ("default"), "");
     if (default_host == "")
@@ -99,15 +133,17 @@ void OverviewInit (string widget)
 	default_host = sformat( _("in %1"), get_host_value( "DocumentRoot", YaST::HTTPDData::GetHost ("default"), ""));
     }
     
-    if (host_ids == nil)
-    {
-	host_ids = YaST::HTTPDData::GetHostsList ();
-    }
-    
+    host_ids = YaST::HTTPDData::GetHostsList ();
+
+    y2milestone ("Current listen: %1", host_ids );
+
     string hosts = mergestring (
 	maplist( string host, host_ids, ``{
 	    return get_host_value ( "ServerName", YaST::HTTPDData::GetHost (host), "" );
-	}), " ");
+	}), ", ");
+
+    // limit the text to 50 chars
+    if (size (hosts) > 50) hosts = substring (hosts, 0, 50) + "...";
 
     UI::ChangeWidget (`overview_table, `Items, 
 	[
@@ -202,12 +238,10 @@ void HostsInit (string widget)
 
 map<string,string> AskNewInfo (string servername, string ip)
 {
-    import "Hostname";
-    import "IP";
-    
     if (size (servername) == 0)
     {
 	import "DNS";
+	import "Hostname";
 	// suggest reasonable value
 	servername = Hostname::MergeFQ (DNS::hostname, DNS::domain);
 	// maybe we should check, if there is such host already
@@ -231,9 +265,9 @@ and click OK to continue with the default host
 switch. Otherwise click Cancel not to change
 the default host.")),
 	    // translators: textentry to set the host name
-	    `TextEntry (`id (`name), _("Server &Name:"), servername),
+	    `TextEntry (`id ("servername"), _("Server &Name:"), servername),
 	    // translators: textentry to set the host IP address
-	    `Left( `ComboBox( `id(`ip), `opt(`editable), _("Server &IP address:"), ips, ip ) ),
+	    `Left( `ComboBox( `id("ip"), `opt(`editable), _("Server &IP address:"), ips, ip ) ),
 	    `VSpacing(0.5),
 	    `HBox( `PushButton (`id(`ok), `opt(`default), Label::ContinueButton ()),
 		`PushButton (`id(`cancel), Label::CancelButton ()) )
@@ -252,35 +286,18 @@ the default host.")),
 	}
 	
 	// it must be `ok
-	servername = (string)UI::QueryWidget (`name, `Value);
-	if (size(servername) == 0)
+	if (validate_servername("servername",nil,nil))
 	{
-	    // translators: error message - the entered server name is not valid domain name
-	    Popup::Error (_("Server name cannot be empty."));
 	    continue;
 	}
+
+	servername = (string)UI::QueryWidget (`id("servername"), `Value);
 	
-	if (!Hostname::CheckFQ (servername))
+	if (validate_serverip("ip",nil,nil))
 	{
-	    // translators: error message - the entered server name is not valid domain name
-	    Popup::Error (_("Invalid server name."));
 	    continue;
 	}
-	
-	ip = (string)UI::QueryWidget (`ip, `Value);
-	if (size(ip) == 0)
-	{
-	    // translators: error message - the entered server IP is not valid
-	    Popup::Error (_("Server IP address cannot be empty."));
-	    continue;
-	}
-	
-	if (!IP::Check (ip))
-	{
-	    // translators: error message - the entered server IP is not valid
-	    Popup::Error (_("Invalid IP address."));
-	    continue;
-	}
+	ip = (string)UI::QueryWidget (`id("ip"), `Value);
 	
 	break;
 	
@@ -357,7 +374,7 @@ list HostsContents (map descr) {
 }
 
 boolean HostsDelete (any opt_id, string opt_key) {
-    if (opt_key == "default")
+    if (opt_id == "default")
     {
 	// translators: error message - default host cannot be deleted
 	Popup::Error (_("Cannot delete the default host."));
@@ -368,7 +385,7 @@ boolean HostsDelete (any opt_id, string opt_key) {
 	return false;
 	
     HttpServer::modified = true;
-    return YaST::HTTPDData::DeleteHost (opt_key);
+    return YaST::HTTPDData::DeleteHost ((string)opt_id);
 }
 
 global string HostsMapId2Key (map desc, string id)
@@ -387,7 +404,6 @@ global string HostDocumentRootSummary( string key, any id )
 
 global boolean HostIsDefault( any widget, string key )
 {
-    y2error( "Testing changed of %1", key );
     return key == "default";
 }
 
@@ -408,21 +424,6 @@ global void initServiceStatus (any key);
 global void storeServiceStatus (any key, map event);
 global void initAdaptFirewall (any key);
 global void storeAdaptFirewall (any opt_id, map event);
-
-boolean validate_servername (string id, string key, map event) ``{
-    y2internal ("Validate function");
-    import "Hostname";
-    string value = (string)UI::QueryWidget (`id ("ServerName"), `Value);
-    if (!Hostname::CheckFQ (value))
-    {
-	Popup::Error (Hostname::ValidFQ ());
-	return false;
-    }
-    else
-    {
-	return true;
-    }
-}
 
 /**
  * Map of popups for CWM
@@ -446,7 +447,6 @@ global map<string,map> popups = $[
 		    // table cell description
 		    "label" : _("Document Root"),
 		    "optional" : false,
-		    "immutable" : true,
 		],
 		"popup" : $[
 		    "widget" : `textentry,
@@ -745,7 +745,7 @@ define string item2listen( string network, string port ) ``{
 	    // translators: text entry label
 	    `TextEntry( `id(`port), _("&Port:"), port ),
 	    // translators: combo box label for list of configured IPs
-	    `Left( `ComboBox( `id(`address), `opt( `editable ), _("Network &Address:"), ips ) ),
+	    `Left( `ComboBox( `id("address"), `opt( `editable ), _("Network &Address:"), ips ) ),
 	    `VSpacing(),
 	    `HBox( 
 		`PushButton( `id(`ok), Label::OKButton() ),
@@ -754,7 +754,7 @@ define string item2listen( string network, string port ) ``{
 	));
 	
 	if( !adr_type ) {
-	    UI::ChangeWidget( `id( `address ), `Value, network );
+	    UI::ChangeWidget( `id( "address" ), `Value, network );
 	}
 	
 	symbol ret = nil;
@@ -764,12 +764,21 @@ define string item2listen( string network, string port ) ``{
 	    ret = (symbol) UI::UserInput();
 	    
 	    if( ret == `ok ) {
-		res["ADDRESS"] = (string)UI::QueryWidget( `id(`address), `Value );
+		res["ADDRESS"] = (string)UI::QueryWidget( `id("address"), `Value );
 		res["PORT"] = (string)UI::QueryWidget( `id(`port), `Value );
 		if ( res["ADDRESS"]:nil == aa ) 
 		{
 		    // on all addresses, cleanup the value
 		    res["ADDRESS"] = "";
+		}
+		else
+		{
+		    // validate
+		    if (! validate_serverip ("address", nil, nil) )
+		    {
+			ret = nil;
+			continue;
+		    }
 		}
 		
 		// validation
