@@ -505,6 +505,7 @@ global map<string,map> popups = $[
 		    // table cell description
 		    "label" : _("Server Name"),
 		    "optional" : false,
+		    "unique" : true,
 		],
 		"popup" : $[
 		    "label"  : _("Server Name"),
@@ -518,6 +519,7 @@ global map<string,map> popups = $[
 		    // table cell description
 		    "label" : _("Document Root"),
 		    "optional" : false,
+		    "unique" : true,
 		],
 		"popup" : $[
 		    "widget" : `textentry,
@@ -528,6 +530,7 @@ global map<string,map> popups = $[
 		    // table cell description
 		    "label" : _("Server Administrator E-Mail"),
 		    "optional" : false,
+		    "unique" : true,
 		],
 		"popup" : $[
 		    "widget" : `textentry,
@@ -538,6 +541,7 @@ global map<string,map> popups = $[
 		    // table cell description
 		    "label"  : _("Server Resolution"),
 		    "optional" : false,
+		    "unique" : true,
 		],
 		"popup" : $[
 		    "widget" : `radio_buttons,
@@ -553,13 +557,15 @@ global map<string,map> popups = $[
 		"table" : $[
 		    // table cell description
 		    "label"  : _("IP Address"),
-		    "optional" : false
+		    "optional" : false,
+		    "unique" : true,
 		],
 	    ],
 	    "SSL" : $[
 		"table" : $[
 		    "handle" : `ssl,
 		    "optional" : false,
+		    "unique" : true,
 		]
 	    ],
 	    "Directory" : $[
@@ -599,7 +605,9 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	    ],
 	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
 	    "add_items" : 
-		maplist( string key, any value, (map<string,any>)SCR::Read (.target.ycp, Directory::datadir + "/all-host-options.ycp"), ``(key) ),
+		maplist( string key, any value, (map<string,any>)union( 
+		    (map)SCR::Read (.target.ycp, Directory::datadir + "/all-host-options.ycp"), 
+		    popups ), ``(key) ),
 	    "help" : HELPS["global_table"]:"",
 	]);
 
@@ -1140,7 +1148,6 @@ define string item2listen( string network, string port ) ``{
 	    return showErrorLogPopup( key, event );
 	}
 
-	// default handling
 	symbol res = TablePopup::TableHandle( hostwidget, key, event );
 	if (update_contents)
 	{
@@ -1180,6 +1187,7 @@ define string item2listen( string network, string port ) ``{
 	
 	options = set_host_value( opt_key, options, UI::QueryWidget (`id (opt_key), property) );
 	YaST::HTTPDData::ModifyHost (currenthost, options);
+	y2internal ("Storing host %1: %2", currenthost, options);
 	HttpServer::modified = true;
     }
 
