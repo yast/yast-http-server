@@ -1,4 +1,177 @@
-#package YaPI::HTTPD::System;
+=head1 NAME
+
+YaPI::Apache2
+
+=head1 PREFACE
+
+This package is the public Yast2 API to configure the apache2.
+
+=head1 SYNOPSIS
+
+use YaPI::Apache2
+
+GetHostsList()
+
+  returns a list of host id strings
+
+$hostData = GetHost($hostid)
+
+  returns a host hash with all settings of the host
+
+ModifyHost($host_id,$hostData)
+
+  modifies the host with $host_id.
+  $hostData is an array reference containing the data
+
+CreateHost($host_id,$host_hash)
+
+  creates a new host with $host_id
+  $host_hash is a hash reference containing the data
+
+DeleteHost($host_id)
+
+  the host with $host_id is getting deleted
+
+$modList = GetModuleList()
+
+  returns a list of strings with all enabled modules
+
+$knownMods = GetKnownModules()
+
+  returns a list of maps with all known modules
+
+ModifyModuleList($moduleList,$state)
+
+  $moduleList is a list of module name strings
+  $state is a boolean for enable/disable the modules in list
+
+$knownSel = GetKnownModuleSelections()
+
+  returns a list of strings with all known predefined selections
+
+$selList = GetModuleSelectionsList()
+
+  returns a list of all activated predefined module selections
+
+ModifyModuleSelectionList($selectionList,$state)
+
+  $selectionList is a list of predefined module selections
+  $state is a boolean for enable/disable the selections in list
+
+ModifyService($state)
+
+  $state is a boolean for enable/disable the apache2 runlevel script
+
+$serviceState = ReadService()
+
+  returnin the state of the apache2 runlevel script as a boolean
+
+CreateListen($fromPort,$toPort,$address,$doFirewall)
+
+  $fromPort and $toPort are the listen ports. They can be the same.
+  $address is the bind address and can be an empty string for 'all'
+  $doFirewall is a boolean to write the listen data to the SuSEFirewall2
+
+DeleteListen($fromPort,$toPort,$address,$doFirewall)
+
+  $fromPort and $toPort are the listen ports. They can be the same.
+  $address is the bind address and can be an empty string for 'all'
+  $doFirewall is a boolean to delete the listen data from the SuSEFirewall2
+
+$curListen = GetCurrentListen()
+
+  returns a list of hashes with the listen data
+  Hash keys are ADDRESS and PORT
+
+$spackList = GetServicePackages()
+
+  returns a list of packages needed for this service
+  (dependencies are not solved)
+
+$mpackList = GetModulePackages()
+
+  returns a list of packages needed for the modules
+  (dependencies are not solved)
+
+GetErrorLogFiles()
+
+  not implemented yet
+
+GetAccessLogFiles()
+
+  not implemented yet
+
+GetTransferLogFiles()
+
+  not implemented yet
+
+B<Host Data array>
+
+This function returns a list of hashes. Each hash has at least the following
+keys:
+
+ KEY   => apache2 configuration directive like 'ServerAdmin'
+ VALUE => the value of the configuration directive like 'admin@mydom.de'
+
+the following keys are optional
+
+ OVERHEAD => a comment in the config file above the KEY/VALUE directive
+
+The following keys are not mapped 1:1 from the configfile, but are
+derived from real apache2 directives
+
+ KEY   = SSL
+ VALUE = 0,1 or 2
+
+turns on/off SSL for the host.
+
+0 = SSL is turned off
+
+1 = SSL is turned on but SSL is not required
+
+2 = SSL is turned on and SSL is required for every connection
+
+KEY   = VirtualByName
+VALUE = 0,1
+
+B<Host id>
+
+Every host has an so called host id which is used to identify and make
+it unique to the API.
+So the host id can not be choosen out of the blue but has a fix structure:
+
+    vhost_entry/servername
+
+For example
+
+    *:80/myserver.mydom.de
+    192.168.0.10:80/internal.mydom.de
+
+The part in front of the slash is the virtual host
+part and will appear behind the "VirtualHost" directive
+in the config file. The part behind the slash is the
+servername. So for the examples above, the apache2 config
+will look like this:
+
+    <VirtualHost *:80>
+        ServerName myserver.mydom.de
+    </VirtualHost>
+
+    <VirtualHost 192.168.0.10:80>
+        ServerName internal.mydom.de
+    </VirtualHost>
+
+there is just one host id that breaks this nameing schema and
+that is the "default" host. Everything in the default host
+will not end in a VirtualHost section.
+You can not create or delete the default host id.
+
+=head1 DESCRIPTION
+
+=over 2
+
+=cut
+
 package HTTPD;
 use YaST::YCP;
 BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
@@ -8,6 +181,7 @@ YaST::YCP::Import ("Service");
 YaST::YCP::Import ("SuSEFirewall");
 YaST::YCP::Import ("NetworkDevices");
 YaST::YCP::Import ("Progress");
+
 
 #######################################################
 # temoprary solution start
@@ -74,7 +248,27 @@ sub checkHostmap {
     return 1;
 }
 
-#list<string> GetHostList();
+=item *
+C<@hostList = GetHostsList();>
+
+This function returns a list of strings of all host ids.
+Even without any virtual host, there is always the "default"
+host id for the default host.
+On error, undef is returned and the Error() function can be used
+to get the error hash.
+
+EXAMPLE:
+
+ my $list = GetHostsList();
+ if( not defined($list) ) {
+     return Error();
+ }
+ foreach my $hostid ( @$list ) {
+     print "ID: $hostid\n";
+ }
+
+=cut
+
 BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
     my @ret = ();
@@ -89,10 +283,32 @@ sub GetHostsList {
     } else {
         return SetError( summary => 'SCR Agent parsing failed' );
     }
-    return @ret;
+    return \@ret;
 }
 
-#map GetHost( string hostid );
+=item *
+C<$hostData = GetHost($hostid);>
+
+This function returns a host data list.
+
+EXAMPLE
+
+ # dumping all configured hosts
+ my $hostList = GetHostsList();
+ if( not defined $hostList ) {
+     # error
+ }
+ foreach my $hostid ( @$hostList ) {
+     my @host = GetHost( $hostid );
+     print "# dumping $hostid\n";
+     foreach my $directive ( @host ) {
+         print $directive->{OVERHEAD}."\n";
+         print $directive->{KEY}.' '.$directive->{VALUE}."\n";
+     }
+ }
+
+=cut
+
 BEGIN { $TYPEINFO{GetHost} = ["function", ["list", [ "map", "string", "any" ] ], "string"]; }
 sub GetHost {
     my $hostid = shift;
@@ -112,7 +328,6 @@ sub GetHost {
     return SetError( summary => 'hostid not found' ) unless( $filename );
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
         if( $hostHash->{HOSTID} eq $hostid ) {
-            use Data::Dumper;
             my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
             my $sslHash = { KEY => 'SSL', VALUE => 0 };
             my $overheadHash = { KEY => 'OVERHEAD', VALUE => $hostHash->{'OVERHEAD'} };
@@ -132,13 +347,65 @@ sub GetHost {
             } elsif( $sslEngine eq 'on' ) {
                 $sslHash->{'VALUE'} = 1;
             }
-            return ( @{$hostHash->{'DATA'}}, $sslHash, $vbnHash );
+            return [ @{$hostHash->{'DATA'}}, $sslHash, $vbnHash ];
         }
     }
     return SetError( summary => 'hostid not found' );
 }
 
-#boolean ModifyHost( string hostid, list hostdata );
+=item *
+C<ModifyHost($hostid,$hostdata)>
+
+This function modifies the host with $hostid.
+The complete host data will be replaced with $hostdata.
+
+EXAMPLE
+
+ # turn off SSL and setting a comment in config file
+ my @host = GetHost( $hostid );
+ foreach my $directive ( @host ) {
+     if( $directive->{KEY} eq 'SSL' ) {
+         $directive->{VALUE} = 2;
+         $directive->{OVERHEAD} = "# customer wants SSL to be required\n";
+     }
+ }
+ ModifyHost( $hostid, \@host );
+
+ATTENTION
+
+If you change the ServerName directive, the host id will change 
+automatically too.
+
+HINT
+
+A helper function like replaceKey might be helpful but is not provided
+by the API.
+
+ my @hostData = GetHost( $hostid );
+ replaceKey( 'SSL', { KEY => 'SSL', VALUE => 1 }, \@hostData );
+ replaceKey( 'ServerAdmin', { KEY => 'ServerAdmin', VALUE => 'my@my.dom' }, \@hostData );
+ ModifyHost( $hostid, \@hostData );
+
+ sub replaceKey {
+     my $key      = shift;
+     my $new      = shift;
+     my $hostData = shift;
+     my $found = 0;
+ 
+     foreach( @$hostData ) {
+         if( $_->{KEY} eq $new->{KEY} ) {
+             $new->{OVERHEAD} = $_ ->{OVERHEAD} unless( exists($new->{OVERHEAD}) );
+             $_ = $new;
+             $found = 1;
+             last;
+         }
+     }
+     push( @$hostData, $new ) unless( $found );
+     return 1;
+ }
+
+=cut
+
 BEGIN { $TYPEINFO{ModifyHost} = ["function", "boolean", "string", [ "map", "string", "any" ] ]; }
 sub ModifyHost {
     my $hostid = shift;
@@ -214,7 +481,28 @@ sub ModifyHost {
     return 0; # host not found. Error?
 }
 
-#bool CreateHost( string hostid, list hostdata );
+=item *
+C<CreateHost($hostid,$hostdata)>
+
+This function creates a host with $hostid. $hostdata is the host data
+array.
+
+ATTENTION
+
+ServerName directive and host id must match. If not, the host will not
+be created.
+
+EXAMPLE
+
+ my @newHost = (
+                 { KEY => "ServerName",    VALUE => 'createTest2.suse.de' },
+                 { KEY => "VirtualByName", VALUE => 1 },
+                 { KEY => "ServerAdmin",   VALUE => 'no@one.de' }
+               );
+ CreateHost( '192.168.1.2/createTest2.suse.de', \@temp );
+
+=cut
+
 BEGIN { $TYPEINFO{CreateHost} = ["function", "boolean", "string", [ "map", "string", "any" ] ]; }
 sub CreateHost {
     my $hostid = shift;
@@ -273,6 +561,16 @@ sub CreateHost {
     return 1;
 }
 
+=item *
+C<DeleteHost($hostid)>
+
+This function removes the host with $hostid
+
+EXAMPLE
+ DeleteHost( '192.168.1.2/createTest2.suse.de' );
+
+=cut
+
 #bool DeleteHost( string hostid );
 BEGIN { $TYPEINFO{DeleteHost} = ["function", "boolean", "string"]; }
 sub DeleteHost {
@@ -318,7 +616,23 @@ sub writeHost {
 # apache2 modules API start
 #######################################################
 
-# list<string> GetModuleList()
+=item *
+C<$moduleList = GetModuleList()>
+
+this function returns a reference to an array of strings.
+The list contains all active apache2 module names.
+
+EXAMPLE
+
+ my $modules = GetModuleList();
+ if( $modules ) {
+     foreach my $mod_name ( @$modules ) {
+         print "active module: $mod_name\n";
+     }
+ }
+
+=cut
+
 BEGIN { $TYPEINFO{GetModuleList} = ["function", [ "list", "string" ] ]; }
 sub GetModuleList {
     my $data = SCR::Read('.sysconfig.apache2.APACHE_MODULES'); # FIXME: Error handling
@@ -327,7 +641,40 @@ sub GetModuleList {
     return split(/\s+/, $data);
 }
 
-# list<map> GetKnownModules()
+=item *
+C<$moduleList = GetKnownModules()>
+
+this function returns a reference to an array of hashes.
+Each has has the following keys:
+
+name      => name of the module
+summary   => a description of the module
+packages  => an array reference with all needed packages for this module
+default   => a boolean that shows if this module is active by default
+required  => a boolean that shows if this module is required
+suggested => a boolean that shows if this module is suggested by SUSE
+position  => a number that shows the position in the loading order
+
+EXAMPLE
+
+ # list all modules with enabled/disabled state
+ my $knownMods  = GetKnownModules();
+ my $activeMods = GetModuleList();
+ my %activeMods = ();
+ @activeMods{@$activeMods} = ();
+ foreach my $km ( @$knownMods ) {
+     my $state = (grep(/^$km$/, @$activeMods))?('on'):('off');
+     delete($activeMods{$km});
+     print "$km->{name} = $state\n";
+ }
+
+ # list active unknown mods now
+ foreach my $m ( keys(%activeMods ) ) {
+     print "$m = on\n";
+ }
+
+=cut
+
 BEGIN { $TYPEINFO{GetKnownModules} = ["function", [ "list", ["map","string","any"] ] ]; }
 sub GetKnownModules {
     my @ret = ();
@@ -335,10 +682,21 @@ sub GetKnownModules {
         push( @ret, { name => $mod, %{$HTTPDModules::modules{$mod}} } );
         @ret = sort( { $a->{position} <=> $b->{position} } @ret );
     }
-    return @ret;
+    return \@ret;
 }
 
-# bool ModifyModuleList( list<string>, bool )
+=item *
+C<ModifyModuleList($moduleList, $state)>
+
+with this function you can turn on and off modules of the apache2
+$modulelist is an array reference to a list of modulenames.
+
+EXAMPLE
+ ModifyModuleList( [ 'perl' ], 1 );
+ ModifyModuleList( [ 'php4' ], 0 );
+
+=cut
+
 BEGIN { $TYPEINFO{ModifyModuleList} = ["function", "boolean", [ "list","string" ], "boolean" ]; }
 sub ModifyModuleList {
     my $newModules = shift;
@@ -351,7 +709,7 @@ sub ModifyModuleList {
             push( @newList, $mod );
         }
     } else {
-        my @oldList = ( GetModuleList(), selections2modules( [ GetModuleSelectionsList() ] ) );
+        my @oldList = ( @{GetModuleList()}, selections2modules( [ GetModuleSelectionsList() ] ) );
         my %uniq;
         @uniq{@oldList} = ();
         @oldList = keys( %uniq );
@@ -370,38 +728,93 @@ sub ModifyModuleList {
     return 1;
 }
 
-# map GetKnownModuleSelections()
+=item *
+C<$knownSelList = GetKnownModuleSelections()>
+
+this functions returns a reference to an array that
+contains hashes with information about all known
+module selections.
+One hash has the following keys:
+
+id      => name of the selection
+summary => a describtion of the selection
+modules => an array reference with the names of the modules
+default => a boolean that shows if this selection is on by default
+
+EXAMPLE
+
+ my $knownSelList = GetKnownModuleSelections();
+ foreach my $kms ( @$knownSelList ) {
+     print "$kms->{id} = $kms->{summary}\n";
+ }
+
+=cut
+
+
 BEGIN { $TYPEINFO{GetKnownModuleSelections} = ["function", [ "map","string","any" ] ]; }
 sub GetKnownModulSelections {
     my @ret = ();
     foreach my $sel ( keys(%HTTPDModules::selection) ) {
         push( @ret, { id => $sel, %{$HTTPDModules::selection{$sel}} } );
     }
-    return @ret;
+    return \@ret;
 }
 
-# list<string> GetModuleSelectionsList()
+=item *
+C<$selList = GetModuleSelectionsList()>
+
+this functions returns a reference to an array that
+contains strings with the names of the active module
+seletcions.
+
+EXAMPLE
+
+ my $selList = GetModuleSelectionsList();
+ print "active selections: ".join(',', @$selList)."\n";
+
+=cut
+
 BEGIN { $TYPEINFO{GetModuleSelectionsList} = ["function", ["list","string"] ]; }
 sub GetModuleSelectionsList {
-    return @{(SCR::Read('.http_server.moduleselection'))[0]};
+    return (SCR::Read('.http_server.moduleselection'))[0];
 }
 
-# bool ModifyModuleSelectionList( list<string>, bool )
+=item *
+C<ModifyModuleSelectionList($selList, $status)>
+
+this function modifies the module selection list.
+You can turn on and off module selections with the
+boolean $status.
+Changing the selections will directly influence the
+module list.
+
+EXAMPLE
+
+ ModifyModuleSelectionList( ['perl-scripting', 'debug'],1  );
+ ModifyModuleSelectionList( ['php4-scripting'], 0 );
+
+=cut
+
 BEGIN { $TYPEINFO{ModifyModuleSelectionList} = ["function", "boolean", ["list","string"], "boolean" ]; }
 sub ModifyModuleSelectionList {
     my $newSelection = shift;
     my $enable = shift;
     my %uniq = ();
 
-    @uniq{GetModuleSelectionsList()} = ();
+    @uniq{@{GetModuleSelectionsList()}} = ();
     if( $enable ) {
         @uniq{@$newSelection} = ();
+        foreach my $ns ( @$newSelection ) {
+            ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 1 );
+            ModifyModuleList( [], 1 );
+        }
     } else {
         delete(@uniq{@$newSelection});
+        ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 0 );
+        ModifyModuleList( [], 1 );
     }
 
     SCR::Write('.http_server.moduleselection', [keys(%uniq)]);
-    ModifyModuleList( [], 1 );
 }
 
 # internal only
@@ -424,7 +837,20 @@ sub selections2modules {
 # apache2 modify service
 #######################################################
 
-# boolean ModiflyService( boolean )
+=item *
+C<ModifyService($status)>
+
+with this function you can turn on and off the apache2
+runlevel script.
+Turning off means, no apache2 start at boot time.
+
+EXAMPLE
+
+ ModifyService(0); # turn apache2 off
+ ModifyService(1); # turn apache2 on
+
+=cut
+
 BEGIN { $TYPEINFO{ModifyService} = ["function", "boolean", "boolean" ]; }
 sub ModifyService {
     my $enable = shift;
@@ -437,6 +863,22 @@ sub ModifyService {
         Service::RunInitScript( "apache2", "stop" );
     }
     return 1;
+}
+
+=item *
+C<$status = ReadService()>
+
+with this function you can read out the state of the
+apache2 runlevel script (starting apache2 at boot time).
+
+EXAMPLE
+
+ print "apache2 is ".( (ReadService())?('on'):('off') )."\n";
+
+=cut
+BEGIN { $TYPEINFO{ReadService} = ["function", "boolean"]; }
+sub ReadService {
+    return Service::Enabled('apache2');
 }
 
 #######################################################
@@ -463,8 +905,24 @@ sub ip2device {
     return \%ip2device;
 }
 
-# boolean CreateListen( int, int, list<string>, boolean )
-# boolean CreateListen( int, int, list<string> )
+=item *
+C<CreateListen( $fromPort, $toPort, $listen, $doFirewall )>
+
+with this function you can configure the addresses and ports
+the webserver is listening on. $fromPort and $toPort can have
+the same value. $listen must be a network interface of the
+host but can be an empty string for 'all' interfaces.
+The $doFirewall boolean indicates if the SuSEFirewall2 shall
+be configured for the settings.
+
+EXAMPLE
+
+ CreateListen( 80, 80, '127.0.0.1', 0 );   # localhost without firewall setup
+ CreateListen( 443, 443, '', 1 );          # HTTPS on all interfaces
+ CreateListen( 80, 80, '192.168.0.1', 1 ); # internal+firewall setup
+
+=cut
+
 BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ], "boolean" ] ; }
 sub CreateListen {
     my $fromPort = shift;
@@ -472,7 +930,7 @@ sub CreateListen {
     my $ip = shift; #FIXME: this is a list
     my $doFirewall = shift;
 
-    my @listenEntries = GetCurrentListen();
+    my @listenEntries = @{GetCurrentListen()};
     my %newEntry;
     $newEntry{ADDRESS} = $ip if ($ip);
     $newEntry{PORT} = ($fromPort eq $toPort)?($fromPort):($fromPort.'-'.$toPort);
@@ -486,7 +944,24 @@ sub CreateListen {
     return 1;
 }
 
-# boolean CreateListen( int, int, list<string> )
+=item *
+C<DeleteListen( $fromPort, $toPort, $listen, $doFirewall )>
+
+with this function you can delete an address and port
+the webserver is listening on. $fromPort and $toPort can have
+the same value. $listen must be a network interface of the
+host but can be an empty string for 'all' interfaces.
+The $doFirewall boolean indicates if the SuSEFirewall2 shall
+be configured for the settings.
+
+EXAMPLE
+
+ DeleteListen( 80, 80, '127.0.0.1', 0 );   # localhost without firewall setup
+ DeleteListen( 443, 443, '', 1 );          # HTTPS on all interfaces
+ DeleteListen( 80, 80, '192.168.0.1', 1 ); # internal+firewall setup
+
+=cut
+
 BEGIN { $TYPEINFO{DeleteListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ], 'boolean' ] ; }
 sub DeleteListen {
     my $fromPort = shift;
@@ -494,7 +969,7 @@ sub DeleteListen {
     my $ip = shift; #FIXME: this is a list
     my $doFirewall = shift;
 
-    my @listenEntries = GetCurrentListen();
+    my @listenEntries = @{GetCurrentListen()};
     my @newListenEntries = ();
     foreach my $listen ( @listenEntries ) {
         if( defined($ip) and (not exists($listen->{'ADDRESS'}) or $listen->{'ADDRESS'} ne $ip) ) {
@@ -515,7 +990,26 @@ sub DeleteListen {
     return 1;
 }
 
-# list<map> GetCurrentListen()
+=item *
+C<$listenList = GetCurrentListen()>
+
+this function returns a list of hashes with the current listen data.
+Each hash has the following keys:
+
+ADDRESS => the listen address like 127.0.0.1
+PORT    => the listen port like "80", "443", "80-81"
+
+it's not possible to get the firewall settings.
+
+EXAMPLE
+
+ my $listenList = GetCurrentListen();
+ foreach my $ld ( @$listenList ) {
+     print "Listening on: ".$ld->{ADDRESS}."/".$ld->{PORT}."\n";
+ }
+
+=cut
+
 BEGIN { $TYPEINFO{GetCurrentListen} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetCurrentListen {
     my @data = SCR::Read('.http_server.listen');
@@ -527,7 +1021,7 @@ sub GetCurrentListen {
             push( @ret, { PORT => $listen } );
         }
     }
-    return @ret;
+    return \@ret;
 }
 
 #######################################################
@@ -540,13 +1034,25 @@ sub GetCurrentListen {
 # apache2 pacakges
 #######################################################
 
-# list<string> GetServicePackages();
+=item *
+C<GetServicePackages()>
+
+???
+
+=cut
+
 BEGIN { $TYPEINFO{GetServicePackages} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetServicePackages {
     return 'apache2'; #???
 }
 
-# list<string> GetModulePackages
+=item *
+C<GetModulePackages()>
+
+???
+
+=cut
+
 BEGIN { $TYPEINFO{GetModulePackages} = ["function", ["list", "string"] ]; }
 sub GetModulePackages {
     my $mods = GetModuleSelectionsList();
@@ -592,13 +1098,13 @@ sub GetTransferLogFiles {
 
 sub run {
     print "-------------- GetHostsList\n";
-    foreach my $h ( GetHostsList() ) {
+    foreach my $h ( @{GetHostsList()} ) {
         print "ID: $h\n";
     }
 
     print "-------------- ModifyHost Number 0\n";
     my $hostid = "default";
-    my @hostArr = GetHost( $hostid );
+    my @hostArr = @{GetHost( $hostid )};
     ModifyHost( $hostid, \@hostArr );
 
     print "-------------- CreateHost\n";
@@ -610,7 +1116,7 @@ sub run {
     CreateHost( '192.168.1.2/createTest2.suse.de', \@temp );
 
     print "-------------- GetHost created host\n";
-    @hostArr = GetHost( '*:80/dummy-host.example.com' );
+    @hostArr = @{GetHost( '*:80/dummy-host.example.com' )};
     use Data::Dumper;
     print Data::Dumper->Dump( [ \@hostArr ] );
 
@@ -620,17 +1126,17 @@ sub run {
     DeleteHost( '192.168.1.2/createTest2.suse.de' );
 
     print "-------------- show module list\n";
-    foreach my $mod ( GetModuleList() ) {
+    foreach my $mod ( @{GetModuleList()} ) {
         print "MOD: $mod\n";
     }
 
     print "-------------- show known modules\n";
-    foreach my $mod ( GetKnownModules() ) {
+    foreach my $mod ( @{GetKnownModules()} ) {
         print "KNOWN MOD: $mod->{name}\n";
     }
 
     print "-------------- show known selections\n";
-    foreach my $mod ( GetKnownModuleSelections() ) {
+    foreach my $mod ( @{GetKnownModuleSelections()} ) {
         print "KNOWN SEL: $mod->{id}\n";
     }
 
@@ -641,7 +1147,7 @@ sub run {
     ModifyService(1);
 
     print "-------------- get listen\n";
-    foreach my $l ( GetCurrentListen() ) {
+    foreach my $l ( @{GetCurrentListen()} ) {
         print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
         print $l->{PORT}."\n";
     }
@@ -650,7 +1156,7 @@ sub run {
     DeleteListen( 443,443,'',1 );
     DeleteListen( 80,80,"12.34.56.78",1 );
     print "-------------- get listen\n";
-    foreach my $l ( GetCurrentListen() ) {
+    foreach my $l ( @{GetCurrentListen()} ) {
         print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
         print $l->{PORT}."\n";
     }
@@ -664,12 +1170,12 @@ sub run {
     ModifyModuleSelectionList( [ 'mod_test3' ], 0 );
 
     print "-------------- get ModuleSelections\n";
-    foreach my $sel ( GetModuleSelectionsList() ) {
+    foreach my $sel ( @{GetModuleSelectionsList()} ) {
         print "SEL: $sel\n";
     }
 
     print "--------------trigger error\n";
-    my @host = GetHost( 'will.not.be.found' );
+    my @host = @{GetHost( 'will.not.be.found' )};
     if( @host and not(defined($host[0])) ) {
         my %error = Error();
         while( my ($k,$v) = each(%error) ) {
