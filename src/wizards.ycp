@@ -126,8 +126,8 @@ symbol HttpServerSequence() {
 	]
     ];
 
-    Wizard::SetDesktopIcon("http-server");
     Wizard::CreateDialog();
+    Wizard::SetDesktopIcon("http-server");
 
     symbol ret = Sequencer::Run(aliases, sequence);
 
@@ -146,8 +146,8 @@ symbol HttpServerAutoSequence() {
     // translators: initialization dialog message
     term contents = `Label(_("Initializing ..."));
 
-    Wizard::SetDesktopIcon("http-server");
     Wizard::CreateDialog();
+    Wizard::SetDesktopIcon("http-server");
     Wizard::SetContentsButtons(caption, contents, "",
 	    Label::BackButton(), Label::NextButton());
 
