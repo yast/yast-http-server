@@ -39,12 +39,10 @@ ycp::Return (undef);
 
 # read the configuration
 
-my @listen = ();
 my @custom_log = ();
 my $error_log = "";
 my $document_root = "";
 my $line = "";
-my $new_listen = "";
 my $size = "";
 
 my @section_stack = ();
@@ -79,10 +77,6 @@ while( $line = <CONF> ) {
     
     # only top-level values
     if( $stack_size == 0 ) {
-	if( $line =~ /^[ \t]*Listen[ \t]+([^ \t]+)/ ) {
-	    push( @listen, $1 );
-	}
-    
 	if( $line =~ /^[ \t]*DocumentRoot[ \t]+([^ \t]+)/ ) {
 	    $document_root = $1;
 	}
@@ -113,12 +107,7 @@ while ( <STDIN> )
     
     if ($command eq "Write")
     {
-	if( $path eq ".Listen" or $path eq ".\"Listen\"" )
-	{
-	    @listen = @{$argument};
-	    ycp::Return ( "true" );
-	}
-	elsif( $path eq ".CustomLog" or $path eq ".\"CustomLog\"" )
+	if( $path eq ".CustomLog" or $path eq ".\"CustomLog\"" )
 	{
 	    @custom_log = @{$argument};
 	    ycp::Return ( "true" );
@@ -168,7 +157,7 @@ while ( <STDIN> )
 			
 			# only top-level values
 			if( $stack_size == 0 ) {
-			    if( not ( $line =~ /^\s*(Listen|CustomLog|ErrorLog)\s+[^\s]+/ ) ) {
+			    if( not ( $line =~ /^\s*(CustomLog|ErrorLog)\s+[^\s]+/ ) ) {
 				print $newconf $line;
 			    }
 			} else { 
@@ -178,10 +167,6 @@ while ( <STDIN> )
 		    close( ORIGCONF );		
 		}
 	    
-		# insert new config values
-		foreach my $i ( @listen ) {
-		    print $newconf "Listen $i\n";
-		}
 #		foreach my $i ( @custom_log ) {
 #		    print $newconf "CustomLog $i\n";
 #		}
@@ -229,11 +214,7 @@ while ( <STDIN> )
     elsif ($command eq "Read")
     {
 
-	if( $path eq ".Listen" or $path eq ".\"Listen\"" )
-	{
-	    ycp::Return (\@listen, 1 );
-	}
-	elsif ( $path eq ".DocumentRoot" or $path eq ".\"DocumentRoot\"" )
+	if ( $path eq ".DocumentRoot" or $path eq ".\"DocumentRoot\"" )
 	{
 	    ycp::Return( $document_root, 1 );
 	}
