@@ -41,6 +41,21 @@ foreach my $hostid ( HTTPD::GetHostsList() ) {
     $hosts{$hostid} = [ HTTPD::GetHost($hostid) ] if( $hostid );
 }
 
+
+my @oldListen = HTTPD::GetCurrentListen();
+my %newListen = ();
+my %delListen = ();
+
+my @oldModules = HTTPD::GetModuleList();
+my %newModules = ();
+my %delModules = ();
+
+my @oldModuleSelections = HTTPD::GetModuleSelectionsList();
+my %newModuleSelections = ();
+my %delModuleSelections = ();
+
+my $serviceState;   # 1 = enable, 0=disable
+
 #list<string> GetHostList();
 BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
@@ -115,31 +130,89 @@ sub WriteHosts {
 # list<string> GetModuleList()
 BEGIN { $TYPEINFO{GetModuleList} = ["function", [ "list", "string" ] ]; }
 sub GetModuleList {
+    my @ret;
+    foreach my $mod ( sort( @oldModules, keys(%newModules) ) ) {
+        push( @ret, $mod ) unless( exists( $delModules{$mod} ) );
+    }
+    return @ret;
 }
 
 # list<map> GetKnownModules()
 BEGIN { $TYPEINFO{GetKnownModules} = ["function", [ "list", ["map","string","any"] ] ]; }
 sub GetKnownModules {
+    # no state anyway, so we call the stateless API directly
+    return HTTPD::GetKnownModules(); 
 }
 
 # bool ModifyModuleList( list<string>, bool )
 BEGIN { $TYPEINFO{ModifyModuleList} = ["function", "boolean", [ "list","string" ], "boolean" ]; }
 sub ModifyModuleList {
+    my $newModules = shift;
+    my $enable = shift;
+
+    foreach my $mod ( @$newModules ) {
+        if( not $enable ) {
+            $delModules{$mod} = 1;
+            delete($newModules{$mod});
+        } else {
+            $newModules{$mod} = 1 unless( grep( /^$mod$/, @oldModules ) );
+            delete($delModules{$mod});
+        }
+    }
+
+    return 1;
+}
+BEGIN { $TYPEINFO{WriteModuleList} = ["function", "boolean"]; }
+sub WriteModuleList {
+    HTTPD::ModifyModuleList( [ keys(%delModules) ], 0 );
+    HTTPD::ModifyModuleList( [ keys(%newModules) ], 1 );
+    %delModules = ();
+    %newModules = ();
+    @oldModules = HTTPD::GetModuleList();
+    return 1;
 }
 
 # map GetKnownModulSelections()
 BEGIN { $TYPEINFO{GetKnownModulSelections} = ["function", [ "map","string","any" ] ]; }
 sub GetKnownModulSelections {
+    return HTTPD::GetKnownModulSelections();
 }
 
 # list<string> GetModuleSelectionsList()
 BEGIN { $TYPEINFO{GetModuleSelectionsList} = ["function", ["list","string"] ]; }
 sub GetModuleSelectionsList {
+    my @ret;
+    foreach my $mod ( sort( @oldModuleSelections, keys(%newModuleSelections) ) ) {
+        push( @ret, $mod ) unless( exists( $delModuleSelections{$mod} ) );
+    }
+    return @ret;
 }
 
 # bool ModifyModuleSelectionList( list<string>, bool )
 BEGIN { $TYPEINFO{ModifyModuleSelectionList} = ["function", "boolean", ["list","string"], "boolean" ]; }
 sub ModifyModuleSelectionList {
+    my $newModules = shift;
+    my $enable = shift;
+
+    foreach my $mod ( @$newModules ) {
+        if( not $enable ) {
+            $delModuleSelections{$mod} = 1;
+            delete($newModuleSelections{$mod});
+        } else {
+            $newModuleSelections{$mod} = 1 unless( grep( /^$mod$/, @oldModuleSelections ) );
+            delete($delModuleSelections{$mod});
+        }
+    }
+    return 1;
+}
+
+sub WriteModuleSelectionList {
+    HTTPD::ModifyModuleSelectionList( [ keys(%delModuleSelections) ], 0 );
+    HTTPD::ModifyModuleSelectionList( [ keys(%newModuleSelections) ], 1 );
+    %newModuleSelections = ();
+    %delModuleSelections = ();
+    @oldModuleSelections = HTTPD::GetModuleSelectionsList();
+    return 1;
 }
 
 #######################################################
@@ -155,6 +228,13 @@ sub ModifyModuleSelectionList {
 # boolean ModiflyService( boolean )
 BEGIN { $TYPEINFO{ModifyService} = ["function", "boolean", "boolean" ]; }
 sub ModifyService {
+    $serviceState = shift;
+    return 1;
+}
+
+BEGIN { $TYPEINFO{WriteService} = ["function", "boolean", "boolean" ]; }
+sub WriteService {
+    HTTPD::ModifyService( $serviceState );
 }
 
 #######################################################
@@ -169,18 +249,80 @@ sub ModifyService {
 
 # boolean CreateListen( int, int, list<string>, boolean )
 # boolean CreateListen( int, int, list<string> )
-BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ], "boolean" ] ; }
+BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ] ] ; }
 sub CreateListen {
+    my $fromPort = shift;
+    my $toPort = shift;
+    my $ip = shift || ''; #FIXME: this is a list
+
+    my $port = ($fromPort eq $toPort)?($fromPort):($fromPort.'-'.$toPort);
+    delete($delListen{"$ip:$fromPort:$toPort"});
+
+    foreach my $old ( @oldListen ) {
+        if( ($ip and exists($old->{ADDRESS}) and $ip eq $old->{ADDRESS}) and
+            ($port eq $old->{PORT}) ) {
+            return 1; # already created listen
+        } elsif( not($ip) and not(exists($old->{ADDRESS})) and
+                 $port eq $old->{PORT} ) {
+            return 1; # already created listen
+        }
+    }
+
+    $newListen{"$ip:$fromPort:$toPort"} = 1;
+
+    return 1;
 }
 
 # boolean CreateListen( int, int, list<string> )
-BEGIN { $TYPEINFO{DeleteListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ], 'boolean' ] ; }
+BEGIN { $TYPEINFO{DeleteListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ] ] ; }
 sub DeleteListen {
+    my $fromPort = shift;
+    my $toPort = shift;
+    my $ip = shift; #FIXME: this is a list
+
+    $delListen{"$ip:$fromPort:$toPort"} = 1;
+    delete($newListen{"$ip:$fromPort:$toPort"});
+
+    return 1;
 }
 
 # list<map> GetCurrentListen()
 BEGIN { $TYPEINFO{GetCurrentListen} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetCurrentListen {
+    my @new;
+    foreach my $new ( keys(%newListen) ) {
+        my ( $ip, $fp, $tp ) = split(/:/, $new);
+        my $port = ($fp eq $tp)?($fp):($fp.'-'.$tp);
+        push( @new, { ADDRESS => $ip, PORT => $port } );
+    }
+    foreach my $old ( @oldListen ) {
+        if( $old->{PORT} =~ /-/ ) {
+            my ( $fp, $tp ) = split( /-/, $old->{PORT} );
+            my $addr = $old->{ADDRESS} || '';
+            next if( exists( $delListen{"$addr:$fp:$tp"} ) );
+        } else {
+            my $addr = $old->{ADDRESS} || '';
+            next if( exists( $delListen{"$addr:$old->{PORT}:$old->{PORT}"} ) );
+        }
+        push( @new, $old );
+    }
+    return @new;
+}
+
+sub WriteListen {
+    my $doFirewall = shift;
+
+    foreach my $toDel ( keys(%delListen) ) {
+        my ($ip,$fp,$tp) = split(/:/, $toDel);
+        HTTPD::DeleteListen( $fp, $tp, $ip, $doFirewall );
+    }
+    foreach my $toCreate ( keys(%newListen) ) {
+        my ($ip,$fp,$tp) = split(/:/, $toCreate);
+        HTTPD::CreateListen( $fp, $tp, $ip, $doFirewall );
+    }
+    %delListen = ();
+    %newListen = ();
+    @oldListen = HTTPD::GetCurrentListen();
 }
 
 #######################################################
@@ -190,17 +332,19 @@ sub GetCurrentListen {
 
 
 #######################################################
-# apache2 pacakges
+# apache2 packages
 #######################################################
 
 # list<string> GetServicePackages();
 BEGIN { $TYPEINFO{GetServicePackages} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetServicePackages {
+    return HTTP::GetServicePackages(); # no state here anyway
 }
 
 # list<string> GetModulePackages
 BEGIN { $TYPEINFO{GetModulePackages} = ["function", ["list", "string"] ]; }
 sub GetModulePackages {
+    
 }
 
 #######################################################
@@ -268,44 +412,75 @@ sub run {
     WriteHosts();
 
     print "-------------- show module list\n";
-    #foreach my $mod ( GetModuleList() ) {
-    #    print "MOD: $mod\n";
-    #}
+    foreach my $mod ( GetModuleList() ) {
+        print "MOD: $mod\n";
+    }
 
     print "-------------- show known modules\n";
-    #foreach my $mod ( GetKnownModules() ) {
-    #    print "KNOWN MOD: $mod->{name}\n";
-    #}
+    foreach my $mod ( GetKnownModules() ) {
+        print "KNOWN MOD: $mod->{name}\n";
+    }
+
+    print "-------------- modify module list\n";
+    ModifyModuleList( [ 'cgi' ], 0 );
+    ModifyModuleList( [ 'unknownModule' ], 1 );
+
+    print "-------------- show module list\n";
+    foreach my $mod ( GetModuleList() ) {
+        print "MOD: $mod\n";
+    }
+
+#    ModifyModuleList( [ 'cgi' ], 1 );
+    WriteModuleList();
 
     print "-------------- show known selections\n";
-    #foreach my $mod ( GetKnownModulSelections() ) {
-    #    print "KNOWN SEL: $mod->{id}\n";
-    #}
+    foreach my $mod ( GetKnownModulSelections() ) {
+        print "KNOWN SEL: $mod->{id}\n";
+    }
 
     print "-------------- show active selections\n";
-    #GetModuleSelectionsList();
+    foreach my $sel ( GetModuleSelectionsList() ) {
+        print "ACTIVE SEL: $sel\n";
+    }
+
+    print "-------------- modify active selections\n";
+    ModifyModuleSelectionList( [ 'TestSel' ], 0 );
+
+    print "-------------- show active selections\n";
+    foreach my $sel ( GetModuleSelectionsList() ) {
+        print "ACTIVE SEL: $sel\n";
+    }
+
+    ModifyModuleSelectionList( [ 'TestSel' ], 1 );
 
     print "-------------- activate apache2\n";
     #ModifyService(1);
 
     print "-------------- get listen\n";
-    #foreach my $l ( GetCurrentListen() ) {
-    #    print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
-    #    print $l->{PORT}."\n";
-    #}
+    foreach my $l ( GetCurrentListen() ) {
+        print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
+        print $l->{PORT}."\n";
+    }
 
     print "-------------- del listen\n";
-    #DeleteListen( 443,443,'',1 );
-    #DeleteListen( 80,80,"12.34.56.78",1 );
+    DeleteListen( 443,443,'' );
+    DeleteListen( 80,80,"12.34.56.78" );
     print "-------------- get listen\n";
-    #foreach my $l ( GetCurrentListen() ) {
-    #    print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
-    #    print $l->{PORT}."\n";
-    #}
+    foreach my $l ( GetCurrentListen() ) {
+        print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
+        print $l->{PORT}."\n";
+    }
 
     print "-------------- create listen\n";
-    #CreateListen( 443,443,'',1 );
-    #CreateListen( 80,80,"12.34.56.78",1 );
+    CreateListen( 443,443,'' );
+    CreateListen( 80,80,"12.34.56.78" );
+
+    print "-------------- get listen\n";
+    foreach my $l ( GetCurrentListen() ) {
+        print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
+        print $l->{PORT}."\n";
+    }
+
 
     print "--------------set ModuleSelections\n";
     #ModifyModuleSelectionList( [ 'mod_test1', 'mod_test2', 'mod_test3' ], 1 );
