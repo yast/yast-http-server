@@ -266,12 +266,6 @@ $[
 	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Provides a rule-based rewriting engine to rewrite requested URLs on the fly")
 	],
-	"setenvif"  : $[
-	    "status": false,
-	    "default": false,
-	    // translators: Apache2 module description (from apache2 docs)
-	    "description" : _("Allows the setting of environment variables based on characteristics of the request")
-	],
 	"speling"  : $[
 	    "status": false,
 	    "default": false,

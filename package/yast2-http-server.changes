@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Sep 15 18:54:22 CEST 2003 - visnov@suse.de
+
+- setenvif should be on by default (#30689)
+- 2.8.14
+
+-------------------------------------------------------------------
 Sat Sep 13 18:19:14 CEST 2003 - nashif@suse.de
 
 - Enable service in autoinst mode
