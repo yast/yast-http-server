@@ -46,8 +46,10 @@ symbol ReadDialog() {
  * @return `abort if aborted and `next otherwise
  */
 symbol WriteDialog() {
+y2internal("Writing ...");
     Wizard::RestoreHelp(HELPS["write"]:"");
     HttpServer::AbortFunction = HttpServer::PollAbort;
+y2internal("before Write()");
     boolean ret = HttpServer::Write();
     return ret ? `next : `abort;
 }
