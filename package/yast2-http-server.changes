@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Sep 19 12:28:00 CEST 2003 - visnov@suse.de
+
+- refix #31306 - handle PHP as a special case.
+- 2.8.16
+
+-------------------------------------------------------------------
 Thu Sep 18 18:05:28 CEST 2003 - visnov@suse.de
 
 - do not trigger package installation for modules, if

@@ -186,6 +186,14 @@ global map widgets = $[
 
 /******************************** Listen popup ****************************/
 
+    /**
+     * Show a popup for editing Listen statement.
+     *
+     * @param network 	initial value for the network part of the statement
+     *                  If empty or _("All Addresses"), considered for all Listen for all interfaces.
+     * @param port	initial value for a port number
+     * @return string	the new Listen statement or nil if Cancel was pressed
+     */
     define string AskListen( string network, string port ) ``{
 	// translators: all network addresses Listen type
 	boolean adr_type = ( network == _("All Addresses") || network == "" );
@@ -332,6 +340,14 @@ global map widgets = $[
 	return true;
     }
 
+    /**
+     *  Handler for editing default host. Handles additional buttons, like logs and modules.
+     *  Rest is passed to CWM::TableHandle.
+     *
+     *  @param key	the key modified
+     *  @param event	event description
+     *  @return symbol 	the result of the handling
+     */
     global define symbol handleDefaultHostTable( any key, map event ) ``{
 	// handle menu button entries
 	if( event["ID"]:nil == `modules ) 
@@ -361,9 +377,11 @@ global map widgets = $[
     }
 
     /**
-      * Validation of the default host 
+      * Validation of the default host configuration.
+      *
       * @param key any option key
       * @param event any event happened
+      * @return boolean	true if there is at least one Listen statement
       */
     global define boolean validateDefaultHostTable (any key, any event) ``{
 	if( event["ID"]:nil != `next ) return true;
@@ -635,6 +653,13 @@ listen cannot be empty.
     }
 // *********************************** Listen widget ***************************
 
+    /**
+     * Handler for the summary of Listen statements list.
+     *
+     * @param key	key to be configured
+     * @param id	identification of the widget, not used
+     * @return string	the new value
+     */
     global define string summaryGenericList( any key, any id ) ``{
 	return mergestring( HttpServer::settings[currenthost, key]:[], " ");
     }
@@ -643,8 +668,7 @@ listen cannot be empty.
 
     /**
       * Initialization function for firewall adapting
-      * @param opt_id any option id
-      * @param opt_key any option key
+      * @param key any option key to be initialized
       */
     global define void initAdaptFirewall (any key) ``{
 	if( HttpServer::settings["settings", "firewall_started"]:false ) {
@@ -659,7 +683,7 @@ listen cannot be empty.
     /**
       * Store function for firewall adapting
       * @param opt_id any option id
-      * @param opt_key any option key
+      * @param event map event description
       */
     global define void storeAdaptFirewall (any opt_id, map event) ``{
 	if( HttpServer::settings["settings", "firewall_started"]:false ) {
