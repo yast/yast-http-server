@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Jul 30 17:38:52 CEST 2003 - visnov@suse.de
+
+- do not complain about unknown modules 
+- show unknown modules as well
+- 2.8.1
+
+-------------------------------------------------------------------
 Wed Jul 30 08:46:28 CEST 2003 - visnov@suse.de
 
 - autoyast support added
