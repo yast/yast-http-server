@@ -4,32 +4,39 @@ BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
 use YaPI::HTTPDModules;
 use YaPI::HTTPD;
 
-#######################################################
-# temoprary solution start
-#######################################################
-
-my %__error = ();
-
-sub SetError {
-    %__error = @_;
-    @__error{'package','file','line'} = caller();
-    return undef;
-}
-
-sub Error {
-    return %__error;
-}
-
-#######################################################
-# temoprary solution end
-#######################################################
-
-
 our $VERSION="0.01";
 our %TYPEINFO;
 
 use strict;
 use Errno qw(ENOENT);
+
+sub SetError {
+    my $self = shift;
+    return YaPI::HTTPD->SetError( @_ );
+}
+
+sub Error {
+    return YaPI::HTTPD->Error();
+}
+
+sub ParseDirOption {
+    my $self = shift;
+    my $optionText = shift;
+    my %ret = (
+                'SECTIONNAME' => 'Directory',
+                'KEY'         => '_SECTION',
+                'VALUE'       => []
+    );
+
+    my @options = split( /\n/, $optionText );
+    $ret{SECTIONPARAM} = shift(@options);
+    foreach my $option ( @options ) {
+        chomp($option);
+        my( $k,$v ) = split( /\s+/, $option, 2 );
+        push( @{$ret{VALUE}}, { KEY => $k, VALUE => $v } );
+    }
+    return \%ret;
+}
 
 #######################################################
 # default and vhost API start
