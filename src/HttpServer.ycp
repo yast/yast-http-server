@@ -69,7 +69,8 @@ global map settings = $[
     ],
     "settings" : $[
 	"enabled" : false,// should be the service started?
-	"firewall" : true // should we adapt firewall?
+	"firewall" : true, // should we adapt firewall?
+	"firewall_started" : false, // is firewall enabled?
     ]
 ];
 
@@ -237,6 +238,8 @@ global define boolean Read() ``{
 	}
     });
     
+    settings["settings", "firewall_started"] = select( SuSEFirewall::Export(), "start_firewall", false );
+    
     Progress::on();
     
     // translators: progress step
@@ -331,7 +334,7 @@ global define boolean Write() ``{
     Progress::NextStage();
 
     // modify firewall
-    if( settings["settings", "firewall"]: false ) {
+    if( settings["settings", "firewall"]: false && settings["settings", "firewall_started"]:false ) {
     
 	// delete all our firewall settings
 	foreach( map listen, listen4firewall, ``{

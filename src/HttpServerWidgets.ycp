@@ -618,9 +618,13 @@ global map widgets = $[
       * @param opt_key any option key
       */
     global define void initAdaptFirewall (any key) ``{
-	UI::ChangeWidget (`id (key), `Value,
-	    HttpServer::settings["settings", "firewall"]:false);
-	UI::SetFocus (`id (key));
+	if( HttpServer::settings["settings", "firewall_started"]:false ) {
+	    UI::ChangeWidget (`id (key), `Value,
+		HttpServer::settings["settings", "firewall"]:false);
+	} else {
+	    // disable the widget
+	    UI::ChangeWidget (`id (key), `Enabled, false );
+	}
     }
 
     /**
@@ -629,8 +633,10 @@ global map widgets = $[
       * @param opt_key any option key
       */
     global define void storeAdaptFirewall (any opt_id, map event) ``{
-	HttpServer::settings["settings", "firewall"] = UI::QueryWidget (`id (opt_id), `Value);
-	HttpServer::modified = true;
+	if( HttpServer::settings["settings", "firewall_started"]:false ) {
+	    HttpServer::settings["settings", "firewall"] = UI::QueryWidget (`id (opt_id), `Value);
+	    HttpServer::modified = true;
+	}
     }
 
 /* EOF */
