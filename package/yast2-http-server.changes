@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Aug 26 18:52:29 CEST 2004 - visnov@suse.cz
+
+- allow the same option multiple times 
+
+-------------------------------------------------------------------
 Wed Aug 25 18:23:16 CEST 2004 - visnov@suse.cz
 
 - really adapt the firewall 
