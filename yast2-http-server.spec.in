@@ -33,5 +33,6 @@ Summary:	Configuration of http-server
 @scrconfdir@/cfg_apache2.scr
 @scrconfdir@/cfg_httpdconf.scr
 @scrconfdir@/cfg_listenconf.scr
+@scrconfdir@/cfg_defaulthost.scr
 @agentdir@/ag_httpd
 %doc @docdir@

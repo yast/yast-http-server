@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Sep  2 15:41:38 CEST 2003 - visnov@suse.de
+
+- show document root from sysconfig or /etc/apache2/default-server.conf (#29674)
+
+-------------------------------------------------------------------
 Mon Sep  1 16:31:06 CEST 2003 - visnov@suse.de
 
 - do not configure document root (#29674)

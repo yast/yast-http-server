@@ -56,7 +56,7 @@ choose the appropriate entry of the table and click <b>Toggle Status</b>.</p>
 	"server_enable" : _("<p><b><big>HTTP Server and Default Host Settings</big></b><br>
 The HTTP server can be activated by choosing <b>Enabled</b>. To deactive it, choose
 <b>Disabled</b>.</p>
-"),
+") ,
 
 	// firewall adapting help 1/1
 	"firewall_adapt" : _("<p>By enabling <b>Adapt firewall</b> you instruct

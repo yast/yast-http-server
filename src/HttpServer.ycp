@@ -92,6 +92,8 @@ global map ip2device = $[];
  */
 global list listen4firewall = [];
 
+global string document_root = "";
+
 /****************************** local data ************************************/
 
 /**
@@ -226,7 +228,13 @@ global define boolean Read() ``{
     value = SCR::Read( .sysconfig.apache2."APACHE_SERVERNAME" );
     if( value != nil ) settings["defaulthost","ServerName"] = value;
     value = SCR::Read( .sysconfig.apache2."APACHE_DOCUMENT_ROOT" );
-//    if( value != nil ) settings["defaulthost","DocumentRoot"] = value;
+    // store document root somewhere else
+    if( size(value) > 0 ) document_root = value;
+    else {
+	// try defaulthost.conf
+	value = SCR::Read( .etc.apachedefault.DocumentRoot );
+	if( value != nil ) document_root = value;
+    }
     
     // check the service status
     settings["settings", "enabled" ] = Runlevel::ServiceEnabled( "apache2" );

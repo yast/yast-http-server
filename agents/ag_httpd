@@ -42,6 +42,7 @@ ycp::Return (undef);
 my @listen = ();
 my @custom_log = ();
 my $error_log = "";
+my $document_root = "";
 my $line = "";
 my $new_listen = "";
 my $size = "";
@@ -78,6 +79,10 @@ while( $line = <CONF> ) {
 	    push( @listen, $1 );
 	}
     
+	if( $line =~ /^[ \t]*DocumentRoot[ \t]+([^ \t]+)/ ) {
+	    $document_root = $1;
+	}
+
 	if( $line =~ /^[ \t]*CustomLog[ \t]+([^ \t]+)/ ) {
 	    push( @custom_log, $1 );
 	}
@@ -208,6 +213,10 @@ while ( <STDIN> )
 	if( $path eq ".Listen" or $path eq ".\"Listen\"" )
 	{
 	    ycp::Return (\@listen, 1 );
+	}
+	elsif ( $path eq ".DocumentRoot" or $path eq ".\"DocumentRoot\"" )
+	{
+	    ycp::Return( $document_root, 1 );
 	}
 	elsif( $path eq ".CustomLog" or $path eq ".\"CustomLog\"" )
 	{
