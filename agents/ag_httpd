@@ -50,6 +50,10 @@ my $size = "";
 my @section_stack = ();
 my $stack_size = 0;
 
+# unknown options
+my @opts_names = ();
+my @opts_values = ();
+
 while( $line = <CONF> ) {
     chomp( $line );
     
@@ -184,6 +188,12 @@ while ( <STDIN> )
 #		if( defined $error_log && $error_log ne "" ) {
 #		    print $newconf "ErrorLog $error_log\n";
 #		}
+
+		# unknown opts
+		foreach my $i ( @opts_names ) {
+		    my $val = pop( @opts_values );
+		    print $newconf "$i $val\n";
+		}
 	    
 		close( $newconf );
 	    
@@ -202,8 +212,17 @@ while ( <STDIN> )
 	}
 	else 
 	{
-	    y2error ("Unrecognized path! '$path'");
-	    ycp::Return (undef);
+	    # consider this to be an uknown global level option
+	    # beware, this will not care about duplicates etc, simply adds a value
+	    
+	    # make the path more reasonable - remove spaces, dots and quotes
+	    
+	    $path =~ s/[\.\"\s]*([^\s\"]*)[\.\"\s]*/$1/;
+	    push( @opts_names, $path );
+	    push( @opts_values, $argument );
+	    
+	    y2warning ("Unrecognized path! '$path'");
+	    ycp::Return ( "true" );
 	}
     }
 

@@ -399,11 +399,11 @@ global define boolean Write() ``{
     
     // install required RPMs for modules
     // TODO: php4 does not work with thread-based apache2 config
-    Require::RequireAndConflictTarget( rpms, [], sformat( _("The enabled modules require
+    Require::RequireAndConflictTarget( rpms, [], _("The enabled modules require
 installation of some of these additional packages:
 %1
 Install them now?
-"), mergestring( rpms, ", " ) ) );
+") );
     
     // write httpd.conf
     // default host, some of the values are in sysconfig
