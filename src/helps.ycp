@@ -45,15 +45,14 @@ The table contains a list of all available Apache2 modules.
 The first column contains the name of the module. 
 The second column shows whether the module should be
 loaded by the server. Enabled modules will be loaded. The last column displays a short description
-of the module.</p>
-") 
+of the module.</p>")
 	// module dialog help 2/2
 	+ _("<p>To change the status of a module, 
 choose the appropriate entry of the table and click <b>Toggle Status</b>.</p>
 "),
 
 	// apache service enabling help 1/1
-	"server_enable" : _("<p><b><big>HTTP Server and Default Host Settings</big></b><br>
+	"server_enable" : _("<p><b><big>HTTP Server Settings</big></b><br>
 Activate the HTTP server by choosing <b>Enabled</b>. To deactive it, choose
 <b>Disabled</b>.</p>
 ") ,
@@ -65,16 +64,39 @@ The interfaces of the firewall are <b>not</b> added or deleted.
 This option is available only if the firewall is enabled.</p>
 "),
 
-	// default host editing help 1/1
-	"global_table": _("<p>To edit the default host settings, choose the appropriate entry of the table then click <b>Edit</b>.
-To add a new option, click <b>Add</b>. To remove an option, select it and click <b>Delete</b>.</p>"),
+	// server configuration overview help 1/2
+	"overview_widget" : _("<p>The list of options presents
+several parts of the server configuration. <b>Listen on</b>
+containg a list of a ports and IP addresses, where should the
+server listen for the incoming requests. 
+<b>Modules</b> allows to configure the modules loaded by the
+server.
+<b>Default host</b> is a server name of a host used as a
+default (fallback) host. If the server name of the default
+host is not specified, a path to the document root of the
+default host is displayed.
+<b>Hosts</b> constains a list of hosts configured for the server.</p>
+")
+	// server configuration overview help 2/2
+	+ _("<p>Choose an appropriate entry of the table and click <b>Edit</b> to change settings.</p>")
+	// help of menu button for server configuration 1/1
+	+  _("<p>The <b>Log Files</b> menu button allows to display server log files.</p>"),
 
-	// help of menu button for default host 1/1
-	"additional_default" : _("<p><b>Advanced</b> accesses 
-entries for controlling the HTTP server. <b>Show Log</b> shows a pop-up
-dialog with contents of the server logs. <b>Server Modules</b> allows
-configuration of which modules should be loaded by the server.</p>
-"),
+
+	// hosts list help 1/2
+	"hosts" : _("<p><b><big>Configured Hosts</big></b><br>
+This is a list of already configured hosts. One of the hosts is 
+marked as default. A default host is used if no other host
+is matched for an incoming request. To set a host as a default,
+press the <b>Set as Default</b> button.</p>")
+	// hosts list help 2/2
+	+ _("<p>Choose an appropriate entry of the table and click <b>Edit</b> to change the host.
+To add a host, click <b>Add</b>. To remove a host, select it and click <b>Delete</b>.</p>"),
+
+	// host editing help 1/1
+	"global_table": _("<p><b><big>Host Configuration</big></b><br>
+To edit the host settings, choose the appropriate entry of the table then click <b>Edit</b>.
+To add a new option, click <b>Add</b>. To remove an option, select it and click <b>Delete</b>.</p>"),
 
 	// listen dialog editor help 1/2
 	"listen" : _("<p><b><big><i>Listen</i> Settings for a Host</big></b><br>
