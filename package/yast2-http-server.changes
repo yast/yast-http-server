@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Mar 15 08:17:20 CET 2004 - visnov@suse.cz
+
+- added yast2-perl-bindings to requires 
+ 
+-------------------------------------------------------------------
 Wed Mar 10 17:14:05 CET 2004 - visnov@suse.cz
 
 - do not generate certificate

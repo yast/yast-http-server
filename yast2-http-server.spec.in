@@ -2,7 +2,7 @@
 # neededforbuild yast2-devel-packages yast2-network yast2-firewall yast2-country yast2-installation yast2-perl-bindings
 
 @HEADER@
-Requires:	yast2 yast2-network yast2-firewall
+Requires:	yast2 yast2-network yast2-firewall yast2-perl-bindings
 
 BuildArchitectures:	noarch
 
