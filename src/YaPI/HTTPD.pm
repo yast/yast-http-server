@@ -1063,7 +1063,10 @@ BEGIN { $TYPEINFO{GetCurrentListen} = ["function", ["list", [ "map", "string", "
 sub GetCurrentListen {
     my @data = SCR::Read('.http_server.listen');
     my @ret;
-    foreach my $listen ( @data ) {
+    if( not ref($data[0]) ) {
+        return SetError( summary => 'read listen in agent failed' );
+    }
+    foreach my $listen ( @{$data[0]} ) {
         if( $listen =~ /^([^:]+):([^:]+)/ ) {
             push( @ret, { ADDRESS => $1, PORT => $2 } );
         } elsif( $listen =~ /^\d+$/ ) {
