@@ -47,14 +47,7 @@ global define symbol HttpServerSequence() ``{
 	]
     ];
 
-    // translators: initialization dialog caption
-    string caption = _("HTTP Server Configuration");
-    // translators: initialization dialog message
-    term contents = `Label(_("Initializing ..."));
-
     Wizard::CreateDialog();
-    Wizard::SetContentsButtons(caption, contents, "",
-	    Label::BackButton(), Label::NextButton());
 
     any ret = WizardSequencer(aliases, sequence);
 

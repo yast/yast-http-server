@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Aug 20 15:39:48 CEST 2003 - visnov@suse.de
+
+- Do not show Initializing... dialog
+
+-------------------------------------------------------------------
 Mon Aug 18 15:41:37 CEST 2003 - visnov@suse.de
 
 - ssl is default, status not
