@@ -37,26 +37,46 @@ use Errno qw(ENOENT);
 
 my %hosts;
 my %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
-foreach my $hostid ( HTTPD::GetHostsList() ) {
-    $hosts{$hostid} = [ HTTPD::GetHost($hostid) ] if( $hostid );
+
+#bool ReadHosts();
+BEGIN { $TYPEINFO{ReadHosts} = ["function", "boolean" ]; }
+sub ReadHosts {
+    foreach my $hostid ( HTTPD::GetHostsList() ) {
+	$hosts{$hostid} = [ HTTPD::GetHost($hostid) ] if( $hostid );
+    }
+    return 1;
 }
 
-
-my @oldListen = HTTPD::GetCurrentListen();
+my @oldListen = ();
 my %newListen = ();
 my %delListen = ();
 
-my @oldModuleSelections = HTTPD::GetModuleSelectionsList();
+#bool ReadListen();
+BEGIN { $TYPEINFO{ReadListen} = ["function", "boolean" ]; }
+sub ReadListen {
+    @oldListen = HTTPD::GetCurrentListen();
+    return 1;
+}
+
+
+my @oldModuleSelections = ();
 my %newModuleSelections = ();
 my %delModuleSelections = ();
 
-my @oldModules = HTTPD::GetModuleList();
-foreach my $mod ( HTTPD::selections2modules([@oldModuleSelections]) ) {
-    push(@oldModules, $mod) unless( grep/^$mod$/, @oldModules );
-}
+my @oldModules = ();
 my %newModules = ();
 my %delModules = ();
 
+#bool ReadModules();
+BEGIN { $TYPEINFO{ReadModules} = ["function", "boolean" ]; }
+sub ReadModules {
+    @oldModuleSelections = HTTPD::GetModuleSelectionsList();
+    @oldModules = HTTPD::GetModuleList();
+    foreach my $mod ( HTTPD::selections2modules([@oldModuleSelections]) ) {
+	push(@oldModules, $mod) unless( grep/^$mod$/, @oldModules );
+    }
+    return 1;
+}
 
 my $serviceState;   # 1 = enable, 0=disable
 
@@ -392,6 +412,9 @@ sub GetTransferLogFiles {
 #######################################################
 
 sub run {
+    print "-------------- ReadHosts\n";
+    ReadHosts();
+
     print "-------------- GetHostsList\n";
     foreach my $h ( GetHostsList() ) {
         print "ID: $h\n";
