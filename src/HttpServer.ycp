@@ -16,7 +16,7 @@ module "HttpServer";
 textdomain "http-server";
 
 import "HTTPDData";
-//import "NetworkDevices";
+import "NetworkDevices";
 import "Progress";
 import "Report";
 import "Require";
@@ -64,22 +64,7 @@ include "http-server/routines.ycp";
 /**
  * HTTP server settings
  */
-global map<string,any> settings = $[
-    "modules" : GetModules(),
-    "Listen" : [ $["PORT":"80"] ],
-    "default" : $[
-	"ServerName" : "www.example.com",
-//	"DocumentRoot" : "/srv/www/htdocs",
-	"ServerAdmin" : "webmaster@example.com",
-// CustomLog - no defaults
-// ErrorLog - no defaults
-    ],
-    "settings" : $[
-	"enabled" : false,// should be the service started?
-	"firewall" : true, // should we adapt firewall?
-	"firewall_started" : false, // is firewall enabled?
-    ]
-];
+global map<string,any> settings = $[];
 
 global define map<string,any> Settings ()
 {
@@ -207,6 +192,7 @@ global define boolean Read() ``{
     HTTPDData::ReadHosts();
     HTTPDData::ReadListen();
     HTTPDData::ReadModules();
+    HTTPDData::ReadService();
     
     // FIXME: special handling of PHP
 //    if( settings["modules", "php4", "status"]:false == true &&
@@ -216,41 +202,21 @@ global define boolean Read() ``{
 //	settings["modules", "php4", "status"] = false;
 //    }
 
-    // read the rest of the configuration from sysconfig
-    settings["apache_access_log"] = SCR::Read( .sysconfig.apache2."APACHE_ACCESS_LOG" );
-    string value = (string) SCR::Read( .sysconfig.apache2."APACHE_SERVERADMIN" );
-    if( value != nil ) settings["default","ServerAdmin"] = value;
-    value = (string) SCR::Read( .sysconfig.apache2."APACHE_SERVERNAME" );
-    if( value != nil ) settings["default","ServerName"] = value;
-    value = (string) SCR::Read( .sysconfig.apache2."APACHE_DOCUMENT_ROOT" );
-    // store document root somewhere else
-    if( size(value) > 0 ) document_root = value;
-    else {
-	// try defaulthost.conf
-	value = (string) SCR::Read( .etc.apachedefault.DocumentRoot );
-	if( value != nil ) document_root = value;
-    }
-
-    // check the service status
-    settings["settings", "enabled" ] = Runlevel::ServiceEnabled( "apache2" );
-
-    if(Abort()) return false;
-
     Progress::NextStage();
 
     // read current settings for firewall and network
-// FIXME:    Progress::off();
-//    SuSEFirewall::Read();
-//    NetworkDevices::Read();
+    Progress::off();
+#    SuSEFirewall::Read();
+    NetworkDevices::Read();
 
     // generate the map: static IP -> device
     // TODO: IP aliases
     ip2device = $[];
-// FIXME:    list devs = NetworkDevices::Locate("BOOTPROTO", "static");
-//    foreach(string dev, devs, {
-//	string ip = NetworkDevices::GetValue(dev, "IPADDR");
-//	if(ip != nil && ip != "") ip2device[ip] = dev;
-//    });
+    list<string> devs = NetworkDevices::Locate("BOOTPROTO", "static");
+    foreach(string dev, devs, {
+	string ip = NetworkDevices::GetValue(dev, "IPADDR");
+	if(ip != nil && ip != "") ip2device[ip] = dev;
+    });
 
     // generate the map of our settings in firewall
     listen4firewall = maplist( map<string,string> l, settings["Listen"]:[], ``{
@@ -369,13 +335,12 @@ Install them now?
 
     // write hosts
     HTTPDData::WriteHosts ();
-
-    // write listen
-    if( /*FIXME: ! HTTPD::WriteListen (settings["Listen"]:[])*/ false ) {
-	// TODO: configuration file placing can change
-	Report::Error( sformat(_("Cannot write '%1'."), "/etc/apache2/listen.conf" ) );
-    }
-
+    
+    HTTPDData::WriteListen ();
+    
+    HTTPDData::WriteModuleList ();
+    
+#	Report::Error( sformat(_("Cannot write '%1'."), "/etc/apache2/listen.conf" ) );
 
     // global settings
     foreach( string key, any value, settings["settings"]:$[], ``{
@@ -383,17 +348,6 @@ Install them now?
 	if( !contains( ["enabled", "firewall", "firewall_started" ], key ) )
 	    SCR::Write( add(.etc.httpd, key), value );
     });
-    // TODO: virtual hosts, SSL etc
-    if( !SCR::Write( .etc.httpd, nil ) ) {
-	// TODO: configuration file placing can change
-	Report::Error( sformat(_("Cannot write '%1'."), "/etc/apache2/httpd.conf" ) );
-    }
-
-    if( !SCR::Write( .sysconfig.apache2, nil ) ) {
-	// translators: error message
-	Report::Error( sformat(_("Cannot write '%1'."), "/etc/sysconfig/apache2" ) );
-    }
-
 
     Progress::NextStage();
 
@@ -434,20 +388,12 @@ Install them now?
 	}
 
     Progress::NextStage();
-
-    // service enable or disable
-    boolean res = true;
-    if( settings["settings", "enabled"]:false ) {
-	res = res && Runlevel::ServiceAdjust( "apache2", "enable" );
-	if (!write_only)
-		res = res && (Runlevel::RunInitScript( "apache2", "restart" ) == 0);
-    } else {
-	res = res && Runlevel::ServiceAdjust( "apache2", "disable" );
-	if (!write_only)
-		res = res && (Runlevel::RunInitScript( "apache2", "stop" ) == 0);
+    
+    if( ! HTTPDData::WriteService(write_only) )
+    {
+	// translators: error message
+	Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
     }
-    // translators: error message
-    if( !res ) Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
 
     // translators: progress finished
     ProgressNextStage(_("Finished"));

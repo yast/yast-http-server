@@ -258,7 +258,18 @@ sub WriteModuleSelectionList {
 # apache2 modify service
 #######################################################
 
-# boolean ModiflyService( boolean )
+BEGIN { $TYPEINFO{ReadService} = ["function", "boolean" ]; }
+sub ReadService {
+    $serviceState = Service::Enabled( "apache2" );
+    return 1;
+}
+
+BEGIN { $TYPEINFO{GetService} = ["function", "boolean" ]; }
+sub GetService {
+    return $serviceState;
+}
+
+# boolean ModifyService( boolean )
 BEGIN { $TYPEINFO{ModifyService} = ["function", "boolean", "boolean" ]; }
 sub ModifyService {
     $serviceState = shift;
@@ -267,7 +278,7 @@ sub ModifyService {
 
 BEGIN { $TYPEINFO{WriteService} = ["function", "boolean", "boolean" ]; }
 sub WriteService {
-    HTTPD::ModifyService( $serviceState );
+    return HTTPD::ModifyService( $serviceState );
 }
 
 #######################################################
@@ -282,7 +293,7 @@ sub WriteService {
 
 # boolean CreateListen( int, int, list<string>, boolean )
 # boolean CreateListen( int, int, list<string> )
-BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ] ] ; }
+BEGIN { $TYPEINFO{CreateListen} = ["function", "boolean", "integer", "integer", "string" ] ; }
 sub CreateListen {
     my $fromPort = shift;
     my $toPort = shift;
@@ -307,7 +318,7 @@ sub CreateListen {
 }
 
 # boolean CreateListen( int, int, list<string> )
-BEGIN { $TYPEINFO{DeleteListen} = ["function", "boolean", "integer", "integer", [ "list", "string" ] ] ; }
+BEGIN { $TYPEINFO{DeleteListen} = ["function", "boolean", "integer", "integer", "string" ] ; }
 sub DeleteListen {
     my $fromPort = shift;
     my $toPort = shift;

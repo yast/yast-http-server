@@ -218,14 +218,12 @@ global void DefaultHostPopupStore (any opt_id, string opt_key);
 global string HostTableEntrySummary (any opt_id, string opt_key);
 global boolean HostTableEntryDelete (any opt_id, string opt_key);
 global void initModules (any key);
-global void storeModules (any key, map event);
 global symbol handleModules (any key, map event);
 global void initListenSettings (any key);
 global void storeListenSettings (any key, map event);
 global symbol handleListenSettings (any key, map event);
 global void initServiceStatus (any key);
 global void storeServiceStatus (any key, map event);
-global symbol handleServiceStatus (any key, map event);
 global void initAdaptFirewall (any key);
 global void storeAdaptFirewall (any opt_id, map event);
 
@@ -314,7 +312,6 @@ global map moduleslistwidget = $[
 		)
 	    ),
 	    "init" : HttpServerWidgets::initModules,
-	    "store" : HttpServerWidgets::storeModules,
 	    "handle" : HttpServerWidgets::handleModules,
 	    "help" : HELPS["modules"]:"",
 	];
@@ -360,7 +357,6 @@ global map widgets = $[
 		    [ "enabled", _("Enabled") ]
 		],
 		"init"	: HttpServerWidgets::initServiceStatus,
-		"handle" : HttpServerWidgets::handleServiceStatus,
 		"store"	 : HttpServerWidgets::storeServiceStatus,
 		"handle_events" : [ "enabled", "disabled" ],
 		"opt" : [ `notify ],
@@ -381,8 +377,7 @@ global map widgets = $[
 	    "hosts"	: hosts_widget,
 	];
 
-/********************************** helpers *******************************/
-
+/******************************** Listen popup ****************************/
 
 /**
  * Convert a Listen string to an item for table. Splits by the colon.
@@ -394,29 +389,10 @@ global map widgets = $[
 global define term listen2item( map<string,any> arg, integer id ) ``{
 
     string address = arg["ADDRESS"]: _("All Addresses");
+    if (address == "") address = _("All Addresses");
     string port = arg["PORT"]:"80";
     
     return `item( `id(id), address, port );
-}
-
-/**
- * Convert a Listen string to a pair: $[ "port": port, "address": network ]
- *
- * @param arg		the Listen string
- * @return map		map with the result
- */
-global define map listen2map( string arg ) ``{
-    integer colon = find( arg, ":" );
-
-    string address = "all";
-    string port = arg;
-    
-    if( colon != -1 ) {
-	// address is present
-	address = substring( arg, 0, colon );
-	port = substring( arg, colon+1 );
-    }
-    return $[ "port": port, "address": address ];
 }
 
 /**
@@ -435,29 +411,6 @@ define string item2listen( string network, string port ) ``{
     return port;
 }
 
-/**
- * Generate list of configured log files. First, use sysconfig and then as at lower priority
- * use CustomLog from httpd.conf files.
- *
- * @param access_logs	string containing configured access_log
- * @param custom_logs	list of other configured logs
- * @return list		list of all configured logs ordered by priority
- */
-global define list<string> GetLogs( string access_logs, list<string> custom_logs ) ``{
-
-    // initialize using access_logs
-    list<string> result = maplist( string value, splitstring( access_logs, "," ), ``( String::CutBlanks( value ) ) );
-
-    foreach( string log, custom_logs, ``{
-	string l = String::CutBlanks( log );
-	if( ! contains( result, l ) ) result = add( result, l );
-    });
-    
-    return result;
-}
-
-/******************************** Listen popup ****************************/
-
     /**
      * Show a popup for editing Listen statement.
      *
@@ -466,7 +419,7 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
      * @param port	initial value for a port number
      * @return string	the new Listen statement or nil if Cancel was pressed
      */
-    define string AskListen( string network, string port ) ``{
+    define map<string,string> AskListen( string network, string port ) ``{
 	// translators: all network addresses Listen type
 	boolean adr_type = ( network == _("All Addresses") || network == "" );
 	if( port == nil ) port = "";
@@ -493,28 +446,28 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
 	}
 	
 	symbol ret = nil;
-	string network = nil;
-	string res = "";
+	map<string,string> res = $[];
 	do {
 
 	    ret = (symbol) UI::UserInput();
 	    
 	    if( ret == `ok ) {
-		network = (string)UI::QueryWidget( `id(`address), `Value );
-		res = (string)UI::QueryWidget( `id(`port), `Value );
-		boolean single_address = ( network != aa );
+		res["ADDRESS"] = (string)UI::QueryWidget( `id(`address), `Value );
+		res["PORT"] = (string)UI::QueryWidget( `id(`port), `Value );
+		if ( res["ADDRESS"]:nil == aa ) 
+		{
+		    // on all addresses, cleanup the value
+		    res["ADDRESS"] = "";
+		}
 		
 		// validation
-		if( ! regexpmatch( res, "^[ \t]*[0-9]+[ \t]*$" ) ) {
+		if( ! regexpmatch( res["PORT"]:"", "^[ \t]*[0-9]+[ \t]*$" ) ) {
 		    // translators: error message when validating Listen statement
 		    Popup::Error( _("Invalid port number.") );
 		    ret = nil;
 		    continue;
 		}
 		
-		if( size(network) != 0 && single_address ) {
-		    res = network +":"+ res;
-		}
 	    }
 	} while( ret != `ok && ret != `cancel );
 	
@@ -526,6 +479,27 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
     }	
     
 // *************************************** log popups **************************
+
+/**
+ * Generate list of configured log files. First, use sysconfig and then as at lower priority
+ * use CustomLog from httpd.conf files.
+ *
+ * @param access_logs	string containing configured access_log
+ * @param custom_logs	list of other configured logs
+ * @return list		list of all configured logs ordered by priority
+ */
+global define list<string> GetLogs( string access_logs, list<string> custom_logs ) ``{
+
+    // initialize using access_logs
+    list<string> result = maplist( string value, splitstring( access_logs, "," ), ``( String::CutBlanks( value ) ) );
+
+    foreach( string log, custom_logs, ``{
+	string l = String::CutBlanks( log );
+	if( ! contains( result, l ) ) result = add( result, l );
+    });
+    
+    return result;
+}
 
     /**
       * Handle function of the access log button (the first defined access log file)
@@ -719,34 +693,6 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
     }
 
     /**
-      * Store function of a widget
-      * @param key any widget key of widget that is processed
-      * @param event map event that occured
-      */
-    global define void storeModules (any key, map event) ``{
-	list<string> current_on = [];
-	list<string> current_off = [];
-	list<term> items = (list<term>) UI::QueryWidget( `id(`modules), `Items );
-	foreach ( term item, items, ``{
-	    string mod = select( item, 1, "" );
-	    boolean res = select( item, 2, "" ) == _("Enabled");
-	    y2debug( "Changing %1 to %2", mod, res );
-	    
-	    if (res)
-	    {
-		current_on = add (current_on, mod);
-	    }
-	    else
-	    {
-		current_off = add (current_off, mod);
-	    }
-	});
-	
-	HTTPDData::ModifyModuleList (current_on, true);
-	HTTPDData::ModifyModuleList (current_off, false);
-    }
-
-    /**
       * Handle function of a widget
       * @param key any widget key of widget that is processed
       * @param event any event that occured
@@ -764,6 +710,7 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
 	    if( status == _("Enabled") ) status = _("Disabled");
 	    else status = _("Enabled");
 	    UI::ChangeWidget( `id( `modules ), `Item( ci , 1 ) , status );
+	    HTTPDData::ModifyModuleList ([name], status == _("Enabled"));
         }
 	else if (event["ID"]:nil == `add_user)
         {
@@ -859,24 +806,24 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
         if (event["ID"]:nil == `add)
         {
 	    // translators: all network addresses Listen type
-	    string res = AskListen( _("All Addresses"), "" );
+	    map<string,string> res = AskListen( _("All Addresses"), "" );
 	    if( res != nil ) {
-		if( contains( HttpServer::settings["Listen"]:[], res )  )
+		// FIXME: if( contains( HttpServer::settings["Listen"]:[], res )  )
+#		{
+#		    // translators: error message for adding a new Listen statement
+#		    Popup::Error( sformat(_("The entry '%1' already exists."), res) );
+#		} 
+#		else
 		{
-		    // translators: error message for adding a new Listen statement
-		    Popup::Error( sformat(_("The entry '%1' already exists."), res) );
-		} 
-		else
-		{
-		    HttpServer::settings["Listen"] = 
-			add( HttpServer::settings["Listen"]:[], res );
+		    HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
+			res["ADDRESS"]:"" );
 		}
 	    }
         }
 	else if( event["ID"]:nil == `delete )
 	{
 	    // FIXME: ensure there is at least one listen statement
-	    boolean validate = size( HttpServer::settings["Listen"]:[] ) != 0;
+	    boolean validate = size( HTTPDData::GetCurrentListen() ) != 0;
 
 	    y2debug( "Validation result: %1", validate );
 	
@@ -887,17 +834,19 @@ listen cannot be empty.
 	    return nil;
 	    }
 
-	    string res = item2listen( network, port );
-	    HttpServer::settings["Listen"] = 
-		filter( string litem, HttpServer::settings["Listen"]:[], ``(litem != res) );
+	    // remove the entry
+	    HTTPDData::DeleteListen( tointeger(port), tointeger(port), network );
 	}
 	else if( event["ID"]:nil == `edit )
 	{
-	    string res = AskListen( network, port );
+	    map<string,string> res = AskListen( network, port );
 	    if( res != nil ) {
-		HttpServer::settings["Listen"] = add( 
-		    filter( string litem, HttpServer::settings["Listen"]:[], ``(litem != item2listen(network, port)) ),
-		    res );
+		// remove the old one
+		HTTPDData::DeleteListen( tointeger(port), tointeger(port),
+			network );
+		// create the new one
+		HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
+			res["ADDRESS"]:"" );
 	    }
 	}
 	
@@ -912,7 +861,7 @@ listen cannot be empty.
       * @param key any widget key of widget that is processed
       */
     global define void initServiceStatus (any key) ``{
-	if( HttpServer::settings["enabled"]:false  ) {
+	if( HTTPDData::GetService()  ) {
 	    UI::ChangeWidget (`id ("enabled"), `Value, true);
 	}
 	else 
@@ -927,19 +876,9 @@ listen cannot be empty.
       * @param event map event that occured
       */
     global define void storeServiceStatus (any key, map event) ``{
-	HttpServer::enableService( (boolean) UI::QueryWidget ( `id("enabled"), `Value ) );
+	HTTPDData::ModifyService( (boolean) UI::QueryWidget ( `id("enabled"), `Value ) );
     }
 
-    /**
-      * Handle function of a widget
-      * @param key any widget key of widget that is processed
-      * @param event map event that occured
-      * @return symbol symbol for WS or nil
-      */
-    global define symbol handleServiceStatus (any key, map event) ``{
-	boolean current = (boolean) UI::QueryWidget (`id ("enabled"), `Value);
-	HttpServer::settings["enabled"] = current;
-    }
 // *********************************** Listen widget ***************************
 
 // ************************************ Adapt firewall widget ********************
