@@ -194,6 +194,14 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	}
     });
     
+    // validate server admin
+    string serveradmin = (string)get_host_value ( "ServerAdmin", server, nil );
+    if ( ! regexpmatch ( serveradmin, ".+@.+" ))
+    {
+	Report::Error (_("Administrator E-Mail is invalid."));
+	res = false;
+    }
+    
     return res;
 }
 
