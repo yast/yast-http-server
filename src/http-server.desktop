@@ -19,5 +19,5 @@ X-SuSE-YaST-AutoInstResource= http-server
 Icon=http-server
 Exec=/sbin/yast2 http-server 
 
-Name=Http Server
+Name=HTTP Server
 GenericName=Configure Apache 2 server
