@@ -1068,7 +1068,9 @@ sub CreateListen {
     if( $doFirewall ) {
         my $ip2device = $self->ip2device();
         my $if = exists($newEntry{ADDRESS})?$ip2device->{$newEntry{ADDRESS}}:'all';
+        SuSEFirewall->Read();
         SuSEFirewall->AddService( $newEntry{PORT}, "TCP", $if );
+        SuSEFirewall->Write();
     }
     return 1;
 }
@@ -1120,7 +1122,9 @@ sub DeleteListen {
         my $ip2device = $self->ip2device();
         my $if = $ip?$ip2device->{$ip}:'all';
         my $port = ($fromPort eq $toPort)?($fromPort):("$fromPort-$toPort");
+        SuSEFirewall->Read();
         SuSEFirewall->RemoveService( $port, "TCP", $if );
+        SuSEFirewall->Write();
     }
     return 1;
 }
@@ -1603,98 +1607,4 @@ sub ReadServerCA {
 #######################################################
 # apache2 ssl certificates end
 #######################################################
-
-
-sub run {
-    my $self = __PACKAGE__;
-    print "-------------- GetHostsList\n";
-    foreach my $h ( @{$self->GetHostsList()} ) {
-        print "ID: $h\n";
-    }
-
-    print "-------------- ModifyHost Number 0\n";
-    my $hostid = "default";
-    my @hostArr = @{$self->GetHost( $hostid )};
-    $self->ModifyHost( $hostid, \@hostArr );
-
-    print "-------------- CreateHost\n";
-    my @temp = (
-                { KEY => "ServerName",    VALUE => 'createTest2.suse.de' },
-                { KEY => "VirtualByName", VALUE => 1 },
-                { KEY => "ServerAdmin",   VALUE => 'no@one.de' }
-                );
-    $self->CreateHost( '192.168.1.2/createTest2.suse.de', \@temp );
-
-    print "-------------- GetHost created host\n";
-    @hostArr = @{$self->GetHost( '*:80/dummy-host.example.com' )};
-    use Data::Dumper;
-#    print Data::Dumper->Dump( [ \@hostArr ] );
-
-    system("cat /etc/apache2/vhosts.d/yast2_vhosts.conf");
-
-    print "-------------- DeleteHost Number 0\n";
-    $self->DeleteHost( '192.168.1.2/createTest2.suse.de' );
-
-    print "-------------- show module list\n";
-    foreach my $mod ( @{$self->GetModuleList()} ) {
-        print "MOD: $mod\n";
-    }
-
-    print "-------------- show known modules\n";
-    foreach my $mod ( @{$self->GetKnownModules()} ) {
-        print "KNOWN MOD: $mod->{name}\n";
-    }
-
-    print "-------------- show known selections\n";
-    foreach my $mod ( @{$self->GetKnownModuleSelections()} ) {
-        print "KNOWN SEL: $mod->{id}\n";
-    }
-
-    $self->ModifyModuleList( ['ssl'], 0 );
-
-    print "-------------- show active selections\n";
-    $self->GetModuleSelectionsList();
-
-    print "-------------- activate apache2\n";
-    $self->ModifyService(1);
-
-    print "-------------- get listen\n";
-    foreach my $l ( @{$self->GetCurrentListen()} ) {
-        print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
-        print $l->{PORT}."\n";
-    }
-
-    print "-------------- del listen\n";
-    $self->DeleteListen( 443,443,'',1 );
-    $self->DeleteListen( 80,80,"12.34.56.78",1 );
-    print "-------------- get listen\n";
-    foreach my $l ( @{$self->GetCurrentListen()} ) {
-        print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
-        print $l->{PORT}."\n";
-    }
-
-    print "-------------- create listen\n";
-    $self->CreateListen( 443,443,'',1 );
-    $self->CreateListen( 80,80,"12.34.56.78",1 );
-
-    print "--------------set ModuleSelections\n";
-    $self->ModifyModuleSelectionList( [ 'mod_test1', 'mod_test2', 'mod_test3' ], 1 );
-    $self->ModifyModuleSelectionList( [ 'mod_test3' ], 0 );
-
-    print "-------------- get ModuleSelections\n";
-    foreach my $sel ( @{$self->GetModuleSelectionsList()} ) {
-        print "SEL: $sel\n";
-    }
-
-    print "--------------trigger error\n";
-    my $host = $self->GetHost( 'will.not.be.found' );
-    if( not defined $host ) {
-        my %error = $self->Error();
-        while( my ($k,$v) = each(%error) ) {
-            print "ERROR: $k = $v\n";
-        }
-    }
-    print "\n";
-
-}
 1;
