@@ -185,10 +185,10 @@ map<string, any> overview_widget = $[
     "widget"		: `custom,
     "custom_widget"	: 
 	`VBox(
-	    // translators: table heading
-	    `Table (`id( `overview_table), `header( _("Option")
-		// translators: table heading
-		, _("Value") )),
+	    // translators: table heading - column describes part of the settings shown
+	    `Table (`id( `overview_table), `header( _("Settings")
+		// translators: table heading - column shows a summary of the settings
+		, _("Summary") )),
 	    `HBox(
 		`PushButton ( `id(`edit), Label::EditButton ()),
 		`HStretch(),
@@ -1373,6 +1373,16 @@ listen cannot be empty.") );
 	    HttpServer::modified = true;
 	}
     }
+
+/* these are for future use: */
+
+// error message - the entered server name is already configured in another virtual host
+string __duplicate_servername = _("The server name is already in configured.");
+// error message - the entered ip address is already configured for another virtual host
+string __duplicate_ipaddress = _("The IP address is already configured.");
+// error message - the entered ip address is not found
+string __duplicate_ipaddress = _("The IP address is not configured
+on this machine.");
 
 /* EOF */
 }
