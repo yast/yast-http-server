@@ -1187,7 +1187,6 @@ define string item2listen( string network, string port ) ``{
 	
 	options = set_host_value( opt_key, options, UI::QueryWidget (`id (opt_key), property) );
 	YaST::HTTPDData::ModifyHost (currenthost, options);
-	y2internal ("Storing host %1: %2", currenthost, options);
 	HttpServer::modified = true;
     }
 
