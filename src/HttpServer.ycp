@@ -619,7 +619,11 @@ global define list Summary() ``{
                 if ( params["KEY"]:"" == "SSL" && params["VALUE"]:""!="0") ssl = true;
 
                         });
-            summary = Summary::AddLine(summary, serv_name + _(" in ") + doc_root + ", SSL " + ((ssl)?_("enabled"):_("disabled")));
+	    // translators: the summary text, %1 is the host name
+	    // %2 document root location
+            summary = Summary::AddLine(summary, sformat ( _("%1 in %2")
+		, serv_name, doc_root) 
+		+ ", SSL " + ((ssl)?_("enabled"):_("disabled")));
 
 });
 	   }

@@ -118,7 +118,7 @@ symbol WizardSequence2(){
 	y2milestone("Ruby support %1", enable_ruby);
 	// create list of all standard modules
            list<string> existing = maplist (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), { 
-			YaST::HTTPDData::ModifyModuleList ([ mod["name"]:_("unknown") ], mod["default"]:_("0") == "1");
+			YaST::HTTPDData::ModifyModuleList ([ mod["name"]:_("unknown") ], mod["default"]:"0" == "1");
 		} );
 	// add selected modules to that list
 	YaST::HTTPDData::ModifyModuleList ([ "php4" ], enable_php4);
