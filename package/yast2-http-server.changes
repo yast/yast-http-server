@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Mar 26 15:32:44 CET 2004 - visnov@suse.cz
+
+- allow to add directory
+- VirtualByName handling fixes
+- 2.9.13 
+
+-------------------------------------------------------------------
 Wed Mar 24 16:38:18 CET 2004 - visnov@suse.cz
 
 - allow to enter port as a part of IP spec for vhosts
