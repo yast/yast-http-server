@@ -2,18 +2,25 @@
 Tue Nov  2 10:14:54 CET 2004 - visnov@suse.cz
 
 - adapt for new Mode
-- 2.11.0 
+- 2.11.0
 
 -------------------------------------------------------------------
 Mon Nov  1 12:50:06 CET 2004 - visnov@suse.cz
 
 - agent should not crash on errors (#46323)
-- fix import of firewall and its handling in autoyast UI 
+- fix import of firewall and its handling in autoyast UI
 
 -------------------------------------------------------------------
 Tue Oct 19 15:09:43 CEST 2004 - locilka@suse.cz
 
 - using global text-messages anywhere it is possible
+
+-------------------------------------------------------------------
+Tue Oct  5 12:52:09 CEST 2004 - visnov@suse.cz
+
+- set module state also according to the needed packages (#46662)
+- prompt for installing packages needed by modules (#46661)
+- 2.10.8
 
 -------------------------------------------------------------------
 Fri Sep 24 12:36:54 CEST 2004 - visnov@suse.cz
