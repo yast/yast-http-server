@@ -15,6 +15,7 @@
     import "HttpServer";
     import "HttpServerWidgets";
 
+    import "Mode";
     import "Popup";
     import "Label";
     import "CWM";
