@@ -1,14 +1,10 @@
 testsuite
 docs
-comments
 different location for httpd.conf
 virtual hosts
 ssl
-enabling buttons in Listen editting
 autoyast
-commandline
-IP address validation
-automatic module description
+commandline (fill implementation)
 firewall modification
 allow to select more logs
 logresolve

@@ -11,6 +11,7 @@
 
 textdomain "http-server";
 
+import "Label";
 import "Wizard";
 
 include "wizard/sequencer.ycp";

@@ -17,6 +17,7 @@
 
 textdomain "http-server";
 
+import "HttpServer";
 import "Require";
 
 include "commandline/commandline.ycp";
@@ -28,12 +29,81 @@ map cmdline_description = $[
     "initialize"        : ``(HttpServer::Read()),
     "finish"            : ``(HttpServer::Write()),
     "actions"           : $[
+	"configure"	: $[
+	    "help" 	: _("Configure a host settings"),
+	    "handler"	: ``(ConfigureHandler())
+	],
+	"modules"	: $[
+	    "help"	: _("Configure the Apache2 server modules"),
+	    "handler"	: ``(ModulesHandler())
+	],
+	"listen"	: $[
+	    "help" 	: _("Setup the ports and network addresses, where should the server listen"),
+	    "handler"	: ``(ListenHandler())
+	],
     ],
     "options"		: $[
+	"servername"	: $[
+	    "type"	: "hostname",
+	    "help"	: _("Server name, for example www.example.com")
+	],
+	"serveradmin"	: $[
+	    "type"	: "email",
+	    "help"	: _("E-mail address of of the server administrator")
+	],
+	"documentroot"	: $[
+	    "type"	: "string",
+	    "help"	: _("Directory, where are the documents of the server stored")
+	],
+	"host"		: $[
+	    "type"	: "string",
+	    "help"	: _("Name of the host to be configured. Only \"defaulthost\" is valid at the moment.")
+	],
+	"add"		: $[
+	    "type"	: "regex",
+	    "typespec"	: "(\[[0-9a-f:]+\]:[0-9]+)|([0-9]+)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)",
+	    "help"	: _("Add a new listen entry ([address:]port)"),
+	],
+	"delete"	: $[
+	    "type"	: "regex",
+	    "typespec"	: "(\[[0-9a-f:]+\]:[0-9]+)|([0-9]+)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)",
+	    "help"	: _("Delete already existing listen entry ([address:]port)"),
+	],
+	"list"		: $[
+	    "help"	: _("List already configured entries"),
+	],
+	"enable"	: $[
+	    "type"	: "regex",
+	    "typespec"	: ".+(,.+)*",
+	    "help"	: _("Comma separated list of modules to be enabled")
+	],
+	"disable"	: $[
+	    "type"	: "regex",
+	    "typespec"	: ".+(,.+)*",
+	    "help"	: _("Comma separated list of modules to be disabled")
+	]
     ],
-    "mapping"		: $[
+    "mappings"		: $[
+	"configure"	: [ "host", "servername", "serveradmin", "documentroot" ],
+	"modules"	: [ "enable", "disable", "list" ],
+	"listen"	: [ "add", "delete", "list" ]
     ]
 ];
+
+define boolean ConfigureHandler(map options) ``{
+    Report::Error( "This is not implemented yet." );
+    return false;
+}
+
+define boolean ModulesHandler(map options) ``{
+    Report::Error( "This is not implemented yet." );
+    return false;
+}
+
+define boolean ListenHandler(map options) ``{
+    Report::Error( "This is not implemented yet." );
+    return false;
+}
 
 /* The main () */
 y2milestone ("----------------------------------------");

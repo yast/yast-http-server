@@ -13,6 +13,7 @@
 
     textdomain "http-server";
 
+    import "IP";
     import "Label";
     import "Popup";
     import "LogView";
@@ -70,11 +71,11 @@ global map popups = $[
 	];
 
 
-global map defaulthostwidget = union ( CWM::CreateTable (
+global map defaulthostwidget = CWM::CreateTableDescr (
 	    $["add_delete" : true, 
 	      "up_down" : false, 
 	      "unique_keys" : true]
-	), $[
+	, $[
 	    "init" : ``(CWM::TableInit (
 		HttpServerWidgets::widgets["global_table"]:$[])),
 	    "handle" : ``(HttpServerWidgets::handleDefaultHostTable()),
@@ -104,7 +105,7 @@ global map moduleslistwidget = $[
 		), []),
 		`HBox (
 		    `PushButton (`id (`toggle), `opt (`key_F3),
-			_("Toggle status") ),
+			_("&Toggle status") ),
 		    `HStretch ()
 		)
 	    ),
@@ -143,17 +144,9 @@ global map listenwidget = $[
  * Map of widgets for CWM
  */
 global map widgets = $[
-	    "log_button" : $[
-		"widget" : `push_button,
-		// push button
-		"label" : _("&Display log"),
-		"handle" : ``(HttpServerWidgets::showLogPopup ()),
-		"handle_events" : [ "log_button" ],
-		"help" : HELPS["log_button"]:"",
-	    ],
 	    "server_enable" : $[
 		"widget" : `radio_buttons,
-		"label"	 : _("HTTP service"),
+		"label"	 : _("HTTP &service"),
 		"items"	 : [
 		    [ `disabled, _("Disabled" ) ],
 		    [ `enabled, _("Enabled" ) ]
@@ -178,9 +171,9 @@ global map widgets = $[
 	UI::OpenDialog( `VBox(
 	    `RadioButtonGroup( `id(`address_type), 
 	    `VBox(
-		`TextEntry( `id(`port), _("Port:"), port ),
-		`Left(`RadioButton( `id(`all_addresses), `opt(`notify), _("All addresses"), adr_type )),
-		`Left(`RadioButton( `id(`single_address), `opt(`notify), _("This address:"), !adr_type  )),
+		`TextEntry( `id(`port), _("&Port:"), port ),
+		`Left(`RadioButton( `id(`all_addresses), `opt(`notify), _("&All addresses"), adr_type )),
+		`Left(`RadioButton( `id(`single_address), `opt(`notify), _("&This address:"), !adr_type  )),
 		`TextEntry( `id(`address), "", adr_type ? "" : network )
 	    )),
 	    `HBox( 
@@ -201,6 +194,7 @@ global map widgets = $[
 	    if( ret == `ok ) {
 		network = UI::QueryWidget( `id(`address), `Value );
 		res = UI::QueryWidget( `id(`port), `Value );
+		boolean single_address = UI::QueryWidget( `id(`single_address ), `Value );
 		
 		// validation
 		if( ! regexpmatch( res, "^[ \t]*[0-9]+[ \t]*$" ) ) {
@@ -209,9 +203,21 @@ global map widgets = $[
 		    continue;
 		}
 		
-		// TODO: validate IP addess
+		if( single_address ) {
+		    // validate IP
+		    if( ! IP::Check4( network ) ) {
+			// IPv6 format
+			string ipv6 = regexpsub( network, "^[ \t]*\[([0-9a-f:]+)\][ \t]*$", "\1" );
+			if( ! regexpmatch( network, "^[ \t]*\[[0-9a-f]+\][ \t]*$" || ipv6 == nil ||
+			  ! IP::Check6( ipv6 ) ) ) {
+			    Popup::Error( _("Invalid network address." ) );
+			    ret = nil;
+			    continue;
+			}
+		    }
+		}
 
-		if( size(network) != 0 && UI::QueryWidget( `id(`single_address ), `Value ) ) {
+		if( size(network) != 0 && single_address ) {
 		    res = network +":"+ res;
 		}
 		
@@ -393,6 +399,11 @@ global map widgets = $[
 	list listen = HttpServer::settings[currenthost, "Listen"]:[];
 	list items = maplist( string litem, listen, ``{ id = id+1; return listen2item(litem, id); } );
 	UI::ChangeWidget (`id (`listen), `Items, items);
+	
+	// enable/disable buttons - at least single Listen must be present
+	UI::ChangeWidget (`id (`delete), `Enabled, size( listen ) > 1 );
+	
+	// set focus
 	UI::SetFocus (`id (`listen));
     }
 

@@ -106,8 +106,8 @@ global define boolean Read() ``{
 
     // We do not set help text here, because it was set outside
     Progress::New( caption, " ", steps, [
-	    _("Check the environment"),
-	    _("Read Apache2 configuration")
+	    _("&Check the environment"),
+	    _("&Read Apache2 configuration")
 	], [
 	    _("Checking the environment..."),
 	    _("Reading Apache2 configuration..."),

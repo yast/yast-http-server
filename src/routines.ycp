@@ -10,6 +10,8 @@
 {
 
 textdomain "http-server";
+
+import "Directory";
 import "Progress";
 
 /**
