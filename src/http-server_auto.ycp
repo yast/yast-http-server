@@ -68,6 +68,11 @@ else if (func == "Packages") {
 else if (func == "GetModified") {
     ret = HttpServer::modified;
 }
+else if (func == "SetModified") {
+    HttpServer::modified = true;
+    HttpServer::configured = true;
+    ret = true;
+}
 /* Return actual state */
 else if (func == "Export") {
     ret = HttpServer::Export();
