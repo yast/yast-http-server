@@ -193,8 +193,8 @@ sub ModifyModuleList {
 }
 BEGIN { $TYPEINFO{WriteModuleList} = ["function", "boolean"]; }
 sub WriteModuleList {
-    HTTPD::ModifyModuleList( [ keys(%delModules) ], 0 );
-    HTTPD::ModifyModuleList( [ keys(%newModules) ], 1 );
+    HTTPD::ModifyModuleList( [ keys(%delModules) ], 0 ) if(keys(%delModules));
+    HTTPD::ModifyModuleList( [ keys(%newModules) ], 1 ) if(keys(%newModules));
     %delModules = ();
     %newModules = ();
     @oldModules = @{HTTPD::GetModuleList()};
