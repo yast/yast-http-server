@@ -291,7 +291,7 @@ map<string, any> overview_widget = $[
 	    `HBox( 
 		`PushButton ( `id(`edit), Label::EditButton ()),
 		`HStretch(),
-		Mode::config ? `VSpacing(0) : (
+		Mode::config () ? `VSpacing(0) : (
 		// menu button label
         	`MenuButton( `id(`menu), _("&Log Files"),
             	    // menu button item
