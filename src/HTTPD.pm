@@ -333,6 +333,7 @@ sub GetKnownModules {
     my @ret = ();
     foreach my $mod ( keys(%HTTPDModules::modules) ) {
         push( @ret, { name => $mod, %{$HTTPDModules::modules{$mod}} } );
+        @ret = sort( { $a->{position} <=> $b->{position} } @ret );
     }
     return @ret;
 }
@@ -342,16 +343,27 @@ BEGIN { $TYPEINFO{ModifyModuleList} = ["function", "boolean", [ "list","string" 
 sub ModifyModuleList {
     my $newModules = shift;
     my $enable = shift;
-    my %uniq = ();
 
-    @uniq{GetModuleList()} = ();
-    if( $enable ) {
-        @uniq{@$newModules} = ();
+    my @newList = ();
+    if( not $enable ) {
+        foreach my $mod ( GetModuleList() ) {
+            next if( grep( /^$mod$/, @$newModules ) );
+            push( @newList, $mod );
+        }
     } else {
-        delete(@uniq{@$newModules});
+        my @oldList = GetModuleList();
+        foreach my $mod ( @$newModules ) {
+            next if( grep( /^$mod$/, @oldList ) ); # already existing module?
+            push( @oldList, $mod );
+        }
+        @newList = sort( {
+                         my $aa = (exists($HTTPDModules::modules{$a}))?($HTTPDModules::modules{$a}->{position}):(10000000);
+                         my $bb = (exists($HTTPDModules::modules{$b}))?($HTTPDModules::modules{$b}->{position}):(10000000);
+                         $aa <=> $bb;
+                        } @oldList );
     }
 
-    SCR::Write('.sysconfig.apache2.APACHE_MODULES', [ join(' ',keys(%uniq)) ]);
+    SCR::Write('.sysconfig.apache2.APACHE_MODULES', join(' ',@newList));
     return 1;
 }
 
