@@ -20,7 +20,7 @@ Read	.probe.has_pcmcia nil
 Read	.probe.has_smp nil
 Read	.probe.system nil
 Read	.target.ycp "/usr/share/YaST2/data/all-apache2-modules.ycp" nil
-Dump	$["defaulthost":$["Listen":["80"], "ServerAdmin":"webmaster@example.com", "ServerName":"www.example.com:80"], "modules":nil, "settings":$["enabled":false, "firewall":true, "firewall_started":false]]
+Dump	$["defaulthost":$["Listen":["80"], "ServerAdmin":"webmaster@example.com", "ServerName":"www.example.com"], "modules":nil, "settings":$["enabled":false, "firewall":true, "firewall_started":false]]
 Dump	false
 Dump	false
 Read	.target.ycp "/usr/share/YaST2/data/all-apache2-modules.ycp" nil
