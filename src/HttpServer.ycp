@@ -279,7 +279,7 @@ global define boolean Write() ``{
 	    // translators: progress stage 1/3
 	    _("Write the Apache2 settings"),
 	    // translators: progress stage 2/3
-	    _("Run SuSEconfig"),
+//	    _("Run SuSEconfig"),
 	    YaST::HTTPDData::GetService() ?
 		// translators: progress stage 3/3
 		_("Enable Apache2 service")
@@ -289,7 +289,7 @@ global define boolean Write() ``{
 	    // translators: progress step 1/3
 	    _("Writing the settings..."),
 	    // translators: progress step 2/3
-	    _("Running SuSEconfig..."),
+//	    _("Running SuSEconfig..."),
 	    YaST::HTTPDData::GetService() ?
 		// translators: progress step 3/3
 		_("Enabling Apache2 service...")
@@ -354,19 +354,19 @@ Install them now?
 
     YaST::HTTPDData::WriteModuleList ();
 
-    Progress::NextStage();
+//    Progress::NextStage();
 
     // in autoyast, quit here
     // Wrong, service still has to be enabled...
     // if( write_only ) return true;
 
-    // run SuSEconfig
-    if (!write_only) {
-	if( SCR::Execute( .target.bash, "/sbin/SuSEconfig --module apache2" ) != 0 ) {
-	    // translators: error message
-	    Report::Error( Message::SuSEConfigFailed() );
-	}
-    }
+//    // run SuSEconfig
+//    if (!write_only) {
+//	if( SCR::Execute( .target.bash, "/sbin/SuSEconfig --module apache2" ) != 0 ) {
+//	    // translators: error message
+//	    Report::Error( Message::SuSEConfigFailed() );
+//	}
+//    }
 
     Progress::NextStage();
     
