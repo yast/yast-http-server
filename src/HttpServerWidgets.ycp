@@ -111,9 +111,13 @@ void OverviewInit (string widget)
 
     UI::ChangeWidget (`overview_table, `Items, 
 	[
+	    // translators: table entry for Listen statements
 	    `item ( `id(`listen), _("Listen on"), listen_summary ),
+	    // translators: table entry for server modules
 	    `item ( `id(`modules), _("Modules"), "" ),
+	    // translators: table entry for default host
 	    `item ( `id(`default), _("Default Host"), default_host ),
+	    // translators: table entry for all configured hosts
 	    `item ( `id(`hosts), _("Hosts"), hosts ),
 	]);
 }
@@ -142,7 +146,10 @@ map<string, any> overview_widget = $[
     "widget"		: `custom,
     "custom_widget"	: 
 	`VBox(
-	    `Table (`id( `overview_table), `header( _("Option"), _("Value") )),
+	    // translators: table heading
+	    `Table (`id( `overview_table), `header( _("Option")
+		// translators: table heading
+		, _("Value") )),
 	    `HBox(
 		`PushButton ( `id(`edit), Label::EditButton ()),
 		`HStretch(),
@@ -210,6 +217,9 @@ map<string,string> AskNewInfo (string servername, string ip)
 
     UI::OpenDialog (
 	`VBox(
+	    // translators: popup description on changing the default host
+	    // the old default host is changed to a virtual one, but it may
+	    // miss some needed information. the popup asks to set them.
 	    `Label( _("The current default host will be replaced by 
 the new host and will become a virtual host.
 
@@ -220,7 +230,9 @@ a virtual host. Verify the suggested values below
 and click OK to continue with the default host
 switch. Otherwise click Cancel not to change
 the default host.")),
+	    // translators: textentry to set the host name
 	    `TextEntry (`id (`name), _("Server &Name:"), servername),
+	    // translators: textentry to set the host IP address
 	    `Left( `ComboBox( `id(`ip), `opt(`editable), _("Server &IP address:"), ips, ip ) ),
 	    `VSpacing(0.5),
 	    `HBox( `PushButton (`id(`ok), `opt(`default), Label::ContinueButton ()),
@@ -243,12 +255,14 @@ the default host.")),
 	servername = (string)UI::QueryWidget (`name, `Value);
 	if (size(servername) == 0)
 	{
+	    // translators: error message - the entered server name is not valid domain name
 	    Popup::Error (_("Server name cannot be empty."));
 	    continue;
 	}
 	
 	if (!Hostname::CheckFQ (servername))
 	{
+	    // translators: error message - the entered server name is not valid domain name
 	    Popup::Error (_("Invalid server name."));
 	    continue;
 	}
@@ -256,12 +270,14 @@ the default host.")),
 	ip = (string)UI::QueryWidget (`ip, `Value);
 	if (size(ip) == 0)
 	{
+	    // translators: error message - the entered server IP is not valid
 	    Popup::Error (_("Server IP address cannot be empty."));
 	    continue;
 	}
 	
 	if (!IP::Check (ip))
 	{
+	    // translators: error message - the entered server IP is not valid
 	    Popup::Error (_("Invalid IP address."));
 	    continue;
 	}
@@ -341,6 +357,7 @@ list HostsContents (map descr) {
 boolean HostsDelete (any opt_id, string opt_key) {
     if (opt_key == "default")
     {
+	// translators: error message - default host cannot be deleted
 	Popup::Error (_("Cannot delete the default host."));
 	return false;
     }
@@ -353,6 +370,7 @@ boolean HostsDelete (any opt_id, string opt_key) {
 global string HostsMapId2Key (map desc, string id)
 {
     string res = get_host_value ( "ServerName", YaST::HTTPDData::GetHost(id), id );
+    // translators: human-readable "default host"
     if (id == "default" && res == "default" ) res = _("Default host");
     return res;
 }
@@ -555,8 +573,11 @@ map<string, map> edit_ssl = $[
     "popup" : $[
 	"widget" : `radio_buttons,
 	"items" : [
+	    // translators: radio button for SSL being disabled
     	    [ "0", _("&No SSL") ],
+	    // translators: radio button for SSL being allowed
     	    [ "1", _("SSL &Allowed") ],
+	    // translators: radio button for SSL being required
     	    [ "2", _("SSL &Required") ],
 	],
 	"orientation" : `horizontal,
@@ -636,6 +657,7 @@ global symbol handleSSLTable( any key, map event )
 
 global list<string> SSLTableContents (map descr)
 {
+    // translators: unknown table entry value
     list<string> ret = maplist (map<string, any> option, YaST::HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
     
     // filter out unneeded options - only those with SSL are interesting
@@ -907,14 +929,17 @@ define string item2listen( string network, string port ) ``{
 	{
 	    if (res == "0") 
 	    {
+		// translators: table entry text for SSL being disabled
 		res = _("No SSL");
 	    }
 	    else if (res == "1")
 	    {
+		// translators: table entry text for SSL being allowed for each request
 		res = _("Enabled");
 	    }
 	    else if (res == "2")
 	    {
+		// translators: table entry text for SSL being required for each request
 		res = _("Required");
 	    }
 	}
@@ -922,10 +947,12 @@ define string item2listen( string network, string port ) ``{
 	{
 	    if (res == "0")
 	    {
+		// translators: table entry text for name-based vhosts
 		res = _("Resolution via HTTP Headers");
 	    }
 	    else 
 	    {
+		// translators: table entry text for IP-based vhosts
 		res = _("Resolution via IP Address Used");
 	    }
 	}
@@ -946,8 +973,12 @@ define string item2listen( string network, string port ) ``{
 	
 	list<term> items = maplist (map<string,any> mod, known , ``{
 	    index = index + 1;
+	    // translators: server module status unknown
 	    string name = mod["name"]:_("unknown");
-	    return `item (`id (index), name, contains( modules, name) ? _("Enabled") : _("Disabled"), mod["summary"]:"" );
+	    // translators: server module status
+	    return `item (`id (index), name, contains( modules, name) ? _("Enabled") 
+		// translators: server module status
+		: _("Disabled"), mod["summary"]:"" );
 	});
 	UI::ChangeWidget (`id (`modules), `Items, items);
 	UI::SetFocus (`id (`modules));
@@ -1071,9 +1102,9 @@ define string item2listen( string network, string port ) ``{
 	    y2debug( "Validation result: %1", validate );
 	
 	    if( !validate ) {
+		// translators: error message
 		Popup::Error(_("The list of the ports to which the server should
-listen cannot be empty.
-") );
+listen cannot be empty.") );
 	    return nil;
 	    }
 

@@ -39,17 +39,20 @@ Abort the save procedure by pressing <b>Abort</b>.
 An additional dialog informs you whether it is safe to do so.</p>
 "),
 
-	// module dialog help 1/2
+	// module dialog help 1/3
 	"modules" : _("<p><b><big>Editing HTTP Server Modules</big></b><br>
 The table contains a list of all available Apache2 modules.
 The first column contains the name of the module. 
 The second column shows whether the module should be
 loaded by the server. Enabled modules will be loaded. The last column displays a short description
 of the module.</p>")
-	// module dialog help 2/2
+	// module dialog help 2/3
 	+ _("<p>To change the status of a module, 
 choose the appropriate entry of the table and click <b>Toggle Status</b>.</p>
-"),
+")
+	// module dialog help 3/3
+	+ _("<p>If you need to add a module not listed in the table 
+use the <b>Add Module</b> button.</p>"),
 
 	// apache service enabling help 1/1
 	"server_enable" : _("<p><b><big>HTTP Server Settings</big></b><br>

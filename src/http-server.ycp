@@ -102,7 +102,12 @@ define boolean ModulesHandler(map<string, string> options) ``{
 	foreach( map<string,any> mod, YaPI::HTTPD::GetKnownModules(), ``{
 	    // translators: status of a module
 	    CommandLine::Print( sformat( "%1\t%2", 
-		contains( enabled, mod["name"]:"" ) ? _("Enabled") : _("Disabled"), mod["name"]:_("unknown") ) );
+		// translators: server module status
+		contains( enabled, mod["name"]:"" ) ? _("Enabled") 
+		    // translators: server module status
+		    : _("Disabled")
+		    // translators: server module status unknown
+		    , mod["name"]:_("unknown") ) );
 	});
     }
 
