@@ -39,13 +39,13 @@ Abort the save procedure by pressing <b>Abort</b>.
 An additional dialog informs you whether it is safe to do so.</p>
 "),
 
-	"open_port" : _("The <b>port</b> value defines on which Apache2 will listen. The default is 80.<p>"), 
+	"open_port" : _("The <b>Port</b> value defines on which Apache2 will listen. The default is 80.<p>"), 
 
-	"listen_interfaces" : _("Checked <b>ip addresses</b> defines on which Apache2 will listen.If you are ensure check all.<p>"),
+	"listen_interfaces" : _("The list <b>Listen on Interfaces</b> contains the list of all IP addresses configured for this host. Checked IP addresses defines on which Apache2 will listen. If you are unsure, check all.<p>"),
 
 	"fw_open" : _("When firewall is enabled you are allowed to check whether you want to enable Apache2 port on firewall<p>"),
 
-	"script_modules" : _("Check which script languages you want to used.<p>"), 
+	"script_modules" : _("Here it is possible to enable the script languages the Apache2 server should support.<p>"), 
 
 	"summary_text"	: _("Summary box displays some settings which will be writed to Apache2 configuration by pressing <b>finish</b> button.<p>"),
 
