@@ -476,22 +476,22 @@ global boolean HostIsDefault( any widget, string key )
 
 /******************************************************************************************/
 
-global string summaryGenericList( any key, any id );
-global symbol handleHostTable( any key, map event );
+global string summaryGenericList(string key, any id );
+global symbol handleHostTable(string key, map event );
 global list<string> HostTableContents (map descr);
 global void DefaultHostPopupInit (any opt_id, string opt_key);
 global void DefaultHostPopupStore (any opt_id, string opt_key);
 global string HostTableEntrySummary (string opt_id, string opt_key);
 global boolean HostTableEntryDelete (string opt_id, string opt_key);
 global string HostId2Key( map desc, string id );
-global void initModules (any key);
-global symbol handleModules (any key, map event);
-global void initListenSettings (any key);
-global symbol handleListenSettings (any key, map event);
-global void initServiceStatus (any key);
-global void handleServiceStatus (any key, map event);
-global void storeServiceStatus (any key, map event);
-global void initAdaptFirewall (any key);
+global void initModules (string key);
+global symbol handleModules (string key, map event);
+global void initListenSettings (string key);
+global symbol handleListenSettings (string key, map event);
+global void initServiceStatus (string key);
+global void handleServiceStatus (string key, map event);
+global void storeServiceStatus (string key, map event);
+global void initAdaptFirewall (string key);
 global void storeAdaptFirewall (any opt_id, map event);
 global void DirectoryOptionInit (string key);
 global void DirectoryOptionStore (string opt_id, map event);
@@ -586,7 +586,7 @@ global map<string,map> popups = $[
 	    ],
 	];
 
-define void HostInit (any key);
+define void HostInit (string key);
 
 global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	    $["add_delete" : true, 
@@ -611,7 +611,7 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	    "help" : HELPS["global_table"]:"",
 	]);
 
-define void HostInit (any key) ``{
+define void HostInit (string key) ``{
     TablePopup::TableInit (HttpServerWidgets::hostwidget, key);
 }
 
@@ -669,9 +669,9 @@ global map listenwidget = $[
 	];
 
 
-global symbol handleSSLTable( any key, map event );
+global symbol handleSSLTable(string key, map event );
 global list<string> SSLTableContents (map descr);
-global void SSLInit (any key);
+global void SSLInit (string key);
 global void SSLTypeInit (any widget);
 global void SSLTypeStore (any widget);
 
@@ -755,7 +755,7 @@ global map widgets = $[
 
 /******************************** SSL widget ****************************/
 
-global symbol handleSSLTable( any key, map event )
+global symbol handleSSLTable( string key, map event )
 {
     if ( event["ID"]:nil == `generate_certificate )
     {
@@ -775,7 +775,7 @@ global list<string> SSLTableContents (map descr)
     return ret;
 }
 
-global void SSLInit (any widget)
+global void SSLInit (string widget)
 {
     TablePopup::TableInit(sslwidget, widget);
 }
@@ -1139,7 +1139,7 @@ define string item2listen( string network, string port ) ``{
      *  @param event	event description
      *  @return symbol 	the result of the handling
      */
-    global define symbol handleHostTable( any key, map event ) ``{
+    global define symbol handleHostTable(string key, map event ) ``{
 	// handle menu button entries
 	if( event["ID"]:nil == `show_access_log ) {
 	    return showAccessLogPopup( key, event );
@@ -1243,7 +1243,7 @@ define string item2listen( string network, string port ) ``{
       * Initialize function of a widget
       * @param key any widget key of widget that is processed
       */
-    global define void initModules (any key) ``{
+    global define void initModules (string key) ``{
 	list< map<string,any> > known = YaST::HTTPDData::GetKnownModules();
 	list<string> modules = YaST::HTTPDData::GetModuleList();
 	integer index = -1;
@@ -1267,7 +1267,7 @@ define string item2listen( string network, string port ) ``{
       * @param event any event that occured
       * @return symbol symbol for WS or nil
       */
-    global define symbol handleModules (any key, map event) ``{
+    global define symbol handleModules (string key, map event) ``{
 	UI::SetFocus (`id (`modules));
 	integer current = (integer) UI::QueryWidget (`id (`modules), `CurrentItem);
         if (event["ID"]:nil == `toggle)
@@ -1327,7 +1327,7 @@ define string item2listen( string network, string port ) ``{
       * Initialize function of a widget
       * @param key any widget key of widget that is processed
       */
-    global define void initListenSettings (any key) ``{
+    global define void initListenSettings (string key) ``{
 
 	integer id = -1;
 	list< map<string,any> > listen = YaST::HTTPDData::GetCurrentListen();
@@ -1348,7 +1348,7 @@ define string item2listen( string network, string port ) ``{
       * @param event map event that occured
       * @return symbol symbol for WS or nil
       */
-    global define symbol handleListenSettings (any key, map event) ``{
+    global define symbol handleListenSettings (string key, map event) ``{
 	UI::SetFocus (`id (`listen));
 	integer current = (integer) UI::QueryWidget (`id (`listen), `CurrentItem);
 	term currentitem = (term) UI::QueryWidget( `id(`listen), `Item(current) );
@@ -1416,7 +1416,7 @@ listen cannot be empty.") );
       * Initialize function of a widget
       * @param key any widget key of widget that is processed
       */
-    global define void initServiceStatus (any key) ``{
+    global define void initServiceStatus (string key) ``{
 	if( YaST::HTTPDData::GetService()  ) {
 	    UI::ChangeWidget (`id ("enabled"), `Value, true);
 	}
@@ -1431,12 +1431,12 @@ listen cannot be empty.") );
       * @param key any widget key of widget that is processed
       * @param event map event that occured
       */
-    global define void storeServiceStatus (any key, map event) ``{
+    global define void storeServiceStatus (string key, map event) ``{
 	YaST::HTTPDData::ModifyService( (boolean) UI::QueryWidget ( `id("enabled"), `Value ) );
 	HttpServer::modified = true;
     }
 
-    global void handleServiceStatus (any key, map event)
+    global void handleServiceStatus (string key, map event)
     {
 	// enable/disable overview widget
 	boolean enable = (boolean)UI::QueryWidget (`id("enabled"), `Value );
@@ -1452,7 +1452,7 @@ listen cannot be empty.") );
       * Initialization function for firewall adapting
       * @param key any option key to be initialized
       */
-    global define void initAdaptFirewall (any key) ``{
+    global define void initAdaptFirewall (string key) ``{
 	if( Service::Enabled( "SuSEfirewall2_final" ) ) {
 	    UI::ChangeWidget (`id (key), `Value, HttpServer::firewall);
 	    UI::ChangeWidget (`id (key), `Enabled, true );

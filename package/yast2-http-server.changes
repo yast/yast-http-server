@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Mar 29 14:48:17 CEST 2004 - visnov@suse.cz
+
+- use `Value, not `Enabled in query widget
+
+-------------------------------------------------------------------
 Mon Mar 29 11:09:03 CEST 2004 - visnov@suse.cz
 
 - removed debug

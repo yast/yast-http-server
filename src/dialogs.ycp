@@ -217,7 +217,7 @@
 		string servername = (string) UI::QueryWidget( `id("servername"), `Value );
 		string documentroot = (string) UI::QueryWidget( `documentroot, `Value );
 		string admin = (string) UI::QueryWidget( `admin, `Value );
-		boolean virtualbyname = (boolean) UI::QueryWidget( `name_based, `Enabled );
+		boolean virtualbyname = (boolean) UI::QueryWidget( `name_based, `Value );
 		
     		if (! HttpServerWidgets::validate_servername("servername",nil,nil))
     		{
