@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Apr  1 11:51:44 CEST 2004 - ug@suse.de
+
+- removed obsolete code from HTTPD.pm
+- fixed firewall stuff
+
+-------------------------------------------------------------------
 Wed Mar 31 17:36:14 CEST 2004 - visnov@suse.cz
 
 - removed obsolete code (#37652) 
