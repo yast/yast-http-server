@@ -147,25 +147,25 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
     symbol AddHost () {
 	term contents = `HBox( `HSpacing(0.5), `VBox (
 	    `Frame(
-		_("Server identification"),
+		_("Server Identification"),
 		`VBox(
-		    `TextEntry( `id( `servername ), _("Server name:") ),
+		    `TextEntry( `id( `servername ), _("Server Name:") ),
 		    `HBox(
-			`TextEntry( `id( `documentroot ), _("Server contents root:") ),
+			`TextEntry( `id( `documentroot ), _("Server Contents Root:") ),
 			`PushButton( `id( `browse ), Label::BrowseButton () )
 		    ),
-		    `TextEntry( `id( `admin ), _("Administrator e-mail:") )
+		    `TextEntry( `id( `admin ), _("Administrator E-mail:") )
 		)),
 	    `VSpacing (1),
 	    `Frame(
-		_("Server resolution"),
+		_("Server Resolution"),
 		`VBox(
-		`Left( `ComboBox( `id( `ipaddress ), _("IP address:"), maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) ) ),
+		`Left( `ComboBox( `id( `ipaddress ), _("IP Address:"), maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) ) ),
 		`RadioButtonGroup(
 		    `id ( `resolution ),
 		    `VBox (
-			`Left(`RadioButton ( `id ( `name_based ), _("Determine request server by HTTP headers") ) ),
-			`Left(`RadioButton ( `id ( `ip_based ), _("Determine request server by server IP address") ) )
+			`Left(`RadioButton ( `id ( `name_based ), _("Determine Request Server by HTTP Headers") ) ),
+			`Left(`RadioButton ( `id ( `ip_based ), _("Determine Request Server by Server IP Address") ) )
 		    )
 		)))), `HSpacing (0.5)
 	);
