@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Oct 19 15:09:43 CEST 2004 - locilka@suse.cz
+
+- using global text-messages anywhere it is possible
+
+-------------------------------------------------------------------
 Fri Sep 24 12:36:54 CEST 2004 - visnov@suse.cz
 
 - quoting bug in directory path fixed (#45922)

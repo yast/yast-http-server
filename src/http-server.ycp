@@ -22,6 +22,7 @@ import "YaPI::HTTPD";
 import "Popup";
 import "Require";
 import "Report";
+import "Message";
 
 include "http-server/wizards.ycp";
 
@@ -293,8 +294,7 @@ YaST2 cannot continue the configuration
 without installing the package.</p>"), "apache2" ) );
     } else {
 	// translators: error popup before aborting the module
-	Popup::Error( sformat( _("YaST2 cannot continue the configuration
-without installing the required packages."), "apache2" ) );
+	Popup::Error( Message::CannotContinueWithoutPackagesInstalled() );
     }
     
     return (any)false;

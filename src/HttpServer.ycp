@@ -22,6 +22,7 @@ import "Report";
 import "Require";
 import "Service";
 import "Summary";
+import "Message";
 
 /**
  * Abort function
@@ -118,7 +119,7 @@ global define boolean Read() ``{
 	if( SCR::Execute( .target.bash, "cp /var/adm/fillup-templates/sysconfig.apache2 /etc/sysconfig/apache2" )
 	    != 0 ) {
 	// translators:: error message
-	    Report::Error( sformat( _("Cannot create sysconfig file '%1'."), "/etc/sysconfig/apache2" ) );
+	    Report::Error( Message::CannotWriteSettingsTo( "/etc/sysconfig/apache2" ) );
 	    return false;
 	}
     }
@@ -131,7 +132,7 @@ global define boolean Read() ``{
 	if( ! SCR::Write( .target.string, "/etc/apache2/listen.conf", "" ) )
 	{
 	// translators:: error message
-	    Report::Error( sformat( _("Cannot create the file '%1'."), "/etc/apache2/listen.conf" ) );
+	    Report::Error( Message::CannotWriteSettingsTo( "/etc/apache2/listen.conf" ) );
 	    return false;
 	}
     }
@@ -339,7 +340,7 @@ Install them now?
     if (!write_only) {
 	if( SCR::Execute( .target.bash, "/sbin/SuSEconfig --module apache2" ) != 0 ) {
 	    // translators: error message
-	    Report::Error(_("SuSEconfig script failed!") );
+	    Report::Error( Message::SuSEConfigFailed() );
 	}
     }
 
@@ -348,7 +349,7 @@ Install them now?
     if( ! YaST::HTTPDData::WriteService(write_only) )
     {
 	// translators: error message
-	Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
+	Report::Error( Message::CannotAdjustService("apache2") );
     }
     
     if ( YaST::HTTPDData::GetService () )
@@ -357,7 +358,7 @@ Install them now?
 	if ( !Service::Restart ("apache2") )
 	{
 	    // translators: error message
-	    Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
+	    Report::Error( Message::CannotAdjustService("apache2") );
 	}
     }
     else
@@ -365,7 +366,7 @@ Install them now?
 	if ( !Service::Stop ("apache2") )
 	{
 	    // translators: error message
-	    Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
+	    Report::Error( Message::CannotAdjustService("apache2") );
 	}
     }
 
