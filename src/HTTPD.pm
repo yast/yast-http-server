@@ -355,8 +355,8 @@ sub ModifyModuleList {
     return 1;
 }
 
-# map GetKnownModulSelections()
-BEGIN { $TYPEINFO{GetKnownModulSelections} = ["function", [ "map","string","any" ] ]; }
+# map GetKnownModuleSelections()
+BEGIN { $TYPEINFO{GetKnownModuleSelections} = ["function", [ "map","string","any" ] ]; }
 sub GetKnownModulSelections {
     my @ret = ();
     foreach my $sel ( keys(%HTTPDModules::selection) ) {
@@ -604,7 +604,7 @@ sub run {
     }
 
     print "-------------- show known selections\n";
-    foreach my $mod ( GetKnownModulSelections() ) {
+    foreach my $mod ( GetKnownModuleSelections() ) {
         print "KNOWN SEL: $mod->{id}\n";
     }
 
