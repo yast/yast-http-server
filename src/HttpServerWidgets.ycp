@@ -388,6 +388,7 @@ global void initAdaptFirewall (any key);
 global void storeAdaptFirewall (any opt_id, map event);
 
 boolean validate_servername (string key, map event) ``{
+    import "Hostname";
     string value = (string)UI::QueryWidget (`id ("ServerName"), `Value);
     if (!Hostname::CheckFQ (value))
     {
