@@ -2,7 +2,7 @@
  * File:
  *   tty.scr
  * Summary:
- *   SCR Agent for reading/writing vhost files for Apache2
+ *   SCR Agent for reading/writing Apache2 configuration
  * Access:
  *   read/write
  * Authors:
@@ -14,6 +14,6 @@
  * $Id$
  *
  */
-.httpd.vhosts
+.http_server
 
-`ag_httpd_vhosts ( `foo  )
+`ag_http_server ()
