@@ -94,7 +94,7 @@ global list< map<string,any> > set_host_value ( string keyword, list< map<string
     return host;
 }
 
-global boolean validate_servername (string id, map key) 
+global boolean validate_servername (any key, any id, map event) 
 {
     import "Hostname";
     string value = (string)UI::QueryWidget (`id (id), `Value);
@@ -112,7 +112,7 @@ global boolean validate_servername (string id, map key)
 }
 
 
-global boolean validate_serverip (string id, string key, map event) 
+global boolean validate_serverip (any id, any key, map event) 
 {
     import "IP";
     string value = (string)UI::QueryWidget (`id (id), `Value);
@@ -307,8 +307,8 @@ list HostsContents (map descr);
 boolean HostsDelete (any opt_id, string opt_key);
 global boolean HostIsDefault (any widget, string opt_key);
 global string HostsMapId2Key( map desc, any id );
-global string HostDocumentRootSummary( string key, any id );
-global string HostName (string key, any id);
+global string HostDocumentRootSummary( any key, string id );
+global string HostName (any key, string id);
 
 map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 	$["add_delete" : true, 
@@ -385,7 +385,7 @@ the default host.
 	}
 	
 	// it must be `ok
-	if (! validate_servername("servername",nil))
+	if (! validate_servername(nil, "servername",nil))
 	{
 	    continue;
 	}
@@ -487,18 +487,18 @@ boolean HostsDelete (any opt_id, string opt_key) {
     return YaST::HTTPDData::DeleteHost ((string)opt_id);
 }
 
-global string HostName (string key, any id)
+global string HostName (any key, string id)
 {
-    string res = (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost(key), key );
+    string res = (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost((string)key), (string)key );
     // translators: human-readable "default host"
     if (key == "default" && res == "default" ) res = _("Default Host");
     return res;
 }
 
 
-global string HostDocumentRootSummary( string key, any id )
+global string HostDocumentRootSummary( any key, string id )
 {
-    return (string) get_host_value ("DocumentRoot", YaST::HTTPDData::GetHost(key), "");
+    return (string) get_host_value ("DocumentRoot", YaST::HTTPDData::GetHost( (string)key), "");
 }
 
 global boolean HostIsDefault( any widget, string key )
@@ -510,10 +510,10 @@ global boolean HostIsDefault( any widget, string key )
 
 global string summaryGenericList(string key, any id );
 global symbol handleHostTable(string key, map event );
-global list<string> HostTableContents (map descr);
+global list HostTableContents (map descr);
 global void DefaultHostPopupInit (any opt_id, string opt_key);
-global void DefaultHostPopupStore (any opt_id, string opt_key, map event);
-global string HostTableEntrySummary (string opt_id, string opt_key);
+global void DefaultHostPopupStore (any opt_id, string opt_key);
+global string HostTableEntrySummary (any opt_id, string opt_key);
 global boolean HostTableEntryDelete (any opt_id, string opt_key);
 global string HostId2Key( map desc, any id );
 global void initModules (string key);
@@ -521,12 +521,12 @@ global symbol handleModules (string key, map event);
 global void initListenSettings (string key);
 global symbol handleListenSettings (string key, map event);
 global void initServiceStatus (string key);
-global void handleServiceStatus (string key, map event);
+global symbol handleServiceStatus (string key, map event);
 global void storeServiceStatus (string key, map event);
 global void initAdaptFirewall (string key);
 global void storeAdaptFirewall (any opt_id, map event);
-global void DirectoryOptionInit (string key);
-global void DirectoryOptionStore (string opt_id, map event);
+global void DirectoryOptionInit (any key, string id);
+global void DirectoryOptionStore (any key, string id);
 
 /**
  * Map of popups for CWM
@@ -704,10 +704,10 @@ global map listenwidget = $[
 
 
 global symbol handleSSLTable(string key, map event );
-global list<string> SSLTableContents (map descr);
+global list SSLTableContents (map descr);
 global void SSLInit (string key);
-global void SSLTypeInit (string opt_id, string opt_key);
-global void SSLTypeStore (any widget, map event);
+global void SSLTypeInit (any opt_key, string opt_id);
+global void SSLTypeStore (any widget, string opt_id);
 
 map<string, map> edit_ssl = $[
     "table" : $[
@@ -847,7 +847,7 @@ global symbol handleSSLTable( string key, map event )
     return TablePopup::TableHandle( sslwidget, key, event );
 }
 
-global list<string> SSLTableContents (map descr)
+global list SSLTableContents (map descr)
 {
     // translators: unknown table entry value
     list<string> ret = maplist (map<string, any> option, YaST::HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
@@ -862,14 +862,14 @@ global void SSLInit (string widget)
     TablePopup::TableInit(sslwidget, widget);
 }
 
-global void SSLTypeInit (string opt_id, string opt_key)
+global void SSLTypeInit (any key_id, string opt_id)
 {
     // it is a radio button group
-    UI::ChangeWidget (`id(opt_id), `CurrentButton, tostring( get_host_value( "SSL", YaST::HTTPDData::GetHost(currenthost), "0" ) ) );
+    UI::ChangeWidget (`id(key_id), `CurrentButton, tostring( get_host_value( "SSL", YaST::HTTPDData::GetHost(currenthost), "0" ) ) );
 }
 
 
-global void SSLTypeStore (any widget, map event)
+global void SSLTypeStore (any widget, string id)
 {
     // it is a radio button group
     YaST::HTTPDData::ModifyHost( currenthost, set_host_value ("SSL", YaST::HTTPDData::GetHost(currenthost), UI::QueryWidget( `id(widget), `CurrentButton ) ) );
@@ -1056,14 +1056,14 @@ define string item2listen( string network, string port ) ``{
 	else return id;
     }
 
-    global void DirectoryOptionInit (string opt_id)
+    global void DirectoryOptionInit (any key, string id)
     {
-	if (opt_id == nil)
+	if (key == nil)
 	{
 	    // new option
 	    return;
 	}
-	string dirname = regexpsub (opt_id, directory_param_regexp, "\\1");
+	string dirname = regexpsub ((string)key, directory_param_regexp, "\\1");
 
 	// lookup the _SECTION map
 	map<string, any> section = nil;
@@ -1099,12 +1099,12 @@ define string item2listen( string network, string port ) ``{
 	UI::SetFocus (`id(`path) );
     }
     
-    global void DirectoryOptionStore (string opt_id, map event)
+    global void DirectoryOptionStore (any key, string id)
     {
-	string dirname = regexpsub (opt_id, directory_param_regexp, "\\1");
+	string dirname = regexpsub ((string)key, directory_param_regexp, "\\1");
 	if (size (dirname) == 0)
 	{
-	    y2error ("Invalid directory option: %1", opt_id);
+	    y2error ("Invalid directory option: %1", key);
 	    return;
 	}
 	
@@ -1156,7 +1156,7 @@ define string item2listen( string network, string port ) ``{
       * @param descr map description map of the table
       * @return list of items for the table
       */
-    global define list<string> HostTableContents (map descr) ``{
+    global define list HostTableContents (map descr) ``{
     
 	list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
 	list<string> ret = maplist (map<string, any> option, host, ``{
@@ -1264,7 +1264,7 @@ define string item2listen( string network, string port ) ``{
       * @param opt_id any option id
       * @param opt_key any option key
       */
-    global define void DefaultHostPopupStore (any opt_id, string opt_key, map event) ``{
+    global define void DefaultHostPopupStore (any opt_id, string opt_key) ``{
 	list< map<string, any> >options = YaST::HTTPDData::GetHost (currenthost);
 	
 	symbol property = (opt_key == "VirtualByName") ? `CurrentButton : `Value;
@@ -1280,7 +1280,7 @@ define string item2listen( string network, string port ) ``{
       * @param opt_key any option key
       * @return string table entry summary
       */
-    global define string HostTableEntrySummary (string opt_id, string opt_key) ``{
+    global define string HostTableEntrySummary (any opt_id, string opt_key) ``{
 	string res = (string) get_host_value( opt_key, YaST::HTTPDData::GetHost(currenthost), "");
 	if (opt_key == "SSL")
 	{
@@ -1313,9 +1313,9 @@ define string item2listen( string network, string port ) ``{
 		res = _("Resolution via IP Address Used");
 	    }
 	}
-	else if (regexpmatch (opt_id, directory_param_regexp))
+	else if (regexpmatch ((string)opt_id, directory_param_regexp))
 	{
-	    res = regexpsub (opt_id, directory_param_regexp, "\\1 ...");
+	    res = regexpsub ((string)opt_id, directory_param_regexp, "\\1 ...");
 	}
 	return res;
     }
@@ -1520,14 +1520,16 @@ listen cannot be empty.") );
 	HttpServer::modified = true;
     }
 
-    global void handleServiceStatus (string key, map event)
+    global symbol handleServiceStatus (string key, map event)
     {
 	// enable/disable overview widget
 	boolean enable = (boolean)UI::QueryWidget (`id("enabled"), `Value );
 
 	UI::ChangeWidget (`overview_table, `Enabled, enable);	
 	UI::ChangeWidget (`edit, `Enabled, enable);	
-	UI::ChangeWidget (`menu, `Enabled, enable);	
+	UI::ChangeWidget (`menu, `Enabled, enable);
+	
+	return nil;
     }
 
 // ************************************ Adapt firewall widget ********************

@@ -1,9 +1,16 @@
 -------------------------------------------------------------------
+Mon Aug 16 18:31:12 CEST 2004 - visnov@suse.cz
+
+- fixed types of functions for CWM
+- 2.10.2 
+
+-------------------------------------------------------------------
 Tue Aug 10 09:42:22 CEST 2004 - jsrain@suse.cz
 
 - merged texts from proofread
 
 -------------------------------------------------------------------
+>>>>>>> 1.67
 Wed Aug  4 14:09:46 CEST 2004 - visnov@suse.cz
 
 - adapt for the new CWM interface
