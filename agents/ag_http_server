@@ -64,7 +64,7 @@ sub parse_vhost_files {
                 next;
             } elsif( not exists( $vhost->{'SECTIONNAME'} ) ) {
                 $tmpOverhead .= $vhost->{'OVERHEAD'};
-                $tmpOverhead .= $vhost->{KEY}." = ".$vhost->{VALUE}."\n";
+                $tmpOverhead .= $vhost->{KEY}." ".$vhost->{VALUE}."\n";
                 next;
             }
             my $data = [];
@@ -87,6 +87,7 @@ sub parse_vhost_files {
             $vhostData->{'DATA'} = $data;
             push( @{$vhost_files{$file}}, $vhostData );
         }
+        push( @{$vhost_files{$file}}, { OVERHEAD => $tmpOverhead } );
         close( FILE );
     }
 
