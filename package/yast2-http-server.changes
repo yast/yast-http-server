@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Feb 21 17:45:54 CET 2005 - mzugec@suse.cz
+
+- wizard dialogs on first run of http-server 
+
+-------------------------------------------------------------------
 Tue Feb  1 13:06:15 CET 2005 - miso@suse.cz
 
 - show relevant data by pressing back button in SSL dialog 
