@@ -16,6 +16,8 @@
     import "IP";
     import "Label";
     import "Popup";
+    import "Report";
+    import "String";
     import "LogView";
     import "CWM";
     import "HttpServer";
@@ -436,7 +438,8 @@ global map widgets = $[
         {
 	   UI::OpenDialog(
             `VBox(
-                `TextEntry(`id(`mod), _("Enter new module name:" )),
+		// translators: text entry label for adding a user-defined module
+                `TextEntry(`id(`mod), _("Enter new module &name:" )),
                 `HBox(
                     `PushButton(`id(`ok), `opt(`default), Label::OKButton() ),
                     `PushButton(`id(`cancel), Label::CancelButton() )
@@ -451,9 +454,11 @@ global map widgets = $[
 	    if( ret == `ok ) {
 		string mod = String::CutBlanks( UI::QueryWidget( `id(`mod), `Value ) );
 		if( mod == "" ) {
+		    // translators: error message
 		    Report::Error( _("You cannot add a module with empty name" ) );
 		    UI::CloseDialog();
 		} else if( haskey( HttpServer::settings["modules"]:$[], mod )  ) {
+		    // translators: error message
 		    Report::Error( _("The module is already in the list.") );
 		    UI::CloseDialog();
 		} else {

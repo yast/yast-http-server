@@ -5,11 +5,17 @@
 
     include "testsuite.ycp";
     
+    TESTSUITE_INIT([
+	$[ "sysconfig": $[ "personal-firewall": $[ "REJECT_ALL_INCOMING_CONNECTIONS": "yes" ] ] ]
+    ], nil);
+    
     import "HttpServer";
 
+    // TODO: test firewall writing
     HttpServer::settings = $[
         "settings": $[
-            "enabled" : true
+            "enabled" : true,
+	    "firewall": false
         ],
         "modules" : $[
             "ssl": $[
