@@ -387,6 +387,7 @@ sub GetHost {
             my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
             my $sslHash = { KEY => 'SSL', VALUE => 0 };
             my $overheadHash = { KEY => 'OVERHEAD', VALUE => $hostHash->{'OVERHEAD'} };
+            my $ipHash = { KEY => 'HostIP', VALUE => $hostHash->{HostIP} };
             my $sslEngine = 'off';
             my @newHH = ();
             foreach my $h ( @{$hostHash->{'DATA'}} ) {
@@ -404,7 +405,7 @@ sub GetHost {
                 $sslHash->{'VALUE'} = 1;
             }
 #            print Data::Dumper->Dump( [@{$hostHash->{'DATA'}}, $sslHash, $vbnHash] );
-            return [ @{$hostHash->{'DATA'}}, $sslHash, $vbnHash ];
+            return [ @{$hostHash->{'DATA'}}, $sslHash, $vbnHash, $ipHash ];
         }
     }
     return $self->SetError( summary => _('hostid not found'),code => 'HOSTID_NOT_FOUND' );
@@ -619,7 +620,7 @@ use Data::Dumper;
                  OVERHEAD      => "# YaST generated vhost entry\n",
                  VirtualByName => $VirtualByName,
                  HOSTID        => $hostid,
-                 VHOST         => $vhost,
+                 HostIP        => $vhost,
                  DATA          => $data
     };
     # FIXME

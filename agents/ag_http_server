@@ -72,11 +72,11 @@ sub parse_vhost_files {
             }
             my $data = [];
             my $vhostData = {};
-            $vhostData->{'VHOST'}    = $vhost->{'SECTIONPARAM'};
+            $vhostData->{'HostIP'}    = $vhost->{'SECTIONPARAM'};
             $vhostData->{'HOSTID'}   = $vhost->{'SECTIONPARAM'};
             $vhostData->{'OVERHEAD'} = $tmpOverhead.$vhost->{'OVERHEAD'} if( exists($vhostData->{'OVERHEAD'}) );
             $tmpOverhead = "";
-            if( grep( { $vhost eq $_ } keys(%vhost_by_name) ) ) {
+            if( grep( { $vhostData->{'HostIP'} eq $_ } keys(%vhost_by_name) ) ) {
                 $vhostData->{'VirtualByName'} = 1;
             } else {
                 $vhostData->{'VirtualByName'} = 0;
@@ -290,7 +290,7 @@ sub Read {
     my ($path, @args) = @_;
 
     if( $path eq '.vhosts' ) {
-        parse_vhost_files();
+        $class->parse_vhost_files();
         return \%vhost_files;
     } elsif( $path eq '.listen' )  {
         parse_listen_conf();
@@ -307,7 +307,7 @@ sub Write {
     if( $path eq '.vhosts' ) {
     } elsif( $path =~ /\.vhosts\.setFile\.(.*)/ ) {
         # args[0] = array ref (structure explained above)
-        parse_vhost_files();
+        $class->parse_vhost_files();
         if( $1 ) {
             my $filename = $1;
             if( ref($args[0]) eq 'ARRAY' ) {
