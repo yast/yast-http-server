@@ -171,13 +171,14 @@ global define boolean Read() ``{
     NetworkDevices::Read();
 
     // generate the map: static IP -> device
-    // TODO: IP aliases
     ip2device = $[];
     list<string> devs = NetworkDevices::Locate("BOOTPROTO", "static");
     foreach(string dev, devs, {
 	string ip = NetworkDevices::GetValue(dev, "IPADDR");
 	if(ip != nil && ip != "") ip2device[ip] = dev;
     });
+
+    y2milestone ("Mapping of IP addresses and network devices: %1", ip2device);    
 
     // generate the map of our settings in firewall
     listen4firewall = maplist( map<string,string> l, settings["Listen"]:[], ``{
@@ -323,6 +324,20 @@ Install them now?
     return true;
 }
 
+map<string,any> find_known_module (list< map<string,any> > known_modules, string mod)
+{
+    map<string,any> res = nil;
+    foreach( map<string,any> i, known_modules, ``{
+	if (i["name"]:"" == mod)
+	{
+	    res = i;
+	    break;
+	}
+    });
+    
+    return res;
+}
+
 /**
  * Get all http-server settings from the first parameter
  * (For use by autoinstallation.)
@@ -330,31 +345,75 @@ Install them now?
  * @return boolean True on success
  */
 global define boolean Import (map s) ``{
+    string version = s["version"]:"unknown";
+    
+    // setup modules
+    list <map <string,any> > known_modules = HTTPDData::GetKnownModules();
+    list <map <string,any> > modules = s["modules"]: [];
+    foreach (map<string,any> desc, modules, ``{
+	string mod = desc["name"]:"";
+	
+	if ( size(mod) == 0 )
+	{
+	    Report::Warning( _("Module description does not have a name specified, ignoring.") );
+	    continue;
+	}
 
-    map old_modules = GetModules();
+	string change_string = desc["change"]:"nochange";
 
-    settings[ "settings" ] = s[ "settings" ]: $[ "enabled" : false ];
+	// get the default
+	boolean default = (boolean)desc["default"]:nil;
+	
+	if (change_string != "nochange")
+	{
+	    if (! contains ([ "enable", "disable" ], change_string  ) )
+	    {
+		Report::Warning (sformat(_("Unknown change of a module for autoinstallation: %1"), change_string));
+		continue;
+	    }
+	    
+	    // just change the status
+	    HTTPDData::ModifyModuleList( [mod], change_string == "enable" );
+	}
+	else
+	{
+	    // check against the current default
+	    if (default != nil && lookup( find_known_module(known_modules, mod), "default", nil) != default)
+	    {
+		Report::Warning (sformat(_("Default value for module %1 does not match.
+This can cause inconsistent module configuration."), mod));
+	    }
+	}	
+    });
+    
+    // setup listen
+    list < map<string, any> > listen = s["Listen"]:[];
+    foreach (map<string, any> l, listen, ``{ 
+	if ( !haskey(l, "PORT") )
+	{
+	    Report::Error (_("Listen statement without port found."));
+	}
+	else
+	{
+	    HTTPDData::CreateListen(l["PORT"]:0, l["PORT"]:0, l["ADDRESS"]:"" ); 
+	}
+    });
 
-    settings[ "modules" ] = listmap( map value, s["modules"]:[],
-	``{ string n = value["name"]:"";
-	    if( n != "" ) {
-		string old_desc = (string) eval(old_modules[ n, "description" ]:"");
-		return $[ n :
-		    $[ "status": value["state"]:false,
-		       "description": old_desc
-		    ]
-		];
-	    } else return (map)nil;
-	   } );
-
-    settings[ "default" ] = s[ "default" ]: $[
-	"ServerName" : "www.example.com:80",
-//	"DocumentRoot" : "/srv/www/htdocs",
-	"ServerAdmin" : "webmaster@example.com",
-    ];
-
-    // FIXME: do a transformation from 9.0
-//    settings["Listen"] = s[ "defaulthost", "Listen" ]: [ $["PORT":"80"] ];
+    // setup hosts
+    map <string, list<map<string, any> > > hosts = s["hosts"]:$[];
+    foreach (string host, list<map<string, any> > desc, hosts, ``{ HTTPDData::CreateHost(host,desc); }); // check host name
+    
+    // setup service
+    if (haskey( s, "service" ))
+    {
+	HTTPDData::ModifyService (s["service"]:false);
+    }
+    
+    // setup firewall
+    if (haskey( s, "firewall" ))
+    {
+	settings["firewall"] = s["firewal"]:false;
+    }
 
     modified = false;
     configured = true;
@@ -368,13 +427,49 @@ global define boolean Import (map s) ``{
  * @return map Dumped settings (later acceptable by Import ())
  */
 global define map Export () ``{
+    list < map <string,any> > known_modules = HTTPDData::GetKnownModules();
+    list <string> enabled_modules = HTTPDData::GetModuleList();
+
+    // walk over the known modules    
+    list <map <string,any> > modules = maplist (map<string, any> desc, known_modules, ``(
+	$[  "name" : desc["name"]:"", 
+	    "change" : desc["default"]:nil == true ? 
+	    // default is true
+	    (
+		contains (enabled_modules, desc["name"]:"") ? "nochange" : "enable"
+	    )
+	    :
+	    // default is false
+	    (
+		contains (enabled_modules, desc["name"]:"") ? "disable" : "nochange"
+	    ),
+	    "default" : desc["default"]: false
+	] ));
+    // store the user defined ones
+    foreach (string mod, enabled_modules, ``{
+	if( find_known_module(known_modules, mod) != nil )
+	{
+	    // user-defined
+	    modules = add (modules, $[
+		"name" : mod,
+		"change" : "enable",
+		"userdefined" : true
+	    ]);
+	}
+    });
+    
+    // hosts
+    map <string, list< map<string,any> > > hosts = listmap (string host, HTTPDData::GetHostsList(), ``(
+	$[ host : HTTPDData::GetHost(host) ]
+    ));
+
     map result = $[
-	"modules": maplist( string mod, map state, settings["modules"]:$[], ``(
-	    $[ "name": mod, "state" : state["status"]:false ]
-	)),
-	"default": settings["default"]:$[],
-	"settings": settings["settings"]:$[],
-	"Listen": settings["Listen"]:$[]
+	"version" : "2.9",
+	"modules": modules,
+	"hosts" : hosts,
+	"Listen": HTTPDData::GetCurrentListen(),
+	"service" : HTTPDData::GetService (),
+	"firewall" : settings["firewall"]:false,
     ];
 
     configured = true;
@@ -400,11 +495,6 @@ global define list Summary() ``{
         else
 	    // translators: autoyast summary text, server status
             summary = Summary::AddLine(summary, _("Apache2 server is <i>disabled</i>") );
-
-	// translators: autoyast summary text, %1 is path for default host document root
-//	summary = Summary::AddLine(summary, sformat( _("Default host stored in %1"), settings["defaul", "DocumentRoot"]:
-//	    "/srv/www/htdocs" ) );
-
     } else {
         summary = Summary::AddLine(summary, nc );
     }

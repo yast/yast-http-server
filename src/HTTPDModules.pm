@@ -48,7 +48,7 @@ package HTTPDModules;
                     suggested => 0,
                     position  => 60
     },
-    cgi => {
+    'cgi' => {
                     summary   => 'Execution of CGI scripts',
                     packages  => [],
                     default   => 1,
@@ -56,7 +56,7 @@ package HTTPDModules;
                     suggested => 0,
                     position  => 70
     },
-    dir => {
+    'dir' => {
                     summary   => 'Provides for "trailing slash" redirects and serving directory index files',
                     packages  => [],
                     default   => 1,
@@ -64,7 +64,7 @@ package HTTPDModules;
                     suggested => 0,
                     position  => 80
     },
-    env => {
+    'env' => {
                     summary   => 'Modifies the environment passed to CGI scripts and SSI pages',
                     packages  => [],
                     default   => 1,
@@ -72,7 +72,7 @@ package HTTPDModules;
                     suggested => 0,
                     position  => 90
     },
-    expires => {
+    'expires' => {
                     summary   => 'Generation of Expires HTTP headers according to user-specified criteria',
                     packages  => [],
                     default   => 1,
@@ -80,7 +80,7 @@ package HTTPDModules;
                     suggested => 0,
                     position  => 100
     },
-    include => {
+    'include' => {
                     summary   => 'Server-parsed HTML documents (Server Side Includes)',
                     packages  => [],
                     default   => 1,
