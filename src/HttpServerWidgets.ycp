@@ -24,7 +24,7 @@
     import "LogView";
     import "TablePopup";
     import "HttpServer";
-    import "HTTPDData";
+    import "YaST::HTTPDData";
     
     include "http-server/helps.ycp";
 
@@ -86,27 +86,27 @@ list <string> host_ids = nil;
 void OverviewInit (string widget)
 {
     string listen_summary = mergestring ( 
-	maplist( map<string,any> listen, HTTPDData::GetCurrentListen(), 
+	maplist( map<string,any> listen, YaST::HTTPDData::GetCurrentListen(), 
 	    ``(item2listen (listen["ADDRESS"]:"",listen["PORT"]:"80"))), " ");
 	    
-    y2error ("Current listen: %1", HTTPDData::GetCurrentListen() );
+    y2error ("Current listen: %1", YaST::HTTPDData::GetCurrentListen() );
 	    
-    string default_host = get_host_value( "ServerName", HTTPDData::GetHost ("default"), "");
+    string default_host = get_host_value( "ServerName", YaST::HTTPDData::GetHost ("default"), "");
     if (default_host == "")
     {
 	// if the default host does not have a servername specified, use it's
 	// document root, %1 is the full path
-	default_host = sformat( _("in %1"), get_host_value( "DocumentRoot", HTTPDData::GetHost ("default"), ""));
+	default_host = sformat( _("in %1"), get_host_value( "DocumentRoot", YaST::HTTPDData::GetHost ("default"), ""));
     }
     
     if (host_ids == nil)
     {
-	host_ids = HTTPDData::GetHostsList ();
+	host_ids = YaST::HTTPDData::GetHostsList ();
     }
     
     string hosts = mergestring (
 	maplist( string host, host_ids, ``{
-	    return get_host_value ( "ServerName", HTTPDData::GetHost (host), "" );
+	    return get_host_value ( "ServerName", YaST::HTTPDData::GetHost (host), "" );
 	}), " ");
 
     UI::ChangeWidget (`overview_table, `Items, 
@@ -300,7 +300,7 @@ symbol HostsHandle (string table, map event)
 
 	y2milestone ("Changing default host to '%1'", host);
 	
-	list< map<string,any> > defhost_options = HTTPDData::GetHost("default");
+	list< map<string,any> > defhost_options = YaST::HTTPDData::GetHost("default");
 	string servername = get_host_value( "ServerName", defhost_options, "");
 	string ip = get_host_value( "HostIP", defhost_options, "");
 	if (ip == "" || servername != "")
@@ -318,11 +318,11 @@ symbol HostsHandle (string table, map event)
 	}
 	
 	// move the old default host elsewhere
-	HTTPDData::CreateHost ( ip+"/"+servername, defhost_options );
+	YaST::HTTPDData::CreateHost ( ip+"/"+servername, defhost_options );
 	// replace the values of the default host by the new one
-	HTTPDData::ModifyHost ("default", HTTPDData::GetHost(host) );
+	YaST::HTTPDData::ModifyHost ("default", YaST::HTTPDData::GetHost(host) );
 	// remove the old non-default host
-	HTTPDData::DeleteHost (host);
+	YaST::HTTPDData::DeleteHost (host);
 
 	TablePopup::TableInit(hosts_widget, table);
     }
@@ -335,7 +335,7 @@ symbol HostsHandle (string table, map event)
 }
 
 list HostsContents (map descr) {
-    return HTTPDData::GetHostsList ();
+    return YaST::HTTPDData::GetHostsList ();
 }
 
 boolean HostsDelete (any opt_id, string opt_key) {
@@ -347,12 +347,12 @@ boolean HostsDelete (any opt_id, string opt_key) {
     // message popup
     if (! Popup::YesNo (_("Delete selected host?")))
 	return false;
-    return HTTPDData::DeleteHost (opt_key);
+    return YaST::HTTPDData::DeleteHost (opt_key);
 }
 
 global string HostsMapId2Key (map desc, string id)
 {
-    string res = get_host_value ( "ServerName", HTTPDData::GetHost(id), id );
+    string res = get_host_value ( "ServerName", YaST::HTTPDData::GetHost(id), id );
     if (id == "default" && res == "default" ) res = _("Default host");
     return res;
 }
@@ -360,7 +360,7 @@ global string HostsMapId2Key (map desc, string id)
 
 global string HostDocumentRootSummary( string key, any id )
 {
-    return get_host_value ("DocumentRoot", HTTPDData::GetHost(key), "");
+    return get_host_value ("DocumentRoot", YaST::HTTPDData::GetHost(key), "");
 }
 
 global boolean HostIsDefault( any widget, string key )
@@ -633,7 +633,7 @@ global symbol handleSSLTable( any key, map event )
 
 global list<string> SSLTableContents (map descr)
 {
-    list<string> ret = maplist (map<string, any> option, HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
+    list<string> ret = maplist (map<string, any> option, YaST::HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
     
     // filter out unneeded options - only those with SSL are interesting
     ret = filter (string key, ret, ``( issubstring( key, "SSL" )));
@@ -648,14 +648,14 @@ global void SSLInit (any widget)
 global void SSLTypeInit (any widget)
 {
     // it is a radio button group
-    UI::ChangeWidget (`id(widget), `CurrentButton, tostring( get_host_value( "SSL", HTTPDData::GetHost(currenthost), "0" ) ) );
+    UI::ChangeWidget (`id(widget), `CurrentButton, tostring( get_host_value( "SSL", YaST::HTTPDData::GetHost(currenthost), "0" ) ) );
 }
 
 
 global void SSLTypeStore (any widget)
 {
     // it is a radio button group
-    HTTPDData::ModifyHost( currenthost, set_host_value ("SSL", HTTPDData::GetHost(currenthost), UI::QueryWidget( `id(widget), `CurrentButton ) ) );
+    YaST::HTTPDData::ModifyHost( currenthost, set_host_value ("SSL", YaST::HTTPDData::GetHost(currenthost), UI::QueryWidget( `id(widget), `CurrentButton ) ) );
 }
 
 
@@ -769,7 +769,7 @@ define string item2listen( string network, string port ) ``{
       * @return value for wizard sequencer, always nil
       */
     global define symbol showAccessLogPopup (any key, map event) {
-	string log = (string) select( HTTPDData::GetAccessLogFiles( [currenthost] ), 0, "/var/log/apache2/access_log" );
+	string log = (string) select( YaST::HTTPDData::GetAccessLogFiles( [currenthost] ), 0, "/var/log/apache2/access_log" );
 
 	// strip the log format, if present
 	log = select( splitstring( log, " " ), 0, "/var/log/apache2/access_log" );
@@ -797,7 +797,7 @@ define string item2listen( string network, string port ) ``{
       * @return value for wizard sequencer, always nil
       */
     global define symbol showErrorLogPopup (any key, map event) ``{
-	string log = get_host_value( "ErrorLog", HTTPDData::GetHost(currenthost), "/var/log/apache2/error_log");
+	string log = get_host_value( "ErrorLog", YaST::HTTPDData::GetHost(currenthost), "/var/log/apache2/error_log");
 	
 	// strip the log format, if present
 	log = select( splitstring( log, " " ), 0, "/var/log/apache2/error_log" );
@@ -826,7 +826,7 @@ define string item2listen( string network, string port ) ``{
       * @return list of items for the table
       */
     global define list<string> HostTableContents (map descr) ``{
-	list<string> ret = maplist (map<string, any> option, HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
+	list<string> ret = maplist (map<string, any> option, YaST::HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
 
 	// filter out unneeded options
 	ret = filter (string key, ret, ``( ! contains( ["_SECTION", currenthost == "default" ? "HostIP" : "" ], key ) && ! haskey( ssl_options, key ) ) );
@@ -845,8 +845,8 @@ define string item2listen( string network, string port ) ``{
 	// message popup
 	if (! Popup::YesNo (_("Delete selected entry?")))
 	    return false;
-	list< map<string, any> > options = HTTPDData::GetHost (currenthost);
-	HTTPDData::ModifyHost (currenthost, filter (map<string,any> opt, options, ``(opt_id != opt["KEY"]:"")));
+	list< map<string, any> > options = YaST::HTTPDData::GetHost (currenthost);
+	YaST::HTTPDData::ModifyHost (currenthost, filter (map<string,any> opt, options, ``(opt_id != opt["KEY"]:"")));
 	return true;
     }
 
@@ -878,7 +878,7 @@ define string item2listen( string network, string port ) ``{
       */
     global define void DefaultHostPopupInit (any opt_id, string opt_key) ``{
 	UI::ChangeWidget (`id (opt_key), `Value,
-	    get_host_value( opt_key, HTTPDData::GetHost(currenthost), "") );
+	    get_host_value( opt_key, YaST::HTTPDData::GetHost(currenthost), "") );
     }
 
     /**
@@ -887,9 +887,9 @@ define string item2listen( string network, string port ) ``{
       * @param opt_key any option key
       */
     global define void DefaultHostPopupStore (any opt_id, string opt_key) ``{
-	list< map<string, any> >options = HTTPDData::GetHost (currenthost);
+	list< map<string, any> >options = YaST::HTTPDData::GetHost (currenthost);
 	options = set_host_value( opt_key, options, UI::QueryWidget (`id (opt_key), `Value) );
-	HTTPDData::ModifyHost (currenthost, options);
+	YaST::HTTPDData::ModifyHost (currenthost, options);
     }
 
     /**
@@ -899,7 +899,7 @@ define string item2listen( string network, string port ) ``{
       * @return string table entry summary
       */
     global define string HostTableEntrySummary (any opt_id, string opt_key) ``{
-	string res = get_host_value( opt_key, HTTPDData::GetHost(currenthost), "");
+	string res = get_host_value( opt_key, YaST::HTTPDData::GetHost(currenthost), "");
 	if (opt_key == "SSL")
 	{
 	    if (res == "0") 
@@ -937,8 +937,8 @@ define string item2listen( string network, string port ) ``{
       * @param key any widget key of widget that is processed
       */
     global define void initModules (any key) ``{
-	list< map<string,any> > known = HTTPDData::GetKnownModules();
-	list<string> modules = HTTPDData::GetModuleList();
+	list< map<string,any> > known = YaST::HTTPDData::GetKnownModules();
+	list<string> modules = YaST::HTTPDData::GetModuleList();
 	integer index = -1;
 	
 	list<term> items = maplist (map<string,any> mod, known , ``{
@@ -968,7 +968,7 @@ define string item2listen( string network, string port ) ``{
 	    if( status == _("Enabled") ) status = _("Disabled");
 	    else status = _("Enabled");
 	    UI::ChangeWidget( `id( `modules ), `Item( ci , 1 ) , status );
-	    HTTPDData::ModifyModuleList ([name], status == _("Enabled"));
+	    YaST::HTTPDData::ModifyModuleList ([name], status == _("Enabled"));
         }
 	else if (event["ID"]:nil == `add_user)
         {
@@ -999,7 +999,7 @@ define string item2listen( string network, string port ) ``{
 		    // translators: error message
 		    Report::Error( _("The module is already in the list.") );
 		} else {
-		    HTTPDData::ModifyModuleList( [mod], true );
+		    YaST::HTTPDData::ModifyModuleList( [mod], true );
 		    HttpServerWidgets::initModules(nil);
 		}
 	    }
@@ -1017,7 +1017,7 @@ define string item2listen( string network, string port ) ``{
     global define void initListenSettings (any key) ``{
 
 	integer id = -1;
-	list< map<string,any> > listen = HTTPDData::GetCurrentListen();
+	list< map<string,any> > listen = YaST::HTTPDData::GetCurrentListen();
 	y2error ("Listen: %1", listen);
 	list<term> items = maplist( map<string,any> litem, listen, ``{ id = id+1; return listen2item(litem, id); } );
 	UI::ChangeWidget (`id (`listen), `Items, items);
@@ -1056,14 +1056,14 @@ define string item2listen( string network, string port ) ``{
 		} 
 		else
 		{
-		    HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
+		    YaST::HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
 			res["ADDRESS"]:"" );
 		}
 	    }
         }
 	else if( event["ID"]:nil == `delete )
 	{
-	    boolean validate = size( HTTPDData::GetCurrentListen() ) != 0;
+	    boolean validate = size( YaST::HTTPDData::GetCurrentListen() ) != 0;
 
 	    y2debug( "Validation result: %1", validate );
 	
@@ -1075,17 +1075,17 @@ listen cannot be empty.
 	    }
 
 	    // remove the entry
-	    HTTPDData::DeleteListen( tointeger(port), tointeger(port), network );
+	    YaST::HTTPDData::DeleteListen( tointeger(port), tointeger(port), network );
 	}
 	else if( event["ID"]:nil == `edit )
 	{
 	    map<string,string> res = AskListen( network, port );
 	    if( res != nil ) {
 		// remove the old one
-		HTTPDData::DeleteListen( tointeger(port), tointeger(port),
+		YaST::HTTPDData::DeleteListen( tointeger(port), tointeger(port),
 			network );
 		// create the new one
-		HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
+		YaST::HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
 			res["ADDRESS"]:"" );
 	    }
 	}
@@ -1101,7 +1101,7 @@ listen cannot be empty.
       * @param key any widget key of widget that is processed
       */
     global define void initServiceStatus (any key) ``{
-	if( HTTPDData::GetService()  ) {
+	if( YaST::HTTPDData::GetService()  ) {
 	    UI::ChangeWidget (`id ("enabled"), `Value, true);
 	}
 	else 
@@ -1116,7 +1116,7 @@ listen cannot be empty.
       * @param event map event that occured
       */
     global define void storeServiceStatus (any key, map event) ``{
-	HTTPDData::ModifyService( (boolean) UI::QueryWidget ( `id("enabled"), `Value ) );
+	YaST::HTTPDData::ModifyService( (boolean) UI::QueryWidget ( `id("enabled"), `Value ) );
     }
 
 // ************************************ Adapt firewall widget ********************
