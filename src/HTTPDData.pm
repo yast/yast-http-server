@@ -94,7 +94,6 @@ sub WriteHosts {
         HTTPD::DeleteHost( $hostid );
     }
     foreach my $hostid( keys( %{$dirty{NEW}} ) ) {
-        print STDERR "############ $hostid\n";
         HTTPD::CreateHost( $hostid, $hosts{$hostid} );
     }
     foreach my $hostid( keys( %{$dirty{MODIFIED}} ) ) {
@@ -264,9 +263,9 @@ sub run {
     system("cat /etc/apache2/vhosts.d/yast2_vhosts.conf");
 
     print "-------------- DeleteHost Number 0\n";
-    #DeleteHost( '192.168.1.2/createTest2.suse.de' );
+    DeleteHost( '192.168.1.2/createTest2.suse.de' );
 
-    #WriteHosts();
+    WriteHosts();
 
     print "-------------- show module list\n";
     #foreach my $mod ( GetModuleList() ) {
