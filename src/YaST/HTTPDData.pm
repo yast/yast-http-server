@@ -279,10 +279,15 @@ sub WriteHosts {
     foreach my $hostid( keys( %{$dirty{NEW}} ) ) {
         YaPI::HTTPD->CreateHost( $hostid, $hosts{$hostid} );
     }
+
+    if( $dirty{MODIFIED}->{'default'} ) {
+        YaPI::HTTPD->ModifyHost('default', $hosts{'default'} );
+    }
     foreach my $hostid( keys( %{$dirty{MODIFIED}} ) ) {
+        next if( $hostid eq 'default' );
         YaPI::HTTPD->ModifyHost( $hostid, $hosts{$hostid} );
         use Data::Dumper;
-        print Data::Dumper->Dump( [$hosts{$hostid} ] );
+#        print Data::Dumper->Dump( [$hosts{$hostid} ] );
     }
     %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
     return 1;
