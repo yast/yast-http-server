@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Mar 30 11:40:08 CEST 2004 - ug@suse.de
+
+- moved internal functions from HTTPD.pm to httpdUtils.pm 
+
+-------------------------------------------------------------------
 Mon Mar 29 14:48:17 CEST 2004 - visnov@suse.cz
 
 - use `Value, not `Enabled in query widget (fix IP-based host validation) 
