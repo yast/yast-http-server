@@ -307,7 +307,7 @@ $[
 	    "default": false,
 	    // translators: Apache2 module description 
 	    "description" : _("Provides support for PHP4 dynamically generated pages"),
-	    "requires" : [ "apache-mod_php4" ]
+	    "requires" : [ "apache2-mod_php4" ]
 	],
 	"perl"  : $[
 	    "status": false,
