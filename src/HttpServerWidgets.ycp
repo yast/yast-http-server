@@ -1697,7 +1697,7 @@ listen cannot be empty.") );
       * @param event map event description
       */
     global define void storeAdaptFirewall (any opt_id, map event) ``{
-	if( HttpServer::firewall_started ) {
+	if( HttpServer::firewall_started || Mode::config ()) {
 	    HttpServer::firewall = (boolean)UI::QueryWidget (`id (opt_id), `Value);
 	    HttpServer::modified = true;
 	}
