@@ -34,7 +34,7 @@ global map popups = $[
 	    "ServerName" : $[
 		"table" : $[
 		    // table cell, label
-		    "label" : _("Server name"),
+		    "label" : _("Server Name"),
 		    "optional" : false,
 		],
 		"popup" : $[
@@ -44,7 +44,7 @@ global map popups = $[
 	    "DocumentRoot" : $[
 		"table" : $[
 		    // table cell
-		    "label" : _("Document root"),
+		    "label" : _("Document Root"),
 		    "optional" : false,
 		],
 		"popup" : $[
@@ -54,7 +54,7 @@ global map popups = $[
 	    "ServerAdmin" : $[
 		"table" : $[
 		    // table cell
-		    "label" : _("Server administrator e-mail"),
+		    "label" : _("Server Administrator E-Mail"),
 		    "optional" : false,
 		],
 		"popup" : $[
@@ -108,7 +108,7 @@ global map moduleslistwidget = $[
 		`HBox (
 		    `PushButton (`id (`toggle),
 		    // translators: toggle button label
-			_("&Toggle status") ),
+			_("&Toggle Status") ),
 		    `HStretch (),
 		    `PushButton (`id (`add_user),
 		    // translators: add user-defined module button label
@@ -125,10 +125,10 @@ global map listenwidget = $[
 	    "widget" : `custom,
 	    "custom_widget" : `VBox (
 		// translators: radio button group label
-		`Left(`Label( _("Listen on ports:") ) ),
+		`Left(`Label( _("Listen on Ports:") ) ),
 		`Table (`id (`listen), `header (
 		    // table header
-		    _("Network address"),
+		    _("Network Address"),
 		    // table header
 		    _("Port")
 		), []),
@@ -154,12 +154,12 @@ global map widgets = $[
 	    "server_enable" : $[
 		"widget" : `radio_buttons,
 		// translator: server enable/disable radio button group
-		"label"	 : _("HTTP &service"),
+		"label"	 : _("HTTP &Service"),
 		"items"	 : [
 		    // translators: service status radio button label
-		    [ `disabled, _("Disabled" ) ],
+		    [ `disabled, _("Disabled") ],
 		    // translators: service status radio button label
-		    [ `enabled, _("Enabled" ) ]
+		    [ `enabled, _("Enabled") ]
 		],
 		"init"	: ``(HttpServerWidgets::initServiceStatus() ),
 		"handle" : ``(HttpServerWidgets::handleServiceStatus()),
@@ -185,11 +185,11 @@ global map widgets = $[
 
     define string AskListen( string network, string port ) ``{
 	// translators: all network addresses Listen type
-	boolean adr_type = ( network == _("All addresses") || network == "" );
+	boolean adr_type = ( network == _("All Addresses") || network == "" );
 	if( port == nil ) port = "";
 	
 	// translators: Listen type for all addresses;
-	string aa =  _("All addresses");
+	string aa =  _("All Addresses");
 	
 	list ips = union( [ aa ], maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) );
 
@@ -261,11 +261,11 @@ global map widgets = $[
 	    "save" : true,
 	    "actions" : [
 		// menubutton entry, try to keep short
-		[ _("&Reload HTTP server"),
+		[ _("&Reload HTTP Server"),
 		    ``{SCR::Execute (.target.bash,
 			"rcapache2 reload");}],
 		// menubutton entry, try to keep short
-		[ _("Save settings and re&start HTTP server"),
+		[ _("Save Settings and Re&start HTTP Server"),
 		    ``{HttpServer::Write ();}, true ],
 	    ],
 	]);
@@ -289,11 +289,11 @@ global map widgets = $[
 	    "save" : true,
 	    "actions" : [
 		// menubutton entry, try to keep short
-		[ _("Reload HTTP server"),
+		[ _("Reload HTTP Server"),
 		    ``{SCR::Execute (.target.bash,
 			"rcapache2 reload");}],
 		// menubutton entry, try to keep short
-		[ _("Save settings and restart HTTP server"),
+		[ _("Save Settings and Restart HTTP Server"),
 		    ``{HttpServer::Write ();} ],
 	    ],
 	]);
@@ -427,7 +427,7 @@ global map widgets = $[
 	    integer ci = UI::QueryWidget( `id( `modules ), `CurrentItem );
 	    string status = select( UI::QueryWidget( `id(`modules), `Item(ci) ), 2, _("Enabled") );
 	    y2debug( "Status of module: %1", status );
-	    if( status == _("Enabled" ) ) status = _("Disabled");
+	    if( status == _("Enabled") ) status = _("Disabled");
 	    else status = _("Enabled");
 	    UI::ChangeWidget( `id( `modules ), `Item( ci , 1 ) , status );
 	    
@@ -439,7 +439,7 @@ global map widgets = $[
 	   UI::OpenDialog(
             `VBox(
 		// translators: text entry label for adding a user-defined module
-                `TextEntry(`id(`mod), _("Enter new module &name:" )),
+                `TextEntry(`id(`mod), _("Enter new module &name:")),
                 `HBox(
                     `PushButton(`id(`ok), `opt(`default), Label::OKButton() ),
                     `PushButton(`id(`cancel), Label::CancelButton() )
@@ -455,7 +455,7 @@ global map widgets = $[
 		string mod = String::CutBlanks( UI::QueryWidget( `id(`mod), `Value ) );
 		if( mod == "" ) {
 		    // translators: error message
-		    Report::Error( _("You cannot add a module with empty name" ) );
+		    Report::Error( _("You cannot add a module with empty name") );
 		    UI::CloseDialog();
 		} else if( haskey( HttpServer::settings["modules"]:$[], mod )  ) {
 		    // translators: error message
@@ -464,7 +464,7 @@ global map widgets = $[
 		} else {
 		    HttpServer::settings["modules", mod] = $[
 			"status" : true,
-			"description" :  _("User-defined module"),
+			"description" :  _("User-Defined Module"),
 		    ];
 
 		    HttpServer::modified = true;
@@ -529,13 +529,13 @@ global map widgets = $[
 	term currentitem = UI::QueryWidget( `id(`listen), `Item(current) );
 	string network = select(currentitem, 1, "");
 	// translators: all network addresses Listen type
-	if( network == _("All addresses" ) ) network = "";
+	if( network == _("All Addresses") ) network = "";
 	string port = select(currentitem, 2, "");
 
         if (event["ID"]:nil == `add)
         {
 	    // translators: all network addresses Listen type
-	    string res = AskListen( _("All addresses"), "" );
+	    string res = AskListen( _("All Addresses"), "" );
 	    if( res != nil ) {
 		if( contains( HttpServer::settings[currenthost, "Listen"]:[], res )  )
 		{

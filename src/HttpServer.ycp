@@ -114,7 +114,7 @@ list multiple_settings = ["Listen", "Include", "CustomLog"];
 global define boolean Read() ``{
 
     /* HttpServer read dialog caption */
-    string caption = _("Initializing HTTP server configuration");
+    string caption = _("Initializing HTTP Server Configuration");
 
     integer steps = 3;
 
@@ -190,7 +190,7 @@ global define boolean Read() ``{
 	if( !haskey( settings["modules"]:$[], mod ) ) {
 	    y2warning("The configuration file appear to load module '%1', but YaST2 does not know the module.", mod );
 	    // translators: default description of unknown Apache2 modules
-	    settings["modules", mod ] = $[ "status" : true, "description": _("User-defined module") ];
+	    settings["modules", mod ] = $[ "status" : true, "description": _("User-Defined Module") ];
 	} else {
 	    settings["modules", mod, "status" ] = true;
 	}
@@ -261,7 +261,7 @@ global define boolean Read() ``{
 global define boolean Write() ``{
 
     /* HttpServer read dialog caption */
-    string caption = _("Saving HTTP server configuration");
+    string caption = _("Saving HTTP Server Configuration");
 
     integer steps = 4;
 
@@ -388,7 +388,7 @@ Do you want to install them now?"), mergestring( rpms, ", " ) ) );
 	res = res && (Runlevel::RunInitScript( "apache2", "stop" ) == 0);
     }
     // translators: error message
-    if( !res ) Report::Error( sformat( _( "Cannot adjust '%1' service."), "apache2" ) );
+    if( !res ) Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
     
     // translators: progress finished
     ProgressNextStage(_("Finished"));
@@ -465,7 +465,7 @@ global define list Summary() ``{
             summary = Summary::AddLine(summary, _("Apache2 server is <i>disabled</i>") );
 	    
 	// translators: autoyast summary text, %1 is path for default host document root
-	summary = Summary::AddLine(summary, sformat( _("Default host stored in: %1"), settings["defaulthost", "DocumentRoot"]:
+	summary = Summary::AddLine(summary, sformat( _("Default host stored in %1"), settings["defaulthost", "DocumentRoot"]:
 	    "/srv/www/htdocs" ) );
 
     } else {
