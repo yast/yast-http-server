@@ -4,7 +4,12 @@
 // $Id$
 
     include "testsuite.ycp";
-    
+
+    TESTSUITE_INIT([
+        $[ "sysconfig": $[ "personal-firewall": $[ "REJECT_ALL_INCOMING_CONNECTIONS": "yes" ] ] ]
+    ], nil);
+
+
     import "HttpServer";
 
     DUMP( HttpServer::settings );

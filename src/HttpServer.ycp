@@ -283,7 +283,6 @@ global define boolean Write() ``{
 	    settings[ "settings", "firewall"]:false ?_("Modifying firewall...") : 
 		// translators: progress step 2/4
 		_("Skipping firewall modification..."),
-	    _("Modifing firewall..."),
 	    // translators: progress step 3/4
 	    _("Running SuSEconfig..."),
 	    settings["settings", "enabled"]:false ? 
