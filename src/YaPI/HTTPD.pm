@@ -468,6 +468,11 @@ sub ModifyHost {
     foreach my $entry ( @{$vhost_files->{$filename}} ) {
         if( $entry->{HOSTID} eq $hostid ) {
             my @tmp;
+            foreach my $tmp ( @{$entry->{DATA}} ) {
+                next unless( $tmp->{KEY} eq 'DocumentRoot' );
+                $self->delDir( $tmp->{VALUE} );
+                last;
+            }
             foreach my $tmp ( @$newData ) {
                 if( $tmp->{'KEY'} eq 'VirtualByName' ) {
                     $entry->{VirtualByName} = $tmp->{'VALUE'};
@@ -536,7 +541,7 @@ sub delDir {
         foreach my $e ( @{$entry->{DATA}} ) {
             next if( $e->{KEY} eq '_SECTION' and
                      $e->{SECTIONNAME} eq 'Directory' and
-                     $e->{SECTIONPARAM} =~ /^$dir\/*/ );
+                     $e->{SECTIONPARAM} =~ /^"*$dir\/*"*/ );
             push( @newData, $e );
         }
         $entry->{DATA} = \@newData;
