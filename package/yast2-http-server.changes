@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Aug  5 08:18:45 CEST 2003 - visnov@suse.de
+
+- allow to adapt firewall only if the firewall is enabled 
+
+-------------------------------------------------------------------
 Mon Aug  4 17:31:43 CEST 2003 - visnov@suse.de
 
 - adapt firewall if asked for
