@@ -92,6 +92,22 @@ else if (func == "Write") {
     ret = HttpServer::Write();
     Progress::on();
 }
+/**
+ * Return if configuration  was changed
+ * return boolean
+ */
+else if (func == "GetModified") {
+    ret = HttpServer::modified;
+}
+
+/**
+ * Set modified flag
+ * return boolean
+ */
+else if (func == "SetModified") {
+    HttpServer::modified = true;
+    ret = true;
+}
 /* Unknown function */
 else {
     y2error("Unknown function: %1", func);
