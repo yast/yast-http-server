@@ -10,6 +10,10 @@ our %TYPEINFO;
 use strict;
 use Errno qw(ENOENT);
 
+my %hosts;
+my %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
+
+
 sub SetError {
     my $self = shift;
     return YaPI::HTTPD->SetError( @_ );
@@ -30,21 +34,72 @@ sub ParseDirOption {
     );
 
     my @options = split( /\n/, $optionText );
+    chomp(@options);
     $ret{SECTIONPARAM} = shift(@options);
     foreach my $option ( @options ) {
-        chomp($option);
         my( $k,$v ) = split( /\s+/, $option, 2 );
         push( @{$ret{VALUE}}, { KEY => $k, VALUE => $v } );
     }
     return \%ret;
 }
 
+sub delDir {
+    my $self = shift;
+    my $dir = shift;
+    my @newData = ();
+
+    $dir =~ s/\/+/\//g;
+
+    foreach my $e ( @{$hosts{'default'}} ) {
+        next if( $e->{KEY} eq '_SECTION' and
+                 $e->{SECTIONNAME} eq 'Directory' and
+                 $e->{SECTIONPARAM} =~ /^"*$dir\/*"*/ );
+        push( @newData, $e );
+    }
+    $hosts{'default'} = \@newData;
+    $dirty{MODIFIED}->{'default'} = 1;
+    return;
+}
+
+sub addDir {
+    my $self = shift;
+    my $dir = shift;
+    $dir =~ s/\/+/\//g;
+    $self->delDir( $dir ); # avoid double entries
+
+    my $dirEntry = {
+        'OVERHEAD'     => "# YaST created entry\n",
+        'SECTIONNAME'  => 'Directory',
+        'SECTIONPARAM' => "\"$dir\"",
+        'KEY'   => '_SECTION',
+        'VALUE' => [
+                    {
+                     'KEY'   => 'Options',
+                     'VALUE' => 'None'
+                    },
+                    {
+                     'KEY'   => 'AllowOverride',
+                     'VALUE' => 'None'
+                    },
+                    {
+                     'KEY'   => 'Order',
+                     'VALUE' => 'allow,deny'
+                    },
+                    {
+                     'KEY'   => 'Allow',
+                     'VALUE' => 'from all'
+                    }
+                  ]
+    };
+    push( @{$hosts{'default'}}, $dirEntry );
+    $dirty{MODIFIED}->{'default'} = 1;
+    return;
+}
+
+
 #######################################################
 # default and vhost API start
 #######################################################
-
-my %hosts;
-my %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
 
 #bool ReadHosts();
 BEGIN { $TYPEINFO{ReadHosts} = ["function", "boolean" ]; }
@@ -119,7 +174,22 @@ sub ModifyHost {
     my $hostid = shift;
     my $hostdata = shift;
 
+    my $dr;
+    foreach my $h ( @{$hosts{$hostid}} ) {
+        if( $h->{KEY} eq 'DocumentRoot' ) {
+            $dr = $h->{VALUE};
+        }
+    }
     $hosts{$hostid} = $hostdata;
+    foreach my $h ( @{$hosts{$hostid}} ) {
+        if( $h->{KEY} eq 'DocumentRoot' ) {
+            if( $dr ne $h->{VALUE} ) {
+                $self->delDir( $dr );
+                $self->addDir( $h->{VALUE} );
+            }
+        }
+    }
+
     $dirty{MODIFIED}->{$hostid} = 1 unless( exists($dirty{NEW}->{$hostid}) );
     return 1;
 }
@@ -132,6 +202,11 @@ sub CreateHost {
     my $hostdata = shift;
 
     $hosts{$hostid} = $hostdata;
+    foreach my $h ( @$hostdata ) {
+        if( $h->{KEY} eq 'DocumentRoot' ) {
+            $self->addDir($h->{VALUE});
+        }
+    }
     $dirty{NEW}->{$hostid} = 1;
     delete($dirty{DEL}->{$hostid});
     delete($dirty{MODIFIED}->{$hostid});
@@ -143,6 +218,12 @@ BEGIN { $TYPEINFO{DeleteHost} = ["function", "boolean", "string"]; }
 sub DeleteHost {
     my $self = shift;
     my $hostid = shift;
+
+    foreach my $h ( @{$hosts{$hostid}} ) {
+        if( $h->{KEY} eq 'DocumentRoot' ) {
+            $self->delDir($h->{VALUE});
+        }
+    }
     delete( $hosts{$hostid} );
     $dirty{DEL}->{$hostid} = 1 unless( exists( $dirty{NEW}->{$hostid} ) );
     delete($dirty{NEW}->{$hostid});
