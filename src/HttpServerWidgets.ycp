@@ -317,8 +317,8 @@ global string HostDocumentRootSummary( any key, string id );
 global string HostName (any key, string id);
 
 map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
-	$["add_delete" : true, 
-	      "up_down" : false, 
+	$["add_delete_buttons" : true, 
+	      "up_down_buttons" : false, 
 	      "unique_keys" : true,
 	      "changed_column" : true]
 	, $[
@@ -629,8 +629,8 @@ global map<string,map> popups = $[
 define void HostInit (string key);
 
 global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDescr (
-	    $["add_delete" : true, 
-	      "up_down" : false, 
+	    $["add_delete_buttons" : true, 
+	      "up_down_buttons" : false, 
 	      "unique_keys" : false]
 	, $[
 	    "init" : HttpServerWidgets::HostInit,
@@ -739,8 +739,8 @@ map<string, map> edit_ssl = $[
 ];
 
 map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
-	    $["add_delete" : true, 
-	      "up_down" : false, 
+	    $["add_delete_buttons" : true, 
+	      "up_down_buttons" : false, 
 	      "unique_keys" : true]
 	, $[
 	    "init" : HttpServerWidgets::SSLInit,
