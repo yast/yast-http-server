@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Aug 30 11:59:08 CEST 2004 - visnov@suse.cz
+
+- fixed reloading of server
+- fixed log viewing
+- 2.10.3 
+
+-------------------------------------------------------------------
 Mon Aug 30 05:28:44 CEST 2004 - nashif@suse.de
 
 - Added GetModified function to _auto client 

@@ -967,6 +967,11 @@ define string item2listen( string network, string port ) ``{
     
 // *************************************** log popups **************************
 
+    global void ReloadServer ()
+    {
+	SCR::Execute (.target.bash, "rcapache2 reload");
+    }
+    
     /**
       * Handle function of the access log button (the first defined access log file)
       * @param key any key of the widget
@@ -974,9 +979,11 @@ define string item2listen( string network, string port ) ``{
       * @return value for wizard sequencer, always nil
       */
     global define symbol showAccessLogPopup (any key, map event) {
-	string log = (string) select( YaST::HTTPDData::GetAccessLogFiles( [currenthost] ), 0, "/var/log/apache2/access_log" );
+	// FIXME: log files needs to be done via HTTPDData
+	// string log = (string) select( YaST::HTTPDData::GetAccessLogFiles( [currenthost] ), 0, "/var/log/apache2/access_log" );
 
 	// strip the log format, if present
+	string log = "";
 	log = select( splitstring( log, " " ), 0, "/var/log/apache2/access_log" );
 
 	LogView::Display ($[
@@ -984,9 +991,7 @@ define string item2listen( string network, string port ) ``{
 	    "save" : true,
 	    "actions" : [
 		// menubutton entry, try to keep short
-		[ _("&Reload HTTP Server"),
-		    ``{SCR::Execute (.target.bash,
-			"rcapache2 reload");}],
+		[ _("&Reload HTTP Server"), ReloadServer ],
 		// menubutton entry, try to keep short
 		[ _("Save Settings and Re&start HTTP Server"),
 		    HttpServer::Write, true ],
@@ -1002,9 +1007,11 @@ define string item2listen( string network, string port ) ``{
       * @return value for wizard sequencer, always nil
       */
     global define symbol showErrorLogPopup (any key, map event) ``{
-	string log = (string) select( YaST::HTTPDData::GetErrorLogFiles( [currenthost] ), 0, "/var/log/apache2/error_log" );
+	// FIXME: log files needs to be done via HTTPDData
+	// string log = (string) select( YaST::HTTPDData::GetErrorLogFiles( [currenthost] ), 0, "/var/log/apache2/error_log" );
 	
 	// strip the log format, if present
+	string log = "";
 	log = select( splitstring( log, " " ), 0, "/var/log/apache2/error_log" );
 
 	LogView::Display ($[
@@ -1012,9 +1019,7 @@ define string item2listen( string network, string port ) ``{
 	    "save" : true,
 	    "actions" : [
 		// menubutton entry, try to keep short
-		[ _("&Reload HTTP Server"),
-		    ``{SCR::Execute (.target.bash,
-			"rcapache2 reload");}],
+		[ _("&Reload HTTP Server"), ReloadServer ],
 		// menubutton entry, try to keep short
 		[ _("Save Settings and Re&start HTTP Server"),
 		    HttpServer::Write, true ],
