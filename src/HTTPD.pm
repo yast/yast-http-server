@@ -84,7 +84,7 @@ sub GetHostsList {
 }
 
 #map GetHost( string hostid );
-BEGIN { $TYPEINFO{GetHost} = ["function", [ "map", "string", "any" ], "string"]; }
+BEGIN { $TYPEINFO{GetHost} = ["function", ["list", [ "map", "string", "any" ] ], "string"]; }
 sub GetHost {
     my $hostid = shift;
 
