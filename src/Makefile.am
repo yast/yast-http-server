@@ -18,9 +18,6 @@ ynclude_DATA =			\
 ydata_DATA =                     \
         all-apache2-modules.ycp
 
-config_DATA =			\
-	http-server.y2cc
-
 desktop_DATA =			\
 	http-server.desktop
 
@@ -36,6 +33,6 @@ ycpchook = http-server
 
 YCPCFLAGS=-I.
 
-EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA) $(ydata_DATA) $(desktop_DATA)
+EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(module_DATA) $(ydata_DATA) $(desktop_DATA)
 
 include $(top_srcdir)/Makefile.am.common

@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Feb  9 08:29:45 CET 2004 - visnov@suse.cz
+
+- drop y2cc file 
+- fixed neededforbuild
+- 2.9.2
+
+-------------------------------------------------------------------
 Fri Feb  6 08:49:01 CET 2004 - visnov@suse.cz
 
 - fixes for NI (it at least starts)
