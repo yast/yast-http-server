@@ -10,27 +10,32 @@ This package is the public Yast2 API to configure the apache2.
 
 use YaPI::HTTPD
 
-$hostList GetHostsList()
+$hostList = GetHostsList()
 
-  returns a an array reference of host id strings
+  returns an array reference of host id strings or
+  undef on failure.
 
 $hostData = GetHost($hostid)
 
-  returns a host hash with all settings of the host
+  returns a host hash with all settings of the host or
+  undef on failure
 
 ModifyHost($host_id,$hostData)
 
   modifies the host with $host_id.
-  $hostData is an array reference containing the data
+  $hostData is an array reference containing the data.
+  This function returns undef on failure
 
 CreateHost($host_id,$host_hash)
 
   creates a new host with $host_id
   $host_hash is a hash reference containing the data
+  This function returns undef on failure
 
 DeleteHost($host_id)
 
   the host with $host_id is getting deleted
+  This function returns undef on failure
 
 $modList = GetModuleList()
 
@@ -44,6 +49,7 @@ ModifyModuleList($moduleList,$state)
 
   $moduleList is a list of module name strings
   $state is a boolean for enable/disable the modules in list
+  This function returns undef on failure
 
 $knownSel = GetKnownModuleSelections()
 
@@ -112,6 +118,35 @@ $params = GetServerFlags()
 SetServerFlags($param)
 
   sets the apache2 startparameter to $param
+
+WriteServerCert($hostId,$pemData)
+
+  write the server certificate and optional key for
+  $hostID.
+
+WriteServerKey($hostId,$pemData)
+
+  write the server private key and optional certificate
+  for $hostID.
+
+WriteServerCA($hostId,$pemData)
+
+  write the server CA
+
+$pemData = ReadServerCert($hostId)
+
+  read the server certificate. The certificate
+  is returned as a scalar in PEM format.
+
+$pemData = ReadServerKey($hostId)
+
+  read the server key. The key is returned as
+  a scalar in PEM format.
+
+$pemData = ReadServerCA($hostId)
+
+  read the server CA. The CA is returned as
+  a scalar in PEM format.
 
 B<Host Data array>
 
@@ -1122,7 +1157,7 @@ returns a string with the apache2 server flags like
 
 EXAMPLE
 
-print GetServerFlags();
+  print GetServerFlags();
 
 =cut
 
@@ -1139,7 +1174,7 @@ This could be -D SSL, for example. Or -DSTATUS.
 
 EXAMPLE
 
-SetServerFlags("-DReverseProxy");
+  SetServerFlags("-DReverseProxy");
 
 =cut
 
@@ -1157,6 +1192,28 @@ sub SetServerFlags {
 #######################################################
 # apache2 ssl certificates
 #######################################################
+
+=item *
+C<WriteServerCert($hostId,$pemData)>
+
+this function writes the server certificate for the
+host with $hostID to the right place and sets the
+SSLCertificateFile directive to the right path.
+The certificate must be in PEM format and it can contain
+the private key too. If there is a private key in the PEM data,
+the SSLCertificateKeyFile directive is set too.
+The key can also be set via WriteServerKey.
+Writing the server certificate does not turn on SSL
+automatically.
+
+EXAMPLE
+
+  WriteServerCert('*:443', $pemData);
+  $host = GetHost('*:443');
+  replaceKey( 'SSL', { KEY => 'SSL', VALUE => 1 }, $host );
+  ModifyHost('*:443', $host);
+
+=cut
 
 sub WriteServerCert {
     my $hostid = shift;
@@ -1188,6 +1245,27 @@ sub WriteServerCert {
     ModifyHost( $hostid, $host );
 }
 
+=item *
+C<WriteServerKey($hostID, $pemData)>
+
+this function writes the server key for the
+host with $hostID to the right place and sets the
+SSLCertificateKeyFile directive to the right path.
+The key must be in PEM format and it can contain
+the certificate too. If there is a certificate in the PEM data,
+the SSLCertificateFile directive is set too.
+The certificate can also be set via WriteServerCert.
+Writing the server key does not turn on SSL automatically.
+
+
+EXAMPLE
+
+  WriteServerCert('*:443', $certData);
+  WriteServerKey('*:443', $keyData);
+
+=cut
+
+
 sub WriteServerKey {
     my $hostid = shift;
     my $pemData = shift;
@@ -1217,6 +1295,22 @@ sub WriteServerKey {
     ModifyHost( $hostid, $host );
 }
 
+=item *
+C<WriteServerCA($hostID, $pemData)>
+
+this function writes the server CA for the
+host with $hostID to the right place and sets the
+SSLCACertificateFile directive to the right path.
+The CA must be in PEM format.
+Writing the server CA does not turn on SSL automatically.
+
+EXAMPLE
+
+  WriteServerCA($hostID, $pemData);
+
+=cut
+
+
 sub WriteServerCA {
     my $hostid = shift;
     my $pemData = shift;
@@ -1243,6 +1337,23 @@ sub WriteServerCA {
     ModifyHost( $hostid, $host );
 }
 
+=item *
+C<$pemData = ReadServerCert($hostID)>
+
+this function returns the server certificate PEM
+data. Even if the key is stored in the same file,
+just the certificate part is returned.
+
+EXAMPLE
+
+  $pemData = ReadServerCert($hostID);
+  open( CERT, "> /tmp/cert.pem" );
+  print CERT $pemData;
+  close(CERT);
+  $text = `openssl x509 -in /tmp/cert.pem -text -noout`;
+
+=cut
+
 sub ReadServerCert {
     my $hostid = shift;
 
@@ -1266,6 +1377,20 @@ sub ReadServerCert {
     }
     return $1;
 }
+
+=item *
+C<$pemData = ReadServerKey($hostID)>
+
+this function returns the server key in PEM
+format. Even if the certificate is stored in the same
+file, just the private key part is returned.
+
+EXAMPLE
+
+  $cert = ReadServerCert($hostID);
+  $key  = ReadServerKey($hostID);
+
+=cut
 
 sub ReadServerKey {
     my $hostid = shift;
@@ -1298,6 +1423,19 @@ sub ReadServerKey {
     return $1;
 
 }
+
+=item *
+C<$pemData = ReadServerCA($hostID)>
+
+this function returns the server CA in PEM
+format.
+
+EXAMPLE
+
+  $CA =  ReadServerCA($hostID);
+  $fingerprint = `echo "$CA"|openssl x509 -fingerprint -noout`;
+
+=cut
 
 sub ReadServerCA {
     my $hostid = shift;
