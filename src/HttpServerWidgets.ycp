@@ -308,7 +308,7 @@ boolean HostsDelete (any opt_id, string opt_key);
 global boolean HostIsDefault (any widget, string opt_key);
 global string HostsMapId2Key( map desc, any id );
 global string HostDocumentRootSummary( string key, any id );
-global string HostName (string id);
+global string HostName (string key, any id);
 
 map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 	$["add_delete" : true, 
@@ -487,11 +487,11 @@ boolean HostsDelete (any opt_id, string opt_key) {
     return YaST::HTTPDData::DeleteHost ((string)opt_id);
 }
 
-global string HostName (string id)
+global string HostName (string key, any id)
 {
-    string res = (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost(id), id );
+    string res = (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost(key), key );
     // translators: human-readable "default host"
-    if (id == "default" && res == "default" ) res = _("Default Host");
+    if (key == "default" && res == "default" ) res = _("Default Host");
     return res;
 }
 
@@ -706,7 +706,7 @@ global map listenwidget = $[
 global symbol handleSSLTable(string key, map event );
 global list<string> SSLTableContents (map descr);
 global void SSLInit (string key);
-global void SSLTypeInit (any widget);
+global void SSLTypeInit (string opt_id, string opt_key);
 global void SSLTypeStore (any widget, map event);
 
 map<string, map> edit_ssl = $[
@@ -752,7 +752,7 @@ map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
 /**
  * Map of widgets for CWM
  */
-global map widgets = $[
+global map<string, map <string, any> > widgets = $[
 	    "server_enable" : $[
 		"widget" : `radio_buttons,
 		// translator: server enable/disable radio button group
@@ -862,10 +862,10 @@ global void SSLInit (string widget)
     TablePopup::TableInit(sslwidget, widget);
 }
 
-global void SSLTypeInit (any widget)
+global void SSLTypeInit (string opt_id, string opt_key)
 {
     // it is a radio button group
-    UI::ChangeWidget (`id(widget), `CurrentButton, tostring( get_host_value( "SSL", YaST::HTTPDData::GetHost(currenthost), "0" ) ) );
+    UI::ChangeWidget (`id(opt_id), `CurrentButton, tostring( get_host_value( "SSL", YaST::HTTPDData::GetHost(currenthost), "0" ) ) );
 }
 
 

@@ -43,7 +43,7 @@
 	// dialog caption
 	string caption = _("HTTP Server Configuration");
 
-	return CWM::ShowAndRun (["server_enable", "firewall_adapt", "overview_widget" ]
+	return CWM::ShowAndRunOrig (["server_enable", "firewall_adapt", "overview_widget" ]
 	    ,HttpServerWidgets::widgets
 	    ,contents, caption,
 	    Label::BackButton (), Label::FinishButton (), $[`abort : Abort]);
@@ -90,7 +90,7 @@
 	// dialog caption
 	string caption = _("Server Modules");
 
-	return CWM::ShowAndRun (["modules"], HttpServerWidgets::widgets, contents, caption,
+	return CWM::ShowAndRunOrig (["modules"], HttpServerWidgets::widgets, contents, caption,
 	  Label::BackButton(), Label::OKButton(), $[`abort : Abort]);
     }
 

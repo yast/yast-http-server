@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Aug  4 14:09:46 CEST 2004 - visnov@suse.cz
+
+- adapt for the new CWM interface
+- fix crashes via invalid function pointers
+- 2.10.1 
+
+-------------------------------------------------------------------
 Tue Aug  3 18:50:15 CEST 2004 - visnov@suse.cz
 
 - don't allow certificate management in simple mode
