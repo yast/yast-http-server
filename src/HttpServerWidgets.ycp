@@ -25,6 +25,7 @@
     import "TablePopup";
     import "HttpServer";
     import "YaST::HTTPDData";
+    import "Confirm";
     
     include "http-server/helps.ycp";
 
@@ -916,8 +917,7 @@ define string item2listen( string network, string port ) ``{
 	list ips = union( [ aa ], maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) );
 
 	UI::OpenDialog( `VBox(
-	    // translators: text entry label
-	    `TextEntry( `id(`port), _("&Port:"), port ),
+	    `TextEntry( `id(`port), Label::Port(), port ),
 	    // translators: combo box label for list of configured IPs
 	    `Left( `ComboBox( `id("address"), `opt( `editable ), _("Network &Address:"), ips ) ),
 	    `VSpacing(),
@@ -1319,9 +1319,9 @@ define string item2listen( string network, string port ) ``{
       * @return boolean true if was really deleted
       */
     global define boolean HostTableEntryDelete (any opt_id, string opt_key) ``{
-	// message popup
-	if (! Popup::YesNo (_("Delete selected entry?")))
+	if (! Confirm::DeleteSelected()) {
 	    return false;
+	}
 	    
 	host_options = filter ( integer opt, map<string,any> value
 	    , host_options, ``(opt != opt_id) );
