@@ -117,7 +117,7 @@ sub write_files {
             return 0;
         };
         foreach my $entry ( @{$vhost_files{$file}} ) {
-            print FILE $entry->{OVERHEAD};
+            print FILE $entry->{OVERHEAD} if($entry->{OVERHEAD});
             print FILE "<VirtualHost $entry->{VHOST}>\n" if( $entry->{VHOST} );
             foreach my $data ( @{$entry->{DATA}} ) {
                 next if( $data->{KEY} eq 'HostIP' ); # just for internal use
