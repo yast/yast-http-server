@@ -161,11 +161,10 @@ address for feedback about this host.
 Apache 2 must be able to determine which virtual host
 settings it should use to create a response for an HTTP request. 
 In principle, there are two basic approaches. If using <i>HTTP headers</i>
-from the incoming request, the server will look up the host name specified by
+from the incoming request, the server looks up the host name specified by
 the HTTP request headers. The other possibility is to determine the virtual host
 by the <i>IP address</i> used by the client when connecting to the server.
-Consult the Apache 2 manual for further details.</p>
-")
+Consult the Apache 2 manual for further details.</p>\n")
 
     ];
 
