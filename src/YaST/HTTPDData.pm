@@ -164,6 +164,7 @@ BEGIN { $TYPEINFO{GetHost} = ["function", ["list", [ "map", "string", "any" ] ],
 sub GetHost {
     my $self = shift;
     my $hostid = shift;
+
     return exists($hosts{$hostid})?($hosts{$hostid}):[];
 }
 
@@ -208,6 +209,7 @@ sub ModifyHost {
                     }
                     $hosts{'default'} = \@newData;
                 }
+                $dirty{MODIFIED}->{'default'} = 1;
             }
         }
     }
@@ -279,6 +281,8 @@ sub WriteHosts {
     }
     foreach my $hostid( keys( %{$dirty{MODIFIED}} ) ) {
         YaPI::HTTPD->ModifyHost( $hostid, $hosts{$hostid} );
+        use Data::Dumper;
+        print Data::Dumper->Dump( [$hosts{$hostid} ] );
     }
     %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
     return 1;
