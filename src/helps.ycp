@@ -38,19 +38,19 @@ Please wait...<br></p>
 Abort the save procedure by pressing <b>Abort</b>.
 An additional dialog informs you whether it is safe to do so.</p>
 "),
-
-	"open_port" : _("The <b>Port</b> value defines on which Apache2 will listen. The default is 80.<p>"), 
-
-	"listen_interfaces" : _("The list <b>Listen on Interfaces</b> contains the list of all IP addresses configured for this host. Checked IP addresses defines on which Apache2 will listen. If you are unsure, check all.<p>"),
-
-	"fw_open" : _("When firewall is enabled you are allowed to check whether you want to enable Apache2 port on firewall<p>"),
-
-	"script_modules" : _("Here it is possible to enable the script languages the Apache2 server should support.<p>"), 
-
-	"summary_text"	: _("Summary box displays some settings which will be writed to Apache2 configuration by pressing <b>finish</b> button.<p>"),
-
-	"expert_conf"	: _("By pressing <b>HTTP Server Expert Configuration</b> 
-		button more detailed configuration is allowed before writing configuration.<p>"),
+	//translators: Wizard dialog 1/5
+	"open_port" : _("<p>The <b>Port</b> value defines the port on which Apache2 listens. The default is 80.</p>"), 
+        //translators: Wizard dialog 1/5
+	"listen_interfaces" : _("<p><b>Listen on Interfaces</b> contains the list of all IP addresses configured for this host. Checked IP addresses are those on which Apache2 listens. If you are unsure, check all.</p>"),
+        //translators: Wizard dialog 1/5
+	"fw_open" : _("<p>When the firewall is enabled, you can check whether to enable Apache2 ports on the firewall.</p>"),
+        //translators: Wizard dialog 2/5
+	"script_modules" : _("<p>Here, enable the script languages the Apache2 server should support.</p>"), 
+        //translators: Wizard dialog 5/5
+	"summary_text"	: _("<p>The summary displays the settings that will be written to the Apache2 configuration when you press <b>Finish</b>.</p>"),
+        //translators: Wizard dialog 5/5
+	"expert_conf"	: _("<p>By pressing <b>HTTP Server Expert Configuration</b> 
+		button more detailed configuration is allowed before writing configuration.</p>"),
 
 	// module dialog help 1/3
 	"modules" : _("<p><b><big>Editing HTTP Server Modules</big></b><br>
@@ -165,7 +165,7 @@ the presentation of the the new virtual host. <b>Server Name</b> is the DNS name
 of the HTTP headers of the server response. <b>Server Contents Root</b>
 is an absolute path to a directory containing all documents provided by
 this virtual host. <b>Administrator E-Mail</b> allows setup of an e-mail
-address for feedback about this host.
+address for feedback about this host.</p>
 ")
 
 	// new host dialog help 3/3

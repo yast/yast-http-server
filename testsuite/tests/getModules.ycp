@@ -1,0 +1,47 @@
+{
+	include "testsuite.ycp";
+
+        boolean Modified() ``{
+                return true;
+        };
+
+        boolean AbortFunction() ``{
+                return true;
+        }
+textdomain "http-server";
+
+	map READ = $[
+	"target" : $[
+	 "ycp" : $[
+	       "access" : $[
+            "status": true,
+            "default": true,
+            "description" : _("Provides access control based on client host name, IP address, etc.")
+	        ],
+        "actions" : $[
+            "status": true,
+            "default": true,
+            "description" : _("Executing CGI scripts based on media type or request method")
+	        ],
+        "alias" : $[
+            "status": true,
+            "default": true,
+            "description" : _("Mapping different parts of the host file system in the document tree and for URL redirection")
+	        ],
+        "auth" : $[
+            "status": true,
+            "default": true,
+            "description" : _("User authentication using text files")
+	        ]
+	 ]]
+	];
+
+	TESTSUITE_INIT ([READ, $[], $[]], nil);
+
+	include "http-server/routines.ycp";
+	import "YaST::HTTPDData";
+
+	TEST( ``{ return GetModules(); }, [ READ , $[], $[] ], nil );
+#        TEST( ``{ return YaST::HTTPDData::GetModuleList(); }, [ READ , $[], $[] ], nil );
+
+}

@@ -24,6 +24,7 @@ import "Require";
 import "Service";
 import "Summary";
 import "Message";
+import "Directory";
 //import "HttpServerWidgets";
 
 /**
@@ -278,20 +279,16 @@ global define boolean Write() ``{
     Progress::New(caption, " ", steps, [
 	    // translators: progress stage 1/3
 	    _("Write the Apache2 settings"),
-	    // translators: progress stage 2/3
-//	    _("Run SuSEconfig"),
 	    YaST::HTTPDData::GetService() ?
-		// translators: progress stage 3/3
+		// translators: progress stage 2/3
 		_("Enable Apache2 service")
 		// translators: progress stage 3/3
 		: _("Disable Apache2 service")
 	], [
 	    // translators: progress step 1/3
 	    _("Writing the settings..."),
-	    // translators: progress step 2/3
-//	    _("Running SuSEconfig..."),
 	    YaST::HTTPDData::GetService() ?
-		// translators: progress step 3/3
+		// translators: progress step 2/3
 		_("Enabling Apache2 service...")
 		// translators: progress step 3/3
 		: _("Disabling Apache2 service..."),
@@ -584,7 +581,7 @@ global define list Summary() ``{
 
     if( configured ) {
 		// "Listen on " information (interfaces, port)
-	    summary = Summary::AddLine(summary, _("<h3>Listen on</h3>") );
+	    summary = Summary::AddLine(summary, _("<h3>Listen On</h3>") );
             string port       = nil;
             string interfaces = "";
             foreach(map listens, YaST::HTTPDData::GetCurrentListen(),
@@ -605,7 +602,9 @@ global define list Summary() ``{
 		if ( params["KEY"]:"" == "DocumentRoot" ) doc_root = params["VALUE"]:"";
 		if ( params["KEY"]:"" == "SSL" && params["VALUE"]:"" != "0" ) ssl = true;
 			});
+			//translators: assiciation server name with document root
             summary = Summary::AddLine(summary, serv_name + _(" in ") + doc_root);
+			//translators: whether SSL is enabled or disabled
             summary = Summary::AddLine(summary, "SSL " + ((ssl)?_("enabled"):_("disabled")));
 
 		// the same information as in default host but for other virtual hosts
@@ -619,7 +618,10 @@ global define list Summary() ``{
                 if ( params["KEY"]:"" == "SSL" && params["VALUE"]:""!="0") ssl = true;
 
                         });
-            summary = Summary::AddLine(summary, serv_name + _(" in ") + doc_root + ", SSL " + ((ssl)?_("enabled"):_("disabled")));
+		//translators: assiciation server name with document root
+            summary = Summary::AddLine(summary, serv_name + _(" in ") + doc_root + 
+		//translators: whether SSL is enabled or disable
+		", SSL " + ((ssl)?_("enabled"):_("disabled")));
 
 });
 	   }
