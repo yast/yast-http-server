@@ -62,6 +62,10 @@ sub parse_vhost_files {
             if( exists($vhost->{'SECTIONNAME'}) and ($vhost->{'SECTIONNAME'} ne 'VirtualHost') ) {
                 $tmpOverhead .= section2string( [$vhost] );
                 next;
+            } elsif( not exists( $vhost->{'SECTIONNAME'} ) ) {
+                $tmpOverhead .= $vhost->{'OVERHEAD'};
+                $tmpOverhead .= $vhost->{KEY}." = ".$vhost->{VALUE}."\n";
+                next;
             }
             my $data = [];
             my $vhostData = {};
