@@ -62,7 +62,7 @@ global map settings = $[
     "modules" : GetModules(),
     "defaulthost" : $[
 	"ServerName" : "www.example.com:80",
-	"DocumentRoot" : "/srv/www/htdocs",
+//	"DocumentRoot" : "/srv/www/htdocs",
 	"ServerAdmin" : "webmaster@example.com",
 	"Listen" : ["80"],
 // CustomLog - no defaults
@@ -108,7 +108,7 @@ map sysconfig_values = $[
     "apache_access_log"	: "APACHE_ACCESS_LOG",
     "ServerAdmin"	: "APACHE_SERVERADMIN",
     "ServerName"	: "APACHE_SERVERNAME",
-    "DocumentRoot"	: "APACHE_DOCUMENT_ROOT",
+//    "DocumentRoot"	: "APACHE_DOCUMENT_ROOT",
 ];
 
 /************************** end of local data *********************************/
@@ -170,8 +170,8 @@ global define boolean Read() ``{
 
     // check listen.conf
     if( SCR::Read( .target.lstat, "/etc/apache2/listen.conf" ) == $[] ) {
-	// translators: error message, %1 is the file name of expected configuration file
-	Report::Error( sformat( _("The configuration file '%1' does not exist."), "/etc/apache2/listen.conf" )  );
+	// translators: warning message, %1 is the file name of expected configuration file
+	Report::Warning( sformat( _("The configuration file '%1' does not exist."), "/etc/apache2/listen.conf" )  );
 	// create empty file
 	if( ! SCR::Write( .target.string, "/etc/apache2/listen.conf", "" ) )
 	{
@@ -226,7 +226,7 @@ global define boolean Read() ``{
     value = SCR::Read( .sysconfig.apache2."APACHE_SERVERNAME" );
     if( value != nil ) settings["defaulthost","ServerName"] = value;
     value = SCR::Read( .sysconfig.apache2."APACHE_DOCUMENT_ROOT" );
-    if( value != nil ) settings["defaulthost","DocumentRoot"] = value;
+//    if( value != nil ) settings["defaulthost","DocumentRoot"] = value;
     
     // check the service status
     settings["settings", "enabled" ] = Runlevel::ServiceEnabled( "apache2" );
@@ -480,7 +480,7 @@ global define boolean Import (map s) ``{
 	
     settings[ "defaulthost" ] = s[ "defaulthost" ]: $[
 	"ServerName" : "www.example.com:80",
-	"DocumentRoot" : "/srv/www/htdocs",
+//	"DocumentRoot" : "/srv/www/htdocs",
 	"ServerAdmin" : "webmaster@example.com",
 	"Listen" : ["80"],
     ];
@@ -531,8 +531,8 @@ global define list Summary() ``{
             summary = Summary::AddLine(summary, _("Apache2 server is <i>disabled</i>") );
 	    
 	// translators: autoyast summary text, %1 is path for default host document root
-	summary = Summary::AddLine(summary, sformat( _("Default host stored in %1"), settings["defaulthost", "DocumentRoot"]:
-	    "/srv/www/htdocs" ) );
+//	summary = Summary::AddLine(summary, sformat( _("Default host stored in %1"), settings["defaulthost", "DocumentRoot"]:
+//	    "/srv/www/htdocs" ) );
 
     } else {
         summary = Summary::AddLine(summary, nc );

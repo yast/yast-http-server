@@ -129,61 +129,58 @@ while ( <STDIN> )
 	    if( not defined $newconf ) {
 		y2error( "Cannot write to configuration file ''$httpd_conf'" );
 		ycp::Return ("false");
-	    } elsif( not open( ORIGCONF, $httpd_conf ) ) {
-		y2error( "Cannot write to configuration file ''$httpd_conf'" );
-		close( $newconf );
-		system( "rm -f $filename" );
-		ycp::Return ("false");
-	    }
-	    else
+	    } else 
 	    {
-		# copy the original, filter known values
-		@section_stack = ();
+		if( open( ORIGCONF, $httpd_conf ) ) {
+		    # there is an original file
+		    # copy the original, filter known values
+		    @section_stack = ();
 		
-		while( $line = <ORIGCONF> ) {
-		    # section start
-		    if( $line =~ /^\s*<([^\/\s]+).*>/ ) {
-			y2debug( "Pushing $1" );
-			push( @section_stack, $1 );
-			$stack_size = $stack_size+1;
-		    }
-    
-		    # section end
-		    if( $line =~ /^\s*<\/([^\s]+).*>/ ) {
-			my $found_sect = $1;
-			my $exp_sect = pop( @section_stack );
-			y2debug( "Popped $1" );
-			if( $found_sect ne $exp_sect ) {
-		    	    y2error( "Non-matching section: found '$found_sect', expected '$exp_sect'" );
-			    push( @section_stack, $exp_sect );
-			} else {
-			    $stack_size = $stack_size-1;
+		    while( $line = <ORIGCONF> ) {
+			# section start
+			if( $line =~ /^\s*<([^\/\s]+).*>/ ) {
+			    y2debug( "Pushing $1" );
+			    push( @section_stack, $1 );
+			    $stack_size = $stack_size+1;
 			}
-		    }
     
-		    # only top-level values
-		    if( $stack_size == 0 ) {
-			if( not ( $line =~ /^\s*(Listen|CustomLog|ErrorLog)\s+[^\s]+/ ) ) {
+			# section end
+			if( $line =~ /^\s*<\/([^\s]+).*>/ ) {
+			    my $found_sect = $1;
+			    my $exp_sect = pop( @section_stack );
+			    y2debug( "Popped $1" );
+			    if( $found_sect ne $exp_sect ) {
+		    		y2error( "Non-matching section: found '$found_sect', expected '$exp_sect'" );
+				push( @section_stack, $exp_sect );
+			    } else {
+				$stack_size = $stack_size-1;
+			    }
+			}
+			
+			# only top-level values
+			if( $stack_size == 0 ) {
+			    if( not ( $line =~ /^\s*(Listen|CustomLog|ErrorLog)\s+[^\s]+/ ) ) {
+				print $newconf $line;
+			    }
+			} else { 
 			    print $newconf $line;
 			}
-		    } else { 
-			print $newconf $line;
 		    }
+		    close( ORIGCONF );		
 		}
 	    
 		# insert new config values
 		foreach my $i ( @listen ) {
 		    print $newconf "Listen $i\n";
 		}
-		foreach my $i ( @custom_log ) {
-		    print $newconf "CustomLog $i\n";
-		}
-		if( defined $error_log && $error_log ne "" ) {
-		    print $newconf "ErrorLog $error_log\n";
-		}
+#		foreach my $i ( @custom_log ) {
+#		    print $newconf "CustomLog $i\n";
+#		}
+#		if( defined $error_log && $error_log ne "" ) {
+#		    print $newconf "ErrorLog $error_log\n";
+#		}
 	    
 		close( $newconf );
-		close( ORIGCONF );
 	    
 		# copy the file
 		# what about access rights?

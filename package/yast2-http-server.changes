@@ -1,4 +1,17 @@
 -------------------------------------------------------------------
+Mon Sep  1 16:31:06 CEST 2003 - visnov@suse.de
+
+- do not configure document root (#29674)
+- better handle older configs: do not require listen.conf, do not allow
+  empty Listen list, write it to listen.conf
+- 2.8.8
+
+-------------------------------------------------------------------
+Fri Aug 29 16:14:36 CEST 2003 - visnov@suse.de
+
+- fix php4 needed package (#29659)
+
+-------------------------------------------------------------------
 Fri Aug 29 14:51:03 CEST 2003 - visnov@suse.de
 
 - fix command line interface 
