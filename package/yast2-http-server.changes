@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Mar 15 12:46:37 CET 2005 - mzugec@suse.cz
+
+- fixed #72327, APACHE_MODULES problem 
+
+-------------------------------------------------------------------
 Mon Feb 28 09:31:22 CET 2005 - visnov@suse.cz
 
 - fixed localization problems 
