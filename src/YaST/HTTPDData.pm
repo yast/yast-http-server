@@ -175,9 +175,12 @@ sub ModifyHost {
     my $hostdata = shift;
 
     my $dr;
+    my $vbn;
     foreach my $h ( @{$hosts{$hostid}} ) {
         if( $h->{KEY} eq 'DocumentRoot' ) {
             $dr = $h->{VALUE};
+        } elsif( $h->{KEY} eq 'VirtualByName' ) {
+            $vbn = $h->{VALUE};
         }
     }
     $hosts{$hostid} = $hostdata;
@@ -186,6 +189,25 @@ sub ModifyHost {
             if( $dr ne $h->{VALUE} ) {
                 $self->delDir( $dr );
                 $self->addDir( $h->{VALUE} );
+            }
+        } elsif( $h->{KEY} eq 'VirtualByName' ) {
+            if( $vbn ne $h->{VALUE} ) {
+                $hostid =~ /^([^\/]+)/;
+                my $vhost = $1;
+                if( $h->{VALUE} == 1 ) {
+                    push( @{$hosts{'default'}}, { KEY => 'NameVirtualHost', VALUE => $1 } );
+                } else {
+                    my @newData = ();
+                    while( my $e = shift(@{$hosts{'default'}}) ) {
+                        if( $e->{KEY} eq 'NameVirtualHost' and
+                            $e->{VALUE} eq $vhost ) {
+                            push( @newData, @{$hosts{'default'}} );
+                            last;
+                        }
+                        push( @newData, $e );
+                    }
+                    $hosts{'default'} = \@newData;
+                }
             }
         }
     }
@@ -205,6 +227,9 @@ sub CreateHost {
     foreach my $h ( @$hostdata ) {
         if( $h->{KEY} eq 'DocumentRoot' ) {
             $self->addDir($h->{VALUE});
+        } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
+            $hostid =~ /^([^\/]+)/;
+            push( @{$hosts{'default'}}, { KEY => 'NameVirtualHost', VALUE => $1 } );
         }
     }
     $dirty{NEW}->{$hostid} = 1;
@@ -222,6 +247,19 @@ sub DeleteHost {
     foreach my $h ( @{$hosts{$hostid}} ) {
         if( $h->{KEY} eq 'DocumentRoot' ) {
             $self->delDir($h->{VALUE});
+        } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
+            $hostid =~ /^([^\/]+)/;
+            my $vhost = $1;
+            my @newData = ();
+            while( my $e = shift(@{$hosts{'default'}}) ) {
+                if( $e->{KEY} eq 'NameVirtualHost' and
+                    $e->{VALUE} eq $vhost ) {
+                    push( @newData, @{$hosts{'default'}} );
+                    last;
+                }
+                push( @newData, $e );
+            }
+            $hosts{'default'} = \@newData;
         }
     }
     delete( $hosts{$hostid} );

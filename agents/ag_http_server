@@ -36,8 +36,7 @@ my %listen;
 sub parse_vhost_files {
     my $class = shift;
 
-    # parse all NameVirtualHost entries.
-    if( open( FILE, "< /etc/apache2/listen.conf" ) ) {
+    if( open( FILE, "< /etc/apache2/default-server.conf" ) ) {
         while( my $line = <FILE> ) {
             next unless( $line =~ /^NameVirtualHost\s+(.*)/ );
             my $vhost = $1;
@@ -193,28 +192,6 @@ sub section2string {
 
 sub write_vhost_files {
     my $class = shift;
-
-    #
-    # create NameVirtualHost entries in listen.conf
-    #
-    if( open( FILE, "< /etc/apache2/listen.conf" ) ) {
-        my @file = <FILE>;
-        close(FILE);
-
-        # drop all "NameVirtualHost" entries.
-        foreach my $line ( @file ) {
-            next unless( $line =~ /^NameVirtualHost/ );
-            $line = "";
-        }
-
-        # do the new "NameVirtualHost" entries and save file
-        foreach my $entry ( keys(%vhost_by_name) ) {
-            push( @file, "NameVirtualHost $entry\n" );
-        }
-        open( FILE, "> /etc/apache2/listen.conf" ); # FIXME catch ERRORs
-        print FILE @file;
-        close(FILE);
-    }
 
     foreach my $file ( keys(%vhost_files) ) {
         next if( $file eq 'default-server.conf' ); # skip the default server here
