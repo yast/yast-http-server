@@ -257,6 +257,8 @@
 			$[ "KEY": "HostIP", "VALUE" : ip ],
 			$[ "KEY": "SSL", "VALUE" : 0 ],	// No SSL
 		    ]);
+		    
+		HttpServer::modified = true;
 	    }
 	} while (ret == nil);
 

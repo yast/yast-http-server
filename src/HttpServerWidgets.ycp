@@ -339,6 +339,8 @@ symbol HostsHandle (string table, map event)
 	YaST::HTTPDData::ModifyHost ("default", YaST::HTTPDData::GetHost(host) );
 	// remove the old non-default host
 	YaST::HTTPDData::DeleteHost (host);
+	
+	HttpServer::modified = true;
 
 	TablePopup::TableInit(hosts_widget, table);
     }
@@ -364,6 +366,8 @@ boolean HostsDelete (any opt_id, string opt_key) {
     // message popup
     if (! Popup::YesNo (_("Delete selected host?")))
 	return false;
+	
+    HttpServer::modified = true;
     return YaST::HTTPDData::DeleteHost (opt_key);
 }
 
@@ -681,6 +685,7 @@ global void SSLTypeStore (any widget)
 {
     // it is a radio button group
     YaST::HTTPDData::ModifyHost( currenthost, set_host_value ("SSL", YaST::HTTPDData::GetHost(currenthost), UI::QueryWidget( `id(widget), `CurrentButton ) ) );
+    HttpServer::modified = true;
 }
 
 
@@ -872,6 +877,7 @@ define string item2listen( string network, string port ) ``{
 	    return false;
 	list< map<string, any> > options = YaST::HTTPDData::GetHost (currenthost);
 	YaST::HTTPDData::ModifyHost (currenthost, filter (map<string,any> opt, options, ``(opt_id != opt["KEY"]:"")));
+	HttpServer::modified = true;
 	return true;
     }
 
@@ -915,6 +921,7 @@ define string item2listen( string network, string port ) ``{
 	list< map<string, any> >options = YaST::HTTPDData::GetHost (currenthost);
 	options = set_host_value( opt_key, options, UI::QueryWidget (`id (opt_key), `Value) );
 	YaST::HTTPDData::ModifyHost (currenthost, options);
+	HttpServer::modified = true;
     }
 
     /**
@@ -1003,6 +1010,7 @@ define string item2listen( string network, string port ) ``{
 	    else status = _("Enabled");
 	    UI::ChangeWidget( `id( `modules ), `Item( ci , 1 ) , status );
 	    YaST::HTTPDData::ModifyModuleList ([name], status == _("Enabled"));
+	    HttpServer::modified = true;
         }
 	else if (event["ID"]:nil == `add_user)
         {
@@ -1035,6 +1043,7 @@ define string item2listen( string network, string port ) ``{
 		} else {
 		    YaST::HTTPDData::ModifyModuleList( [mod], true );
 		    HttpServerWidgets::initModules(nil);
+		    HttpServer::modified = true;
 		}
 	    }
 	    UI::CloseDialog();
@@ -1092,6 +1101,7 @@ define string item2listen( string network, string port ) ``{
 		{
 		    YaST::HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
 			res["ADDRESS"]:"" );
+		    HttpServer::modified = true;
 		}
 	    }
         }
@@ -1110,6 +1120,7 @@ listen cannot be empty.") );
 
 	    // remove the entry
 	    YaST::HTTPDData::DeleteListen( tointeger(port), tointeger(port), network );
+	    HttpServer::modified = true;
 	}
 	else if( event["ID"]:nil == `edit )
 	{
@@ -1121,6 +1132,7 @@ listen cannot be empty.") );
 		// create the new one
 		YaST::HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
 			res["ADDRESS"]:"" );
+		HttpServer::modified = true;
 	    }
 	}
 	
@@ -1151,6 +1163,7 @@ listen cannot be empty.") );
       */
     global define void storeServiceStatus (any key, map event) ``{
 	YaST::HTTPDData::ModifyService( (boolean) UI::QueryWidget ( `id("enabled"), `Value ) );
+	HttpServer::modified = true;
     }
 
 // ************************************ Adapt firewall widget ********************
