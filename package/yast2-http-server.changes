@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Apr 16 15:20:00 CEST 2004 - ug@suse.de
+
+. ReloadService implemented
+
+-------------------------------------------------------------------
 Mon Apr  5 10:53:55 CEST 2004 - ug@suse.de
 
 - order of mod_ldap and mod_auth_ldap fixed (#31436 again)
