@@ -22,10 +22,29 @@
     import "TablePopup";
     import "HttpServer";
     
-    include "http-server/routines.ycp";
     include "http-server/helps.ycp";
 
 global string currenthost = "defaulthost";
+
+global string summaryGenericList( any key, any id );
+global symbol handleDefaultHostTable( any key, map event );
+global boolean validateDefaultHostTable (any key, map event);
+global list DefaultHostTableContents (map descr);
+global void DefaultHostPopupInit (any opt_id, any opt_key);
+global void DefaultHostPopupStore (any opt_id, any opt_key);
+global string DefaultHostTableEntrySummary (any opt_id, any opt_key);
+global boolean DefaultHostTableEntryDelete (any opt_id, any opt_key);
+global void initModules (any key);
+global void storeModules (any key, map event);
+global symbol handleModules (any key, map event);
+global void initListenSettings (any key);
+global void storeListenSettings (any key, map event);
+global symbol handleListenSettings (any key, map event);
+global void initServiceStatus (any key);
+global void storeServiceStatus (any key, map event);
+global symbol handleServiceStatus (any key, map event);
+global void initAdaptFirewall (any key);
+global void storeAdaptFirewall (any opt_id, map event);
 
 /**
  * Map of popups for CWM
@@ -68,33 +87,38 @@ global map popups = $[
                     "label" : _("Listen on"),
                     "handle" : `listen,
                     "optional" : false,
-		    "summary" : ``( HttpServerWidgets::summaryGenericList() ),
+		    "summary" : HttpServerWidgets::summaryGenericList,
                 ],
 	    ],
 	];
 
+define void HostInit (any key);
 
-global map defaulthostwidget = TablePopup::CreateTableDescr (
+global map<string, any> defaulthostwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	    $["add_delete" : true, 
 	      "up_down" : false, 
 	      "unique_keys" : true]
 	, $[
-	    "init" : ``(TablePopup::TableInit (
-		HttpServerWidgets::widgets["global_table"]:$[])),
-	    "handle" : ``(HttpServerWidgets::handleDefaultHostTable()),
+	    "init" : HttpServerWidgets::HostInit,
+	    "handle" : HttpServerWidgets::handleDefaultHostTable,
 	    "validate_type" : `function,
-	    "validate_function" : ``(HttpServerWidgets::validateDefaultHostTable ()),
+	    "validate_function" : HttpServerWidgets::validateDefaultHostTable,
 	    "options" : popups,
-	    "ids" : ``(HttpServerWidgets::DefaultHostTableContents ()),
+	    "ids" : HttpServerWidgets::DefaultHostTableContents,
 	    "fallback" : $[
-		"init" : ``(HttpServerWidgets::DefaultHostPopupInit ()),
-		"store" : ``(HttpServerWidgets::DefaultHostPopupStore ()),
-		"summary" : ``(HttpServerWidgets::DefaultHostTableEntrySummary ()),
+		"init" : HttpServerWidgets::DefaultHostPopupInit,
+		"store" : HttpServerWidgets::DefaultHostPopupStore,
+		"summary" : HttpServerWidgets::DefaultHostTableEntrySummary,
 	    ],
-	    "option_delete" : ``(HttpServerWidgets::DefaultHostTableEntryDelete ()),
+	    "option_delete" : HttpServerWidgets::DefaultHostTableEntryDelete,
 	    "add_items" : [ "ServerName", "ServerAdmin",],
 	    "help" : HELPS["global_table"]:"",
 	]);
+
+define void HostInit (any key) ``{
+    TablePopup::TableInit (
+        HttpServerWidgets::defaulthostwidget, key);
+}
 
 
 global map moduleslistwidget = $[
@@ -118,9 +142,9 @@ global map moduleslistwidget = $[
 			_("&Add Module") )
 		)
 	    ),
-	    "init" : ``(HttpServerWidgets::initModules ()),
-	    "store" : ``(HttpServerWidgets::storeModules ()),
-	    "handle" : ``(HttpServerWidgets::handleModules ()),
+	    "init" : HttpServerWidgets::initModules,
+	    "store" : HttpServerWidgets::storeModules,
+	    "handle" : HttpServerWidgets::handleModules,
 	    "help" : HELPS["modules"]:"",
 	];
 
@@ -145,9 +169,9 @@ global map listenwidget = $[
 		    `HStretch ()
 		)
 	    ),
-	    "init" : ``(HttpServerWidgets::initListenSettings ()),
-	    "store" : ``(HttpServerWidgets::storeListenSettings ()),
-	    "handle" : ``(HttpServerWidgets::handleListenSettings ()),
+	    "init" : HttpServerWidgets::initListenSettings,
+	    "store" : HttpServerWidgets::storeListenSettings,
+	    "handle" : HttpServerWidgets::handleListenSettings,
 	    "help" : HELPS["listen"]:"",
 	];
 /**
@@ -164,9 +188,9 @@ global map widgets = $[
 		    // translators: service status radio button label
 		    [ `enabled, _("Enabled") ]
 		],
-		"init"	: ``(HttpServerWidgets::initServiceStatus() ),
-		"handle" : ``(HttpServerWidgets::handleServiceStatus()),
-		"store"	 : ``(HttpServerWidgets::storeServiceStatus() ),
+		"init"	: HttpServerWidgets::initServiceStatus,
+		"handle" : HttpServerWidgets::handleServiceStatus,
+		"store"	 : HttpServerWidgets::storeServiceStatus,
 		"handle_events" : [ `enabled, `disabled ],
 		"opt" : [ `notify ],
 		"help" : HELPS["server_enable"]:"",
@@ -176,13 +200,94 @@ global map widgets = $[
 		// translators: checkbox label
 		"label"	 : _("Adapt &Firewall"),
 		"help"	 : HELPS["firewall_adapt"]:"",
-		"init"	: ``(HttpServerWidgets::initAdaptFirewall() ),
-		"store"	 : ``(HttpServerWidgets::storeAdaptFirewall() ),
+		"init"	: HttpServerWidgets::initAdaptFirewall,
+		"store"	 : HttpServerWidgets::storeAdaptFirewall,
 	    ],
 	    "global_table" : defaulthostwidget,
 	    "modules" : moduleslistwidget,
 	    "listen" : listenwidget,
 	];
+
+/********************************** helpers *******************************/
+
+
+/**
+ * Convert a Listen string to an item for table. Splits by the colon.
+ *
+ * @param arg		the Listen string
+ * @param id		the id of this item
+ * @return term		term for the table
+ */
+global define term listen2item( string arg, integer id ) ``{
+    integer colon = find( arg, ":" );
+
+    string address = _("All Addresses");
+    string port = arg;
+    
+    if( colon != -1 ) {
+	// address is present
+	address = substring( arg, 0, colon );
+	port = substring( arg, colon+1 );
+    }
+    return `item( `id(id), address, port );
+}
+
+/**
+ * Convert a Listen string to a pair: $[ "port": port, "address": network ]
+ *
+ * @param arg		the Listen string
+ * @return map		map with the result
+ */
+global define map listen2map( string arg ) ``{
+    integer colon = find( arg, ":" );
+
+    string address = "all";
+    string port = arg;
+    
+    if( colon != -1 ) {
+	// address is present
+	address = substring( arg, 0, colon );
+	port = substring( arg, colon+1 );
+    }
+    return $[ "port": port, "address": address ];
+}
+
+/**
+ * Convert a Listen string to an item for table. Splits by the colon.
+ *
+ * @param network	network address
+ * @param port		port number
+ * @return string 	Listen value
+ */
+global define string item2listen( string network, string port ) ``{
+
+    if( network == _("All Addresses") ) network = "";
+    
+    if( size(network) > 0 ) port = network +":"+ port ;
+    
+    return port;
+}
+
+/**
+ * Generate list of configured log files. First, use sysconfig and then as at lower priority
+ * use CustomLog from httpd.conf files.
+ *
+ * @param access_logs	string containing configured access_log
+ * @param custom_logs	list of other configured logs
+ * @return list		list of all configured logs ordered by priority
+ */
+global define list GetLogs( string access_logs, list custom_logs ) ``{
+
+    // initialize using access_logs
+    list result = maplist( string value, splitstring( access_logs, "," ), ``( String::CutBlanks( value ) ) );
+
+    foreach( string log, custom_logs, ``{
+	string l = String::CutBlanks( log );
+	if( ! contains( result, l ) ) result = add( result, l );
+    });
+    
+    return result;
+}
 
 /******************************** Listen popup ****************************/
 
@@ -202,7 +307,7 @@ global map widgets = $[
 	// translators: Listen type for all addresses;
 	string aa =  _("All Addresses");
 	
-	list ips = union( [ aa ], maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) );
+	list ips = []; // FIXME: union( [ aa ], maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) );
 
 	UI::OpenDialog( `VBox(
 	    // translators: text entry label
@@ -225,11 +330,11 @@ global map widgets = $[
 	string res = "";
 	do {
 
-	    ret = UI::UserInput();
+	    ret = (symbol) UI::UserInput();
 	    
 	    if( ret == `ok ) {
-		network = UI::QueryWidget( `id(`address), `Value );
-		res = UI::QueryWidget( `id(`port), `Value );
+		network = (string)UI::QueryWidget( `id(`address), `Value );
+		res = (string)UI::QueryWidget( `id(`port), `Value );
 		boolean single_address = ( network != aa );
 		
 		// validation
@@ -261,8 +366,8 @@ global map widgets = $[
       * @param event map event that occured
       * @return value for wizard sequencer, always nil
       */
-    global define any showAccessLogPopup (any key, map event) ``{
-	string log = select( GetLogs( HttpServer::settings["apache_access_log"]:"", HttpServer::settings[currenthost, "CustomLog"]:[] ), 0, "/var/log/apache2/access_log" );
+    global define symbol showAccessLogPopup (any key, map event) {
+	string log = (string) select( GetLogs( HttpServer::settings["apache_access_log"]:"",  HttpServer::settings[currenthost, "CustomLog"]:[] ), 0, "/var/log/apache2/access_log" );
 
 	// strip the log format, if present
 	log = select( splitstring( log, " " ), 0, "/var/log/apache2/access_log" );
@@ -277,7 +382,7 @@ global map widgets = $[
 			"rcapache2 reload");}],
 		// menubutton entry, try to keep short
 		[ _("Save Settings and Re&start HTTP Server"),
-		    ``{HttpServer::Write ();}, true ],
+		    HttpServer::Write, true ],
 	    ],
 	]);
 	return nil;
@@ -289,7 +394,7 @@ global map widgets = $[
       * @param event map event that occured
       * @return value for wizard sequencer, always nil
       */
-    global define any showErrorLogPopup (any key, map event) ``{
+    global define symbol showErrorLogPopup (any key, map event) ``{
 	string log = HttpServer::settings[currenthost, "ErrorLog"]: "/var/log/apache2/error_log";
 	
 	// strip the log format, if present
@@ -383,7 +488,7 @@ global map widgets = $[
       * @param event any event happened
       * @return boolean	true if there is at least one Listen statement
       */
-    global define boolean validateDefaultHostTable (any key, any event) ``{
+    global define boolean validateDefaultHostTable (any key, map event) ``{
 	if( event["ID"]:nil != `next ) return true;
 	// Listen list cannot be empty
 	boolean validate = size( HttpServer::settings[currenthost, "Listen"]:[] ) != 0;
@@ -444,7 +549,7 @@ listen cannot be empty.
     global define void storeModules (any key, map event) ``{
 	integer i = size(HttpServer::settings["modules"]:$[]);
 	while( i>0 ) {
-	    term item = UI::QueryWidget( `id(`modules), `Item(i-1) );
+	    term item = (term) UI::QueryWidget( `id(`modules), `Item(i-1) );
 	    string mod = select( item, 1, "" );
 	    y2debug( "Changing %1 to %2", mod, (select( item, 2, "" ) == _("Enabled") ) );
 	    HttpServer::settings["modules", mod, "status"] = (select( item, 2, "" ) == _("Enabled") );	
@@ -463,12 +568,12 @@ listen cannot be empty.
       */
     global define symbol handleModules (any key, map event) ``{
 	UI::SetFocus (`id (`modules));
-	integer current = UI::QueryWidget (`id (`modules), `CurrentItem);
+	integer current = (integer) UI::QueryWidget (`id (`modules), `CurrentItem);
         if (event["ID"]:nil == `toggle)
         {
-	    integer ci = UI::QueryWidget( `id( `modules ), `CurrentItem );
-	    string status = select( UI::QueryWidget( `id(`modules), `Item(ci) ), 2, _("Enabled") );
-	    string name = select( UI::QueryWidget( `id(`modules), `Item(ci) ), 1, nil );
+	    integer ci = (integer) UI::QueryWidget( `id( `modules ), `CurrentItem );
+	    string status = (string) select( (list) UI::QueryWidget( `id(`modules), `Item(ci) ), 2, _("Enabled") );
+	    string name = (string) select( (list) UI::QueryWidget( `id(`modules), `Item(ci) ), 1, nil );
 
 	    y2debug( "Status of module: %1", status );
 	    if( status == _("Enabled") ) status = _("Disabled");
@@ -495,10 +600,10 @@ listen cannot be empty.
 	    
 	    UI::SetFocus( `id( `mod ) );
 
-	    symbol ret = UI::UserInput();
+	    symbol ret = (symbol) UI::UserInput();
 	    
 	    if( ret == `ok ) {
-		string mod = String::CutBlanks( UI::QueryWidget( `id(`mod), `Value ) );
+		string mod = String::CutBlanks( (string) UI::QueryWidget( `id(`mod), `Value ) );
 		if( mod == "" ) {
 		    // translators: error message
 		    Report::Error( _("A name for the module to add is required.") );
@@ -555,7 +660,7 @@ listen cannot be empty.
 	integer i = size(HttpServer::settings[currenthost, "Listen"]:[]);
 	list newlisten = [];
 	while( i>0 ) {
-	    term item = UI::QueryWidget( `id(`listen), `Item(i-1) );
+	    term item = (term) UI::QueryWidget( `id(`listen), `Item(i-1) );
 	    newlisten = add( newlisten, item2listen( select(item,1,""), select(item,2,"") ) );
 	    i = i-1;
 	}
@@ -572,9 +677,9 @@ listen cannot be empty.
       */
     global define symbol handleListenSettings (any key, map event) ``{
 	UI::SetFocus (`id (`listen));
-	integer current = UI::QueryWidget (`id (`listen), `CurrentItem);
-	term currentitem = UI::QueryWidget( `id(`listen), `Item(current) );
-	string network = select(currentitem, 1, "");
+	integer current = (integer) UI::QueryWidget (`id (`listen), `CurrentItem);
+	term currentitem = (term) UI::QueryWidget( `id(`listen), `Item(current) );
+	string network = (string) select(currentitem, 1, "");
 	// translators: all network addresses Listen type
 	if( network == _("All Addresses") ) network = "";
 	string port = select(currentitem, 2, "");
@@ -638,7 +743,7 @@ listen cannot be empty.
       * @param event map event that occured
       */
     global define void storeServiceStatus (any key, map event) ``{
-	HttpServer::enableService( UI::QueryWidget ( `id(`enabled), `Value ) );
+	HttpServer::enableService( (boolean) UI::QueryWidget ( `id(`enabled), `Value ) );
     }
 
     /**
@@ -648,7 +753,7 @@ listen cannot be empty.
       * @return symbol symbol for WS or nil
       */
     global define symbol handleServiceStatus (any key, map event) ``{
-	boolean current = UI::QueryWidget (`id (`enabled), `Value);
+	boolean current = (boolean) UI::QueryWidget (`id (`enabled), `Value);
 	HttpServer::settings["enabled"] = current;
     }
 // *********************************** Listen widget ***************************
