@@ -15,13 +15,12 @@
 module "HttpServer";
 textdomain "http-server";
 
-import "HTTPD";
-import "NetworkDevices";
+import "HTTPDData";
+//import "NetworkDevices";
 import "Progress";
 import "Report";
 import "Require";
 import "Runlevel";
-import "SuSEFirewall";
 import "Summary";
 
 /**
@@ -33,7 +32,7 @@ global block<boolean> AbortFunction = nil;
 /**
  * Required packages
  */
-global list required_packages = ["apache2"];
+global list<string> required_packages = ["apache2"];
 
 /**
  * Data was modified?
@@ -65,7 +64,7 @@ include "http-server/routines.ycp";
 /**
  * HTTP server settings
  */
-global map settings = $[
+global map<string,any> settings = $[
     "modules" : GetModules(),
     "Listen" : [ $["PORT":"80"] ],
     "default" : $[
@@ -82,7 +81,7 @@ global map settings = $[
     ]
 ];
 
-global define map Settings ()
+global define map<string,any> Settings ()
 {
     return settings;
 }
@@ -90,19 +89,19 @@ global define map Settings ()
 /**
  * List of status of modules modified
  */
-global list modules_modified = [];
+global list<string> modules_modified = [];
 
 /**
  * Mapping of IPs to network devices
  */
-global map ip2device = $[];
+global map<string,string> ip2device = $[];
 
 /**
  * List of maps $[ "port": port, "interface": "all" | "eth0", ... ] containing
  * description of listen statement already configured in firewall. Read in
  * Read, used in Write.
  */
-global list listen4firewall = [];
+global list< map<string,string> > listen4firewall = [];
 
 global string document_root = "";
 
@@ -111,14 +110,14 @@ global string document_root = "";
 /**
  * List of httpd.conf options to be stored in settings part, not in hosts
  */
-list server_settings = [ "ErrorLog", "CustomLog" ];
+list<string> server_settings = [ "ErrorLog", "CustomLog" ];
 
 /**
  * List of options which allow multiple keys
  */
-list multiple_settings = ["Include", "CustomLog"];
+list<string> multiple_settings = ["Include", "CustomLog"];
 
-map sysconfig_values = $[
+map<string,string> sysconfig_values = $[
     "apache_access_log"	: "APACHE_ACCESS_LOG",
     "ServerAdmin"	: "APACHE_SERVERADMIN",
     "ServerName"	: "APACHE_SERVERNAME",
@@ -203,49 +202,23 @@ global define boolean Read() ``{
 
     // read current settings from httpd.conf and sysconfig
     Progress::NextStage();
-
-    // read the top level options
-    list toplevel_opts = SCR::Dir( .etc.httpd );
-    foreach( string opt, toplevel_opts, ``{
-	any res = SCR::Read( add( .etc.httpd, opt ) );
-
-	if( contains( multiple_settings, opt ) && ! is( res, list ) )
-	{
-	    if( res == nil ) res = [];
-	    else res = [ res ];
-	}
-
-	if( res == nil ) res = "";
-
-	// server settings to "settings", rest to "default"
-	if( contains( server_settings, opt ) )
-	    settings["settings", opt] = res;
-	else
-	    settings["default", opt] = res;
-    });
-
+    
+    // read hosts
+    HTTPDData::ReadHosts();
+    
     // now, read Listen statements from listen.conf
-    settings["Listen"] = HTTPD::GetCurrentListen();
+    settings["Listen"] = HTTPDData::GetCurrentListen();
 
     // read modules from sysconfig
-    list modules = splitstring( (string) SCR::Read( .sysconfig.apache2."APACHE_MODULES" ), " " );
-    foreach( string mod, modules, ``{
-	if( !haskey( settings["modules"]:$[], mod ) ) {
-	    y2warning("The configuration file appear to load module '%1', but YaST2 does not know the module.", mod );
-	    // translators: default description of unknown Apache2 modules
-	    settings["modules", mod ] = $[ "status" : true, "description": _("User-Defined Module") ];
-	} else {
-	    settings["modules", mod, "status" ] = true;
-	}
-    } );
+    settings["modules"] = HTTPDData::GetKnownModules();
 
     // FIXME: special handling of PHP
-    if( settings["modules", "php4", "status"]:false == true &&
-	! Require::AreAllPackagesInstalled(["apache2-mod_php4"]) )
-    {
-	php_hack = true;
-	settings["modules", "php4", "status"] = false;
-    }
+//    if( settings["modules", "php4", "status"]:false == true &&
+//	! Require::AreAllPackagesInstalled(["apache2-mod_php4"]) )
+//    {
+//	php_hack = true;
+//	settings["modules", "php4", "status"] = false;
+//    }
 
     // read the rest of the configuration from sysconfig
     settings["apache_access_log"] = SCR::Read( .sysconfig.apache2."APACHE_ACCESS_LOG" );
@@ -270,18 +243,18 @@ global define boolean Read() ``{
     Progress::NextStage();
 
     // read current settings for firewall and network
-    Progress::off();
-    SuSEFirewall::Read();
-    NetworkDevices::Read();
+// FIXME:    Progress::off();
+//    SuSEFirewall::Read();
+//    NetworkDevices::Read();
 
     // generate the map: static IP -> device
     // TODO: IP aliases
     ip2device = $[];
-#    list devs = NetworkDevices::Locate("BOOTPROTO", "static");
-#    foreach(string dev, devs, {
-#	string ip = NetworkDevices::GetValue(dev, "IPADDR");
-#	if(ip != nil && ip != "") ip2device[ip] = dev;
-#    });
+// FIXME:    list devs = NetworkDevices::Locate("BOOTPROTO", "static");
+//    foreach(string dev, devs, {
+//	string ip = NetworkDevices::GetValue(dev, "IPADDR");
+//	if(ip != nil && ip != "") ip2device[ip] = dev;
+//    });
 
     // generate the map of our settings in firewall
     listen4firewall = maplist( map<string,string> l, settings["Listen"]:[], ``{
@@ -295,7 +268,7 @@ global define boolean Read() ``{
 	}
     });
 
-    settings["settings", "firewall_started"] = lookup( SuSEFirewall::Export(), "start_firewall", false );
+    settings["settings", "firewall_started"] = false;// FIXME:lookup( SuSEFirewall::Export(), "start_firewall", false );
 
     Progress::on();
 
@@ -366,7 +339,7 @@ global define boolean Write() ``{
 	}
     });
 
-    list<string> rpms = HTTPD::GetModulePackages();
+    list<string> rpms = HTTPDData::GetModulePackages();
 
     if( php_hack ) {
 	settings[ "modules", "php4", "status" ] = true;
@@ -397,20 +370,9 @@ Install them now?
 ") );
 
     // write httpd.conf
-    // default host, some of the values are in sysconfig
-    foreach( string key, any value, settings["default"]:$[], ``{
-	if( size(key) > 0 )
-	{
-	    if( haskey( sysconfig_values, key ) )
-	    {
-		SCR::Write( add(.sysconfig.apache2, sysconfig_values[key]:"error" ), value );
-	    }
-	    else
-	    {
-		SCR::Write( add(.etc.httpd, key), value );
-	    }
-	}
-    });
+
+    // write hosts
+    HTTPDData::WriteHosts ();
 
     // write listen
     if( /*FIXME: ! HTTPD::WriteListen (settings["Listen"]:[])*/ false ) {
@@ -441,21 +403,23 @@ Install them now?
 
     // modify firewall
     if( settings["settings", "firewall"]: false && settings["settings", "firewall_started"]:false ) {
+    
+	// FIXME: adapt firewall settings
 
 	// delete all our firewall settings
-	foreach( map listen, listen4firewall, ``{
-	    SuSEFirewall::RemoveService( listen["port"]:"www", "TCP", listen["interface"]:"all" );
-	});
+//	foreach( map listen, listen4firewall, ``{
+//	    SuSEFirewall::RemoveService( listen["port"]:"www", "TCP", listen["interface"]:"all" );
+//	});
 
 	// setup the new firewall settings
-	y2debug( "Writing Listen settings to firewall: %1", settings["Listen"]:[] );
-	foreach( map<string,string> l, settings["Listen"]:[], ``{
+//	y2debug( "Writing Listen settings to firewall: %1", settings["Listen"]:[] );
+//	foreach( map<string,string> l, settings["Listen"]:[], ``{
 	    // FIXME: interface handling
-	    SuSEFirewall::AddService( l["PORT"]:"www", "TCP", l["interface"]:"all" );
-	});
+//	    SuSEFirewall::AddService( l["PORT"]:"www", "TCP", l["interface"]:"all" );
+//	});
 
 	Progress::off();
-	SuSEFirewall::Write();
+//	SuSEFirewall::Write();
 	Progress::on();
     }
 
@@ -604,7 +568,7 @@ global define void enableService(boolean on) ``{
 global define map AutoPackages() ``{
        if( !Require::IsAnyPackageInstalledTarget( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
            // add a default MPM - prefork because of the PHP4 compatibility
-        required_packages = union (required_packages, ["apache2-prefork"] );
+        required_packages = (list<string>)union (required_packages, ["apache2-prefork"] );
        }
 
        return ($["install": required_packages, "remove": []]);

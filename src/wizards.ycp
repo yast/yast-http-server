@@ -12,9 +12,8 @@
 textdomain "http-server";
 
 import "Label";
+import "Sequencer";
 import "Wizard";
-
-include "wizard/sequencer.ycp";
 
 include "http-server/complex.ycp";
 include "http-server/dialogs.ycp";
@@ -81,7 +80,7 @@ symbol MainSequence() {
 	],
     ];
 
-    symbol ret = WizardSequencer(aliases, sequence);
+    symbol ret = Sequencer::Run(aliases, sequence);
 
     return ret;
 }
@@ -116,7 +115,7 @@ symbol HttpServerSequence() {
 
     Wizard::CreateDialog();
 
-    symbol ret = WizardSequencer(aliases, sequence);
+    symbol ret = Sequencer::Run(aliases, sequence);
 
     UI::CloseDialog();
     return ret;

@@ -50,7 +50,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	return CWM::ShowAndRun (["server_enable", "firewall_adapt", "overview_widget" ]
 	    ,HttpServerWidgets::widgets
 	    ,contents, caption,
-	    Label::BackButton (), Label::FinishButton (), $[`abort : Abort]);
+	    Label::BackButton (), Label::FinishButton (), $["abort" : Abort]);
     }
 
     /**
@@ -58,7 +58,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
       * @return symbol for wizard sequencer
       */
     symbol HostDialog () {
-	list<map> w = CWM::CreateWidgets (["host" ],
+	list< map<string,any> > w = CWM::CreateWidgets (["host" ],
 	    HttpServerWidgets::widgets);
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
@@ -72,7 +72,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 
-	return CWM::Run (w, $[`abort : Abort]);
+	return CWM::Run (w, $["abort" : Abort]);
     }
 
     /**
@@ -90,7 +90,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	string caption = _("Server Modules");
 
 	return CWM::ShowAndRun (["modules"], HttpServerWidgets::widgets, contents, caption,
-	  Label::BackButton(), Label::OKButton(), $[`abort : Abort]);
+	  Label::BackButton(), Label::OKButton(), $["abort" : Abort]);
     }
 
     /**
@@ -98,7 +98,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
       * @return symbol for wizard sequencer
       */
     symbol HostsDialog () {
-	list<map> w = CWM::CreateWidgets (["hosts"],
+	list< map<string,any> > w = CWM::CreateWidgets (["hosts"],
 	    HttpServerWidgets::widgets);
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
@@ -117,7 +117,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	    // menu button label
 	    `PushButton( `id( `set_default ), _("Set as De&fault") ) );
 
-	return CWM::Run (w, $[`abort : Abort]);
+	return CWM::Run (w, $["abort" : Abort]);
     }
 
     /**
@@ -125,7 +125,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
       * @return symbol for wizard sequencer
       */
     symbol ListenDialog () {
-	list<map> w = CWM::CreateWidgets (["listen"],
+	list< map<string,any> > w = CWM::CreateWidgets (["listen"],
 	    HttpServerWidgets::widgets);
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
@@ -141,7 +141,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 
-	return CWM::Run (w, $[`abort : Abort]);
+	return CWM::Run (w, $["abort" : Abort]);
     }
 
     symbol AddHost () {

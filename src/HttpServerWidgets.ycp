@@ -22,7 +22,7 @@
     import "LogView";
     import "TablePopup";
     import "HttpServer";
-    import "HTTPD";
+    import "HTTPDData";
     
     include "http-server/helps.ycp";
 
@@ -30,14 +30,14 @@ global string currenthost = "default";
 
 string item2listen( string network, string port );
 
-string get_host_value ( string keyword, list< map<string, any> > host )
+string get_host_value ( string keyword, list< map<string, any> > host, string default )
 {
-    string ret = "";
+    string ret = default;
     
     foreach( map<string, any> option, host, ``{
 	if (option["KEY"]:nil == keyword)
 	{
-	    ret = option["VALUE"]:"";
+	    ret = option["VALUE"]:default;
 	    break;
 	}
     });
@@ -46,6 +46,17 @@ string get_host_value ( string keyword, list< map<string, any> > host )
     ret = regexpsub (ret, "\"?([^\"]*)\"?", "\\1");
     
     return ret;
+}
+
+void set_host_value ( string keyword, list< map<string, any> > host, any value )
+{
+    foreach( map<string, any> option, host, ``{
+	if (option["KEY"]:nil == keyword)
+	{
+	    option["VALUE"] = value;
+	    break;
+	}
+    });
 }
 
 /*********************************** inital overview table ********************************/
@@ -58,25 +69,25 @@ list <string> host_ids = nil;
 void OverviewInit (string widget)
 {
     string listen_summary = mergestring ( 
-	maplist( map<string,string> listen, HTTPD::GetCurrentListen(), 
+	maplist( map<string,any> listen, HTTPDData::GetCurrentListen(), 
 	    ``(item2listen (listen["ADDRESS"]:"",listen["PORT"]:"80"))), " ");
 	    
-    string default_host = get_host_value( "ServerName", HTTPD::GetHost ("default"));
+    string default_host = get_host_value( "ServerName", HTTPDData::GetHost ("default"), "");
     if (default_host == "")
     {
 	// if the default host does not have a servername specified, use it's
 	// document root, %1 is the full path
-	default_host = sformat( _("in %1"), get_host_value( "DocumentRoot", HTTPD::GetHost ("default")));
+	default_host = sformat( _("in %1"), get_host_value( "DocumentRoot", HTTPDData::GetHost ("default"), ""));
     }
     
     if (host_ids == nil)
     {
-	host_ids = HTTPD::GetHostsList ();
+	host_ids = HTTPDData::GetHostsList ();
     }
     
     string hosts = mergestring (
 	maplist( string host, host_ids, ``{
-	    return get_host_value ( "ServerName", HTTPD::GetHost (host) );
+	    return get_host_value ( "ServerName", HTTPDData::GetHost (host), "" );
 	}), " ");
 
     UI::ChangeWidget (`overview_table, `Items, 
@@ -176,7 +187,7 @@ symbol HostsHandle (string table, map event)
 }
 
 list HostsContents (map descr) {
-    list<string> l = HTTPD::GetHostsList ();
+    list<string> l = HTTPDData::GetHostsList ();
     
     list<string> res = maplist(
 	string host_id,
@@ -201,11 +212,11 @@ boolean HostsDelete (any opt_id, any opt_key) {
 
 global string summaryGenericList( any key, any id );
 global symbol handleHostTable( any key, map event );
-global list HostTableContents (map descr);
-global void DefaultHostPopupInit (any opt_id, any opt_key);
-global void DefaultHostPopupStore (any opt_id, any opt_key);
-global string HostTableEntrySummary (any opt_id, any opt_key);
-global boolean HostTableEntryDelete (any opt_id, any opt_key);
+global list<string> HostTableContents (map descr);
+global void DefaultHostPopupInit (any opt_id, string opt_key);
+global void DefaultHostPopupStore (any opt_id, string opt_key);
+global string HostTableEntrySummary (any opt_id, string opt_key);
+global boolean HostTableEntryDelete (any opt_id, string opt_key);
 global void initModules (any key);
 global void storeModules (any key, map event);
 global symbol handleModules (any key, map event);
@@ -380,7 +391,7 @@ global map widgets = $[
  * @param id		the id of this item
  * @return term		term for the table
  */
-global define term listen2item( map<string,string> arg, integer id ) ``{
+global define term listen2item( map<string,any> arg, integer id ) ``{
 
     string address = arg["ADDRESS"]: _("All Addresses");
     string port = arg["PORT"]:"80";
@@ -432,10 +443,10 @@ define string item2listen( string network, string port ) ``{
  * @param custom_logs	list of other configured logs
  * @return list		list of all configured logs ordered by priority
  */
-global define list GetLogs( string access_logs, list custom_logs ) ``{
+global define list<string> GetLogs( string access_logs, list<string> custom_logs ) ``{
 
     // initialize using access_logs
-    list result = maplist( string value, splitstring( access_logs, "," ), ``( String::CutBlanks( value ) ) );
+    list<string> result = maplist( string value, splitstring( access_logs, "," ), ``( String::CutBlanks( value ) ) );
 
     foreach( string log, custom_logs, ``{
 	string l = String::CutBlanks( log );
@@ -523,7 +534,7 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @return value for wizard sequencer, always nil
       */
     global define symbol showAccessLogPopup (any key, map event) {
-	string log = (string) select( GetLogs( HttpServer::settings["apache_access_log"]:"",  HttpServer::settings[currenthost, "CustomLog"]:[] ), 0, "/var/log/apache2/access_log" );
+	string log = (string) select( HTTPDData::GetAccessLogFiles( [currenthost] ), 0, "/var/log/apache2/access_log" );
 
 	// strip the log format, if present
 	log = select( splitstring( log, " " ), 0, "/var/log/apache2/access_log" );
@@ -551,7 +562,8 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @return value for wizard sequencer, always nil
       */
     global define symbol showErrorLogPopup (any key, map event) ``{
-	string log = HttpServer::settings[currenthost, "ErrorLog"]: "/var/log/apache2/error_log";
+	// FIXME: there are more possibilities where to look for the log file
+	string log = get_host_value( "ErrorLog", HTTPDData::GetHost(currenthost), "/var/log/apache2/error_log");
 	
 	// strip the log format, if present
 	log = select( splitstring( log, " " ), 0, "/var/log/apache2/error_log" );
@@ -566,7 +578,7 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
 			"rcapache2 reload");}],
 		// menubutton entry, try to keep short
 		[ _("Save Settings and Restart HTTP Server"),
-		    ``{HttpServer::Write ();} ],
+		    ``{HttpServer::Write();} ],
 	    ],
 	]);
 	return nil;
@@ -579,14 +591,14 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @param descr map description map of the table
       * @return list of items for the table
       */
-    global define list HostTableContents (map descr) ``{
-	list ret = maplist (map<string, any> option, HTTPD::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
+    global define list<string> HostTableContents (map descr) ``{
+	list<string> ret = maplist (map<string, any> option, HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
 
 	// filter out unneeded options
 	ret = filter (string key, ret, ``( ! contains( ["_SECTION"], key )));
 	// FIXME: replace VirtualByName
 	// required entries
-	ret = union (["ServerName", "ServerAdmin" ], ret);
+	ret = (list<string>)union (["ServerName", "ServerAdmin" ], ret);
 	return ret;
     }
     
@@ -596,12 +608,12 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @param opt_key any option key of selected option
       * @return boolean true if was really deleted
       */
-    global define boolean HostTableEntryDelete (any opt_id, any opt_key) ``{
+    global define boolean HostTableEntryDelete (any opt_id, string opt_key) ``{
 	// message popup
 	if (! Popup::YesNo (_("Delete selected entry?")))
 	    return false;
-	HttpServer::settings[currenthost]
-	    = filter (string k, any v, HttpServer::settings[currenthost]:$[], ``(k != opt_id));
+	list< map<string, any> > options = HTTPDData::GetHost (currenthost);
+	HTTPDData::ModifyHost (currenthost, filter (map<string,any> opt, options, ``(opt_id != opt["KEY"]:"")));
 	return true;
     }
 
@@ -631,9 +643,9 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @param opt_id any option id
       * @param opt_key any option key
       */
-    global define void DefaultHostPopupInit (any opt_id, any opt_key) ``{
+    global define void DefaultHostPopupInit (any opt_id, string opt_key) ``{
 	UI::ChangeWidget (`id (opt_key), `Value,
-	    get_host_value( (string)opt_key, HTTPD::GetHost(currenthost)));
+	    get_host_value( opt_key, HTTPDData::GetHost(currenthost), "") );
 	UI::SetFocus (`id (opt_key));
     }
 
@@ -642,9 +654,10 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @param opt_id any option id
       * @param opt_key any option key
       */
-    global define void DefaultHostPopupStore (any opt_id, any opt_key) ``{
-	HttpServer::settings[currenthost, opt_key] = UI::QueryWidget (`id (opt_key), `Value);
-	HttpServer::modified = true;
+    global define void DefaultHostPopupStore (any opt_id, string opt_key) ``{
+	list< map<string, any> >options = HTTPDData::GetHost (currenthost);
+	set_host_value( opt_key, options, UI::QueryWidget (`id (opt_key), `Value) );
+	HTTPDData::ModifyHost (currenthost, options);
     }
 
     /**
@@ -653,8 +666,8 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @param opt_key any option key
       * @return string table entry summary
       */
-    global define string HostTableEntrySummary (any opt_id, any opt_key) ``{
-	string res = get_host_value( (string)opt_key, HTTPD::GetHost(currenthost));
+    global define string HostTableEntrySummary (any opt_id, string opt_key) ``{
+	string res = get_host_value( opt_key, HTTPDData::GetHost(currenthost), "");
 	if (opt_key == "SSL")
 	{
 	    if (res == "0") 
@@ -692,10 +705,14 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @param key any widget key of widget that is processed
       */
     global define void initModules (any key) ``{
+	list< map<string,any> > known = HTTPDData::GetKnownModules();
+	list<string> modules = HTTPDData::GetModuleList();
 	integer index = -1;
-	list items = maplist (string mod, map z, HttpServer::settings["modules"]:$[], ``{
+	
+	list<term> items = maplist (map<string,any> mod, known , ``{
 	    index = index + 1;
-	    return `item (`id (index), mod, z["status"]:false ? _("Enabled") : _("Disabled"), z["description"]:"" );
+	    string name = mod["name"]:_("unknown");
+	    return `item (`id (index), name, contains( modules, name) ? _("Enabled") : _("Disabled"), mod["summary"]:"" );
 	});
 	UI::ChangeWidget (`id (`modules), `Items, items);
 	UI::SetFocus (`id (`modules));
@@ -707,17 +724,26 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
       * @param event map event that occured
       */
     global define void storeModules (any key, map event) ``{
-	integer i = size(HttpServer::settings["modules"]:$[]);
-	while( i>0 ) {
-	    term item = (term) UI::QueryWidget( `id(`modules), `Item(i-1) );
+	list<string> current_on = [];
+	list<string> current_off = [];
+	list<term> items = (list<term>) UI::QueryWidget( `id(`modules), `Items );
+	foreach ( term item, items, ``{
 	    string mod = select( item, 1, "" );
-	    y2debug( "Changing %1 to %2", mod, (select( item, 2, "" ) == _("Enabled") ) );
-	    HttpServer::settings["modules", mod, "status"] = (select( item, 2, "" ) == _("Enabled") );	
-	    i = i-1;
-	    // FIXME: this needs to care about flags as well (SSL)
-	}
+	    boolean res = select( item, 2, "" ) == _("Enabled");
+	    y2debug( "Changing %1 to %2", mod, res );
+	    
+	    if (res)
+	    {
+		current_on = add (current_on, mod);
+	    }
+	    else
+	    {
+		current_off = add (current_off, mod);
+	    }
+	});
 	
-	y2debug( "%1", HttpServer::settings["modules"]:$[] );
+	HTTPDData::ModifyModuleList (current_on, true);
+	HTTPDData::ModifyModuleList (current_off, false);
     }
 
     /**
@@ -733,17 +759,11 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
         {
 	    integer ci = (integer) UI::QueryWidget( `id( `modules ), `CurrentItem );
 	    string status = (string) select( (term) UI::QueryWidget( `id(`modules), `Item(ci) ), 2, _("Enabled") );
-	    string name = (string) select( (term) UI::QueryWidget( `id(`modules), `Item(ci) ), 1, nil );
-
+	    string name = (string) select( (term) UI::QueryWidget( `id(`modules), `Item(ci) ), 1, nil );	    
 	    y2debug( "Status of module: %1", status );
 	    if( status == _("Enabled") ) status = _("Disabled");
 	    else status = _("Enabled");
 	    UI::ChangeWidget( `id( `modules ), `Item( ci , 1 ) , status );
-	    
-	    HttpServer::modules_modified = union( HttpServer::modules_modified, [name] );
-	    y2debug( "modified_modules now: %1", HttpServer::modules_modified );
-	    
-	    HttpServer::modified = true;
         }
 	else if (event["ID"]:nil == `add_user)
         {
@@ -760,6 +780,9 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
 	    
 	    UI::SetFocus( `id( `mod ) );
 
+	    list<string> existing = maplist (term item, (list<term>) UI::QueryWidget( `id(`modules), `Items )
+		, ``(item[1]:""));
+
 	    symbol ret = (symbol) UI::UserInput();
 	    
 	    if( ret == `ok ) {
@@ -767,26 +790,15 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
 		if( mod == "" ) {
 		    // translators: error message
 		    Report::Error( _("A name for the module to add is required.") );
-		    UI::CloseDialog();
-		} else if( haskey( HttpServer::settings["modules"]:$[], mod )  ) {
+		} else if( contains( existing, mod )  ) {
 		    // translators: error message
 		    Report::Error( _("The module is already in the list.") );
-		    UI::CloseDialog();
 		} else {
-		    HttpServer::settings["modules", mod] = $[
-			"status" : true,
-			"description" :  _("User-Defined Module"),
-		    ];
-
-		    HttpServer::modified = true;
-		    HttpServer::modules_modified = union( HttpServer::modules_modified, [mod] );
-		    
-		    UI::CloseDialog();
-		    
+		    HTTPDData::ModifyModuleList( [mod], true );
 		    HttpServerWidgets::initModules(nil);
 		}
 	    }
-	    else UI::CloseDialog();
+	    UI::CloseDialog();
         }
 
     }
@@ -800,8 +812,8 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
     global define void initListenSettings (any key) ``{
 
 	integer id = -1;
-	list listen = HTTPD::GetCurrentListen();
-	list items = maplist( map<string,string> litem, listen, ``{ id = id+1; return listen2item(litem, id); } );
+	list< map<string,any> > listen = HTTPDData::GetCurrentListen();
+	list<term> items = maplist( map<string,any> litem, listen, ``{ id = id+1; return listen2item(litem, id); } );
 	UI::ChangeWidget (`id (`listen), `Items, items);
 	
 	// enable/disable buttons - at least single Listen must be present

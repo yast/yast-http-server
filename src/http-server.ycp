@@ -76,21 +76,21 @@ define boolean ConfigureHandler(map<string, any> options) ``{
  * @param options    map of the options provided on the command line
  * @return boolean   true on success
  */
-define boolean ModulesHandler(map<string, any> options) ``{
+define boolean ModulesHandler(map<string, string> options) ``{
     // check the command to be present exactly once
     string command = CommandLine::UniqueOption( options,
         ["enable", "disable", "list" ] );
     if( command == nil ) return false;
 
     if( command == "enable" ) {
-	list mods = splitstring( options["enable"]:"", "," );
+	list<string> mods = splitstring( options["enable"]:"", "," );
 	
 	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = true; });
 	
 	HttpServer::modified = true;
     }
     else if( command == "disable" ) {
-	list mods = splitstring( options["disable"]:"", "," );
+	list<string> mods = splitstring( options["disable"]:"", "," );
 	
 	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = false; });
 
@@ -117,7 +117,7 @@ define boolean ModulesHandler(map<string, any> options) ``{
  * @param options    map of the options provided on the command line
  * @return boolean   true on success
  */
-define boolean ListenHandler(map<string, any> options) ``{
+define boolean ListenHandler(map<string, string> options) ``{
 
     // check the command to be present exactly once
     string command = CommandLine::UniqueOption( options,
