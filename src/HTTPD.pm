@@ -351,7 +351,10 @@ sub ModifyModuleList {
             push( @newList, $mod );
         }
     } else {
-        my @oldList = GetModuleList();
+        my @oldList = ( GetModuleList(), selections2modules( [ GetModuleSelectionsList() ] ) );
+        my %uniq;
+        @uniq{@oldList} = ();
+        @oldList = keys( %uniq );
         foreach my $mod ( @$newModules ) {
             next if( grep( /^$mod$/, @oldList ) ); # already existing module?
             push( @oldList, $mod );
@@ -398,6 +401,17 @@ sub ModifyModuleSelectionList {
     }
 
     SCR::Write('.http_server.moduleselection', [keys(%uniq)]);
+    ModifyModuleList( [], 1 );
+}
+
+# internal only
+sub selections2modules {
+    my $list = shift;
+    my @ret;
+    foreach my $sel ( @$list ) {
+        push( @ret, @{$HTTPDModules::selection{$sel}->{modules}} );
+    }
+    return @ret;
 }
 
 #######################################################
