@@ -10,9 +10,9 @@ This package is the public Yast2 API to configure the apache2.
 
 use YaPI::Apache2
 
-GetHostsList()
+$hostList GetHostsList()
 
-  returns a list of host id strings
+  returns a an array reference of host id strings
 
 $hostData = GetHost($hostid)
 
@@ -269,9 +269,9 @@ sub checkHostmap {
 }
 
 =item *
-C<@hostList = GetHostsList();>
+C<$hostList = GetHostsList();>
 
-This function returns a list of strings of all host ids.
+This function returns a reference to a list of strings of all host ids.
 Even without any virtual host, there is always the "default"
 host id for the default host.
 On error, undef is returned and the Error() function can be used
@@ -554,6 +554,7 @@ sub CreateHost {
 
     $hostid =~ /^([^\/]+)/;
     my $vhost = $1;
+    return SetError( "illegal hostid" ) unless( $vhost );
     my $entry = {
                  OVERHEAD      => "# YaST generated vhost entry\n",
                  VirtualByName => $VirtualByName,
@@ -775,7 +776,7 @@ EXAMPLE
 
 
 BEGIN { $TYPEINFO{GetKnownModuleSelections} = ["function", [ "map","string","any" ] ]; }
-sub GetKnownModulSelections {
+sub GetKnownModuleSelections {
     my @ret = ();
     foreach my $sel ( keys(%HTTPDModules::selection) ) {
         push( @ret, { id => $sel, %{$HTTPDModules::selection{$sel}} } );
@@ -1173,15 +1174,88 @@ sub SetServerFlags {
 #######################################################
 
 sub WriteServerCert {
+    my $hostid = shift;
+    my $pemData = shift;
+    my $key = ($pemData =~ /PRIVATE KEY/)?(1):(0);
 
+    my $host = GetHost( $hostid );
+    my $file;
+    foreach my $k ( @$host ) {
+        next unless( $k->{KEY} eq 'ServerName' );
+        $file = $k->{VALUE};
+        last;
+    }
+    $file .= '-cert.pem';
+    SCR::Write( '.target.string', $file, $pemData );
+
+    my $found = 0;
+    foreach my $k ( @$host ) {
+        if( $k->{KEY} eq 'SSLCertificateFile' ) {
+            $k->{VALUE} = $file;
+            $found += 1;
+        } elsif( $key and $k->{KEY} eq 'SSLCertificateKeyFile' ) {
+            $k->{VALUE} = $file;
+            $found += 2;
+        }
+    }
+    push( @$host, { KEY => 'SSLCertificateFile', VALUE => $file } ) unless( $found & 1 );
+    push( @$host, { KEY => 'SSLCertificateKeyFile', VALUE => $file } ) unless( $key and not($found & 2) );
+    ModifyHost( $hostid, $host );
 }
 
 sub WriteServerKey {
+    my $hostid = shift;
+    my $pemData = shift;
+    my $cert = ($pemData =~ /BEGIN CERTIFICATE/)?(1):(0);
 
+    my $host = GetHost( $hostid );
+    my $file;
+    foreach my $k ( @$host ) {
+        next unless( $k->{KEY} eq 'ServerName' );
+        $file = $k->{VALUE};
+        last;
+    }
+    $file .= '-key.pem';
+    SCR::Write( '.target.string', $file, $pemData );
+
+    my $found = 0;
+    foreach my $k ( @$host ) {
+        if( $cert and $k->{KEY} eq 'SSLCertificateKeyFile' ) {
+            $k->{VALUE} = $file;
+            $found += 1;
+        } elsif( $k->{KEY} eq 'SSLCertificateKeyFile' ) {
+            $found += 2;
+        }
+    }
+    push( @$host, { KEY => 'SSLCertificateKeyFile', VALUE => $file } ) if( $cert and not($found & 1) );
+    push( @$host, { KEY => 'SSLCertificateFile', VALUE => $file } ) unless( $found & 2 );
+    ModifyHost( $hostid, $host );
 }
 
 sub WriteServerCA {
+    my $hostid = shift;
+    my $pemData = shift;
 
+    my $host = GetHost( $hostid );
+    my $file;
+    foreach my $k ( @$host ) {
+        next unless( $k->{KEY} eq 'ServerName' );
+        $file = $k->{VALUE};
+        last;
+    }
+    $file .= '-cacert.pem';
+    my $cert = SCR::Write( '.target.string', $file, $pemData );
+
+    my $found = 0;
+    foreach my $k ( @$host ) {
+        if( $k->{KEY} eq 'SSLCACertificateFile' ) {
+            $k->{VALUE} = $file;
+        }
+        $found = 1;
+        last;
+    }
+    push( @$host, { KEY => 'SSLCACertificateFile', VALUE => $file } ) if( not $found );
+    ModifyHost( $hostid, $host );
 }
 
 sub ReadServerCert {
@@ -1344,8 +1418,8 @@ sub run {
     }
 
     print "--------------trigger error\n";
-    my @host = @{GetHost( 'will.not.be.found' )};
-    if( @host and not(defined($host[0])) ) {
+    my $host = GetHost( 'will.not.be.found' );
+    if( not defined $host ) {
         my %error = Error();
         while( my ($k,$v) = each(%error) ) {
             print "ERROR: $k = $v\n";
