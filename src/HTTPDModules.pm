@@ -1,4 +1,4 @@
-package HTTPDModules;
+package YaPI::HTTPDModules;
 %modules = (
     'access' => {
                     summary   => 'Provides access control based on client host name, IP address, etc.',
