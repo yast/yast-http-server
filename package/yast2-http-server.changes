@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Nov  1 12:50:06 CET 2004 - visnov@suse.cz
+
+- agent should not crash on errors (#46323)
+- fix import of firewall and its handling in autoyast UI 
+
+-------------------------------------------------------------------
 Tue Oct 19 15:09:43 CEST 2004 - locilka@suse.cz
 
 - using global text-messages anywhere it is possible
