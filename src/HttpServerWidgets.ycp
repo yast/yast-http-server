@@ -193,7 +193,7 @@ map<string, any> overview_widget = $[
 		`PushButton ( `id(`edit), Label::EditButton ()),
 		`HStretch(),
 		// menu button label
-        	`MenuButton( _("&Log Files"),
+        	`MenuButton( `id(`menu), _("&Log Files"),
             	    // menu button item
             	    [ `item( `id( `show_access_log ), _("Show &Access Log") ),
             	    // menu button item
@@ -427,6 +427,7 @@ global symbol handleModules (any key, map event);
 global void initListenSettings (any key);
 global symbol handleListenSettings (any key, map event);
 global void initServiceStatus (any key);
+global void handleServiceStatus (any key, map event);
 global void storeServiceStatus (any key, map event);
 global void initAdaptFirewall (any key);
 global void storeAdaptFirewall (any opt_id, map event);
@@ -650,6 +651,7 @@ global map widgets = $[
 		    [ "enabled", _("Enabled") ]
 		],
 		"init"	: HttpServerWidgets::initServiceStatus,
+		"handle" : HttpServerWidgets::handleServiceStatus,
 		"store"	 : HttpServerWidgets::storeServiceStatus,
 		"handle_events" : [ "enabled", "disabled" ],
 		"opt" : [ `notify ],
@@ -1346,6 +1348,16 @@ listen cannot be empty.") );
 	HttpServer::modified = true;
     }
 
+    global void handleServiceStatus (any key, map event)
+    {
+	// enable/disable overview widget
+	boolean enable = (boolean)UI::QueryWidget (`id("enabled"), `Value );
+
+	UI::ChangeWidget (`overview_table, `Enabled, enable);	
+	UI::ChangeWidget (`edit, `Enabled, enable);	
+	UI::ChangeWidget (`menu, `Enabled, enable);	
+    }
+
 // ************************************ Adapt firewall widget ********************
 
     /**
@@ -1381,7 +1393,7 @@ string __duplicate_servername = _("The server name is already in configured.");
 // error message - the entered ip address is already configured for another virtual host
 string __duplicate_ipaddress = _("The IP address is already configured.");
 // error message - the entered ip address is not found
-string __duplicate_ipaddress = _("The IP address is not configured
+string __nonconfigured_ipaddress = _("The IP address is not configured
 on this machine.");
 
 /* EOF */
