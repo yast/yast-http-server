@@ -252,7 +252,14 @@ if(size(args) > 0) {
 }
 
 // check rpms
-if( !Require::RequireAndConflictTarget( HttpServer::required_packages, [],
+list required = HttpServer::required_packages;
+
+if( !Require::IsAnyPackageInstalledTarget( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
+    // add a default MPM - prefork because of the PHP4 compatibility
+    required = union (required, ["apache2-prefork"] );
+}
+
+if( !Require::RequireAndConflictTarget( required, [],
     // notification about package needed 1/2
     _("<p>To configure the HTTP server, the <b>%1</b> packages must be installed.</p>") +
     // notification about package needed 2/2

@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Sep 12 09:29:21 CEST 2003 - visnov@suse.de
+
+- first test installed MPMs, then try to install at least one (#30567)
+- 2.8.12
+
+-------------------------------------------------------------------
 Mon Sep  8 21:17:15 CEST 2003 - nashif@suse.de
 
 - #30291: return list of required packages when autoinstalling

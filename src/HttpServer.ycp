@@ -30,7 +30,7 @@ include "http-server/routines.ycp";
 /**
  * Required packages
  */
-global list required_packages = ["apache2", "apache2-prefork", "apache2-metuxmpm", "apache2-worker"];
+global list required_packages = ["apache2"];
 
 /**
  * Abort function
