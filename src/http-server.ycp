@@ -19,6 +19,7 @@ textdomain "http-server";
 
 import "HttpServer";
 import "Require";
+import "Report";
 
 include "commandline/commandline.ycp";
 

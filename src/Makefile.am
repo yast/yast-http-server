@@ -25,4 +25,4 @@ module_DATA =			\
 	HttpServer.ycp		\
 	HttpServerWidgets.ycp
 
-EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA)
+EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA) $(ydata_DATA)
