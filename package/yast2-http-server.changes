@@ -1,7 +1,8 @@
 -------------------------------------------------------------------
 Mon Apr  5 10:53:55 CEST 2004 - ug@suse.de
 
-- order of mod_ldap and mod_auth_ldap fixed
+- order of mod_ldap and mod_auth_ldap fixed (#31436 again)
+- 2.9.20
 
 -------------------------------------------------------------------
 Fri Apr  2 16:26:05 CEST 2004 - visnov@suse.cz
