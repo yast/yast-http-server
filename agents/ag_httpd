@@ -204,16 +204,16 @@ while ( <STDIN> )
 		foreach my $i ( @custom_log ) {
 		    print $newconf "CustomLog $i\n";
 		}
-		if( $serveradmin ne "" ) {
+		if( defined $serveradmin && $serveradmin ne "" ) {
 		    print $newconf "ServerAdmin $serveradmin\n";
 		}
-		if( $error_log ne "" ) {
+		if( defined $error_log && $error_log ne "" ) {
 		    print $newconf "ErrorLog $error_log\n";
 		}
-		if( $servername ne "" ) {
+		if( defined $servername && $servername ne "" ) {
 		    print $newconf "ServerName $servername\n";
 		}
-		if( $documentroot ne "" ) {
+		if( defined $documentroot && $documentroot ne "" ) {
 		    print $newconf "DocumentRoot $documentroot\n";
 		}
 	    

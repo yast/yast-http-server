@@ -22,7 +22,7 @@ Read	.probe.system nil
 Read	.target.ycp "/usr/share/YaST2/data/all-apache2-modules.ycp" nil
 Return	nil
 Dump	true
-Dump	$["enabled":true, "firewall":true]
+Dump	$["enabled":true, "firewall":true, "firewall_started":false]
 Return	nil
 Dump	true
-Dump	$["enabled":false, "firewall":true]
+Dump	$["enabled":false, "firewall":true, "firewall_started":false]
