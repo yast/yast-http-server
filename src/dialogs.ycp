@@ -133,7 +133,7 @@
 	    `VSpacing (1)
 	), `HSpacing (1));
 	// dialog caption for Listen statements configuration
-	string caption = _("Listen ports and addresses");
+	string caption = _("Listen Ports and Addresses");
 	string help = CWM::MergeHelps (w);
 
 	Wizard::SetContentsButtons (caption, contents, help,
@@ -159,7 +159,7 @@
 			)
 		    ),
 		    // translators: textentry, administrator's e-mail for the new host
-		    `TextEntry( `id( `admin ), _("&Administrator E-mail:") )
+		    `TextEntry( `id( `admin ), _("&Administrator E-Mail:") )
 		)),
 	    `VSpacing (1),
 	    `Frame(
@@ -231,6 +231,18 @@
         	    continue;
     		}
 		
+		if ( size(admin) == 0 )
+		{
+		
+		    // translators: error popup
+		    string invalid = _("Administrator E-Mail is invalid.");
+		    
+		    // translators: error popup
+		    Popup::Error ( _("Administrator E-Mail cannot be empty.") );
+		    ret = nil;
+        	    continue;
+		}
+		
 		list< map<string,any> > descr = [
 			$[ "KEY": "DocumentRoot", "VALUE" : documentroot ],
 			$[ "KEY": "ServerName", "VALUE" : servername ],
@@ -240,13 +252,22 @@
 			$[ "KEY": "SSL", "VALUE" : 0 ],	// No SSL
 		    ];
 		    
-		if ( !HttpServerWidgets::validate_server (descr) )
+		if ( !HttpServerWidgets::validate_server (nil, descr) )
 		{
 		    ret = nil;
 		    continue;
 		}
+		
+		any result = YaST::HTTPDData::CreateHost ( ip+"/"+servername, descr );
 
-		YaST::HTTPDData::CreateHost ( ip+"/"+servername, descr );
+		y2milestone ("%1", result);
+		if ( result == nil)
+		{
+		    map<string,string> error = (map<string,string>) YaST::HTTPDData::Error ();
+		    Popup::Error ( error["summary"]:"" );
+		    ret = nil;
+		    continue;
+		}
 		    
 		HttpServer::modified = true;
 	    }
@@ -281,9 +302,11 @@
 	    Label::BackButton (), Label::OKButton ());
 
 	UI::ReplaceWidget( `id(`_tp_table_repl),
-	    // menu button label
-	    // SLES: `PushButton( `id( `generate_certificate ), _("&Generate Certificate") ) );
-	    `Empty() );
+	    `MenuButton( _("Certificates"),
+		[
+		    `item (`id( `import_certificate ), _("&Import Server Certificate...") ),
+		    `item (`id( `common_certificate ), _("&Use Common Server Certificate") ),
+		]));
 
 	return CWM::Run (w, $[`abort : Abort]);
     }

@@ -37,6 +37,18 @@ map<string, any> ssl_options = (map<string, any>)SCR::Read (.target.ycp, Directo
 
 string item2listen( string network, string port );
 
+boolean CheckCommonServerCertificate () {
+    integer s = (integer)SCR::Read(.target.size, "/etc/ssl/servercerts/servercert.pem");
+    if (s <= 0) {
+        return false;
+    }
+    s = (integer)SCR::Read(.target.size, "/etc/ssl/servercerts/serverkey.pem");
+    if (s <= 0) {
+        return false;
+    }
+    return true;
+}
+
 global any get_host_value ( string keyword, list< map<string, any> > host, any default )
 {
     any res = default;
@@ -129,7 +141,7 @@ global boolean validate_serverip (string id, string key, map event)
     }
 }
 
-global boolean validate_server (list < map<string,any> > server )
+global boolean validate_server (string hostid, list < map<string,any> > server )
 {
     list <string> hosts = YaST::HTTPDData::GetHostsList ();
     
@@ -140,6 +152,11 @@ global boolean validate_server (list < map<string,any> > server )
     boolean res = true;
     
     foreach (string host, hosts, ``{
+	if ( host == hostid )
+	{
+	    // skip ourself
+	    continue;
+	}
 	list< map<string,any> > desc = YaST::HTTPDData::GetHost (host);
 	
 	// find out the server name
@@ -149,7 +166,7 @@ global boolean validate_server (list < map<string,any> > server )
 	{
 	    // error message - the entered server name is already configured 
 	    // in another virtual host
-	    Report::Error (_("The server name is already in configured."));
+	    Report::Error (_("The server name entered is already configured."));
 	    res = false;
 	    break;
 	}
@@ -171,8 +188,21 @@ global boolean validate_server (list < map<string,any> > server )
 	}
     });
     
+    if ( size ( (string)get_host_value ( "ServerAdmin", server, "" )) == 0 )
+    {
+	Report::Error ( _("Administrator E-Mail cannot be empty.") );
+	res = false;
+    }
+    
     return res;
 }
+
+global boolean validate_server_fnc (string id, map key) 
+{
+    return validate_server ( currenthost, YaST::HTTPDData::GetHost (currenthost) );
+}
+
+
 
 /*********************************** inital overview table ********************************/
 
@@ -324,17 +354,18 @@ map<string,string> AskNewInfo (string servername, string ip)
 	    `Label( _("The current default host will be replaced by 
 the new host and will become a virtual host.
 
-But, the current default host does not have
+However, the current default host does not have
 the IP address or the server name specified.
 Therefore, it is not possible to use it as 
 a virtual host. Verify the suggested values below 
 and click OK to continue with the default host
 switch. Otherwise click Cancel not to change
-the default host.")),
+the default host.
+")),
 	    // translators: textentry to set the host name
 	    `TextEntry (`id ("servername"), _("Server &Name:"), servername),
 	    // translators: textentry to set the host IP address
-	    `Left( `ComboBox( `id("ip"), `opt(`editable), _("Server &IP address:"), ips ) ),
+	    `Left( `ComboBox( `id("ip"), `opt(`editable), _("Server &IP Address:"), ips ) ),
 	    `VSpacing(0.5),
 	    `HBox( `PushButton (`id(`ok), `opt(`default), Label::ContinueButton ()),
 		`PushButton (`id(`cancel), Label::CancelButton ()) )
@@ -460,7 +491,7 @@ global string HostName (string id)
 {
     string res = (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost(id), id );
     // translators: human-readable "default host"
-    if (id == "default" && res == "default" ) res = _("Default host");
+    if (id == "default" && res == "default" ) res = _("Default Host");
     return res;
 }
 
@@ -512,7 +543,7 @@ global map<string,map> popups = $[
 		    "label"  : _("Server Name"),
 		    "widget" : `textentry,
 		    "validate_type" : `function,
-		    "validate_function" : validate_servername,	    
+		    "validate_function" : validate_servername,
 		],
 	    ],
 	    "DocumentRoot" : $[
@@ -596,6 +627,8 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	, $[
 	    "init" : HttpServerWidgets::HostInit,
 	    "handle" : HttpServerWidgets::handleHostTable,
+	    "validate_type" : `function,
+	    "validate_function" : validate_server_fnc,
 	    "options" : union( (map)SCR::Read (.target.ycp, Directory::datadir + "/all-host-options.ycp"), popups ),
 	    "ids" : HttpServerWidgets::HostTableContents,
 	    "id2key" : HttpServerWidgets::HostId2Key,
@@ -740,7 +773,7 @@ global map widgets = $[
 	    "firewall_adapt" : $[
 		"widget" : `checkbox,
 		// translators: checkbox label
-		"label"	 : _("Adapt &Firewall"),
+		"label"	 : _("Open &Firewall on Selected Ports"),
 		"help"	 : HELPS["firewall_adapt"]:"",
 		"init"	: HttpServerWidgets::initAdaptFirewall,
 		"store"	 : HttpServerWidgets::storeAdaptFirewall,
@@ -758,9 +791,57 @@ global map widgets = $[
 
 global symbol handleSSLTable( string key, map event )
 {
-    if ( event["ID"]:nil == `generate_certificate )
+    if ( event["ID"]:nil == `import_certificate )
     {
-	// SLES: generate it
+
+	string pem = UI::AskForExistingFile ("/", "*.pem", _("Select Certificate"));
+	if (pem == nil) 
+	{
+	    // cancel	    
+	    return nil;
+	}
+	
+	string cert = (string) SCR::Read ( .target.string, pem );
+	if (cert != nil)
+	{
+	    // pass the data to the backend
+	    YaST::HTTPDData::SetCert ( currenthost, "CERT", cert );
+	    
+	    // get the correct host name
+	    list<map<string,any> > host = YaST::HTTPDData::GetHost (currenthost);
+	    host = set_host_value( "SSLCertificateFile", host, 
+		"/etc/apache2/ssl.crt/"
+		+ (string)get_host_value ("ServerName", host, "default")
+		+ "-cert.pem");
+	    YaST::HTTPDData::ModifyHost (currenthost, host);
+	    TablePopup::TableInitWrapper(key);
+	    return nil;
+	}
+	
+	// translators: error message un failed certificate import
+	Report::Error ( sformat( _("Cannot import certificate
+%1"), pem));	
+    }
+    else if (event["ID"]:nil == `common_certificate )
+    {
+	string pem = "/etc/ssl/servercerts/servercert.pem";
+	if ( !CheckCommonServerCertificate () )
+	{
+	    pem = UI::AskForExistingFile ("/etc/ssl/servercerts", "*.pem", _("Select Certificate"));
+	    if (pem == nil)
+	    {
+		// cancelled
+		return nil;
+	    }
+	}
+	else
+	{
+	    list<map<string,any> > host = YaST::HTTPDData::GetHost (currenthost);
+	    host = set_host_value( "SSLCertificateFile", host, "/etc/ssl/servercerts/servercert.pem");
+	    host = set_host_value( "SSLCertificateKeyFile", host, "/etc/ssl/servercerts/serverkey.pem");
+	    YaST::HTTPDData::ModifyHost (currenthost, host);
+	}
+	TablePopup::TableInitWrapper(key);
 	return nil;
     }
     return TablePopup::TableHandle( sslwidget, key, event );
@@ -943,22 +1024,22 @@ define string item2listen( string network, string port ) ``{
       * @return value for wizard sequencer, always nil
       */
     global define symbol showErrorLogPopup (any key, map event) ``{
-	string log = (string) get_host_value( "ErrorLog", YaST::HTTPDData::GetHost(currenthost), "/var/log/apache2/error_log");
+	string log = (string) select( YaST::HTTPDData::GetErrorLogFiles( [currenthost] ), 0, "/var/log/apache2/error_log" );
 	
 	// strip the log format, if present
 	log = select( splitstring( log, " " ), 0, "/var/log/apache2/error_log" );
 
 	LogView::Display ($[
-	    "command" : sformat( "tail -f -n +100  %1 | /usr/sbin/logresolve2", log ),
+	    "command" : sformat( "tail -f %1 -n 100 | /usr/sbin/logresolve2", log ),
 	    "save" : true,
 	    "actions" : [
 		// menubutton entry, try to keep short
-		[ _("Reload HTTP Server"),
+		[ _("&Reload HTTP Server"),
 		    ``{SCR::Execute (.target.bash,
 			"rcapache2 reload");}],
 		// menubutton entry, try to keep short
-		[ _("Save Settings and Restart HTTP Server"),
-		    ``{HttpServer::Write();} ],
+		[ _("Save Settings and Re&start HTTP Server"),
+		    HttpServer::Write, true ],
 	    ],
 	]);
 	return nil;
@@ -1315,11 +1396,11 @@ define string item2listen( string network, string port ) ``{
 		    Report::Error( _("The module is already in the list.") );
 		} else {
 		    YaST::HTTPDData::ModifyModuleList( [mod], true );
-		    HttpServerWidgets::initModules(nil);
 		    HttpServer::modified = true;
 		}
 	    }
 	    UI::CloseDialog();
+	    HttpServerWidgets::initModules(nil);
         }
 
     }
@@ -1354,7 +1435,7 @@ define string item2listen( string network, string port ) ``{
     global define symbol handleListenSettings (string key, map event) ``{
 	UI::SetFocus (`id (`listen));
 	integer current = (integer) UI::QueryWidget (`id (`listen), `CurrentItem);
-	term currentitem = (term) UI::QueryWidget( `id(`listen), `Item(current) );
+	term currentitem = current != nil ? (term) UI::QueryWidget( `id(`listen), `Item(current) ) : `item( -1, "", "");
 	string network = (string) currentitem[1]:nil;
 	// translators: all network addresses Listen type
 	if( network == _("All Addresses") ) network = "";

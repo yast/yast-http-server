@@ -3,6 +3,9 @@ use YaST::YCP;
 BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
 use YaPI::HTTPDModules;
 use YaPI::HTTPD;
+use YaST::httpdUtils;
+
+@YaST::HTTPDData::ISA = qw( YaST::httpdUtils );
 
 our $VERSION="0.01";
 our %TYPEINFO;
@@ -11,6 +14,7 @@ use strict;
 use Errno qw(ENOENT);
 
 my %hosts;
+my %certs;
 my %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
 
 
@@ -107,6 +111,15 @@ sub ReadHosts {
     my $self = shift;
     foreach my $hostid ( @{YaPI::HTTPD->GetHostsList()} ) {
     	$hosts{$hostid} = YaPI::HTTPD->GetHost($hostid) if( $hostid );
+        if( not $self->FetchHostKey($hostid, 'SSLCACertificateFile') ) {
+            $certs{$hostid}->{CA} = YaPI::HTTPD->ReadServerCA($hostid);
+        }
+        if( not $self->FetchHostKey($hostid, 'SSLCertificateFile') ) {
+            $certs{$hostid}->{CERT} = YaPI::HTTPD->ReadServerCert($hostid);
+        } 
+        if( not $self->FetchHostKey($hostid, 'SSLCertificateKeyFile') ) {
+            $certs{$hostid}->{KEY} = YaPI::HTTPD->ReadServerKey($hostid);
+        }
     }
     return 1;
 }
@@ -175,6 +188,10 @@ sub ModifyHost {
     my $hostid = shift;
     my $hostdata = shift;
 
+    if( ! $self->checkHostmap( $hostdata ) ) {
+        return undef;
+    }
+
     my $dr;
     my $vbn;
     foreach my $h ( @{$hosts{$hostid}} ) {
@@ -224,6 +241,10 @@ sub CreateHost {
     my $self = shift;
     my $hostid = shift;
     my $hostdata = shift;
+
+    if( ! $self->checkHostmap( $hostdata ) ) {
+        return undef;
+    }
 
     foreach my $h ( @$hostdata ) {
         if( $h->{KEY} eq 'DocumentRoot' ) {
@@ -294,17 +315,21 @@ sub DeleteHost {
 sub WriteHosts {
     my $self = shift;
     foreach my $hostid( keys( %{$dirty{DEL}} ) ) {
+        delete($certs{$hostid});
         YaPI::HTTPD->DeleteHost( $hostid );
     }
     if( $dirty{MODIFIED}->{'default'} ) {
         YaPI::HTTPD->ModifyHost('default', $hosts{'default'} );
+        $self->WriteCert( 'default' );
     }
     foreach my $hostid( keys( %{$dirty{MODIFIED}} ) ) {
         next if( $hostid eq 'default' );
         YaPI::HTTPD->ModifyHost( $hostid, $hosts{$hostid} );
+        $self->WriteCert( $hostid );
     }
     foreach my $hostid( keys( %{$dirty{NEW}} ) ) {
         YaPI::HTTPD->CreateHost( $hostid, $hosts{$hostid} );
+        $self->WriteCert( $hostid );
     }
 
     %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
@@ -617,142 +642,96 @@ sub GetTransferLogFiles {
 # apache2 logs end
 #######################################################
 
-sub run {
-    my $self = __PACKAGE__;
-    print "-------------- ReadHosts\n";
-    $self->ReadHosts();
 
-    print "-------------- GetHostsList\n";
-    foreach my $h ( $self->GetHostsList() ) {
-        print "ID: $h\n";
+#######################################################
+# apache2 cert stuff 
+#######################################################
+
+sub GetCert {
+    my $self = shift;
+    my $hostid = shift;
+    my $what = shift;
+    my $ret = undef;
+
+    if( $what =~ /^CERT|KEY|CA/ and exists($certs{$hostid}) ) {
+        $ret = $certs{$hostid}->{$what};
     }
+    return $ret;
+}
 
-    print "-------------- ModifyHost Number 0\n";
-    my $hostid = "default";
-    my @hostArr = $self->GetHost( $hostid );
-    $self->ModifyHost( $hostid, \@hostArr );
 
-    print "-------------- CreateHost\n";
-    my @temp = (
-                { KEY => "ServerName",    VALUE => 'createTest2.suse.de' },
-                { KEY => "VirtualByName", VALUE => 1 },
-                { KEY => "ServerAdmin",   VALUE => 'no@one.de' }
-                );
-    $self->CreateHost( '192.168.1.2/createTest2.suse.de', \@temp );
+BEGIN { $TYPEINFO{SetCert} = ["function", "boolean", "string", "string", "string" ]; }
+sub SetCert {
+    my $self   = shift;
+    my $hostid = shift;
+    my $what   = shift;
+    my $data   = shift;
+    my $ret = 0;
 
-    print "-------------- GetHost created host\n";
-    @hostArr = $self->GetHost( '192.168.1.2/createTest2.suse.de' );
-    use Data::Dumper;
-    print Data::Dumper->Dump( [ \@hostArr ] );
-    WriteHosts();
-
-    system("cat /etc/apache2/vhosts.d/yast2_vhosts.conf");
-
-    print "-------------- DeleteHost Number 0\n";
-    $self->DeleteHost( '192.168.1.2/createTest2.suse.de' );
-
-    $self->WriteHosts();
-
-    print "-------------- show module list\n";
-    foreach my $mod ( $self->GetModuleList() ) {
-        print "MOD: $mod\n";
+    if( $what =~ /^CERT|KEY|CA/ ) {
+        if( $what eq 'CERT' and $data =~ /PRIVATE KEY/ ) {
+            delete($certs{$hostid}->{KEY});
+        }
+        $certs{$hostid}->{$what} = $data;
+        $dirty{MODIFIED}->{$hostid} = 1;
+        $ret = 1;
     }
+    return $ret;
+}
 
-    print "-------------- show known modules\n";
-    foreach my $mod ( $self->GetKnownModules() ) {
-        print "KNOWN MOD: $mod->{name}\n";
-    }
+BEGIN { $TYPEINFO{WriteCert} = ["function", "void", "string" ]; }
+sub WriteCert {
+    my $self = shift;
+    my $hostid = shift;
 
-    print "-------------- modify module list\n";
-    $self->ModifyModuleList( [ 'cgi' ], 0 );
-    $self->ModifyModuleList( [ 'unknownModule' ], 1 );
-
-    print "-------------- show module list\n";
-    foreach my $mod ( $self->GetModuleList() ) {
-        print "MOD: $mod\n";
-    }
-
-#    ModifyModuleList( [ 'cgi' ], 1 );
-    $self->WriteModuleList();
-
-    print "-------------- show known selections\n";
-    foreach my $mod ( $self->GetKnownModulSelections() ) {
-        print "KNOWN SEL: $mod->{id}\n";
-    }
-
-    print "-------------- show active selections\n";
-    foreach my $sel ( $self->GetModuleSelectionsList() ) {
-        print "ACTIVE SEL: $sel\n";
-    }
-
-    print "-------------- show module list\n";
-    foreach my $mod ( $self->GetModuleList() ) {
-        print "MOD: $mod\n";
-    }
-
-    print "-------------- modify active selections\n";
-    $self->ModifyModuleSelectionList( [ 'TestSel' ], 0 );
-
-    print "-------------- show active selections\n";
-    foreach my $sel ( $self->GetModuleSelectionsList() ) {
-        print "ACTIVE SEL: $sel\n";
-    }
-
-    print "-------------- show module list\n";
-    foreach my $mod ( $self->GetModuleList() ) {
-        print "MOD: $mod\n";
-    }
-
-
-    $self->ModifyModuleSelectionList( [ 'TestSel' ], 1 );
-
-
-    print "-------------- activate apache2\n";
-    $self->ModifyService(1);
-
-    print "-------------- get listen\n";
-    foreach my $l ( $self->GetCurrentListen() ) {
-        print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
-        print $l->{PORT}."\n";
-    }
-
-    print "-------------- del listen\n";
-    $self->DeleteListen( 443,443,'' );
-    $self->DeleteListen( 80,80,"12.34.56.78" );
-    print "-------------- get listen\n";
-    foreach my $l ( $self->GetCurrentListen() ) {
-        print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
-        print $l->{PORT}."\n";
-    }
-
-    print "-------------- create listen\n";
-    $self->CreateListen( 443,443,'' );
-    $self->CreateListen( 80,80,"12.34.56.78" );
-
-    print "-------------- get listen\n";
-    foreach my $l ( $self->GetCurrentListen() ) {
-        print "$l->{ADDRESS}:" if( $l->{ADDRESS} );
-        print $l->{PORT}."\n";
-    }
-
-
-    print "--------------set ModuleSelections\n";
-    #$self->ModifyModuleSelectionList( [ 'mod_test1', 'mod_test2', 'mod_test3' ], 1 );
-    #$self->ModifyModuleSelectionList( [ 'mod_test3' ], 0 );
-
-    print "-------------- get ModuleSelections\n";
-    #foreach my $sel ( $self->GetModuleSelectionsList() ) {
-    #    print "SEL: $sel\n";
-    #}
-
-    print "--------------trigger error\n";
-    my @host = $self->GetHost( 'will.not.be.found' );
-    if( @host and not(defined($host[0])) ) {
-        my %error = $self->Error();
-        while( my ($k,$v) = each(%error) ) {
-            print "ERROR: $k = $v\n";
+    if( exists($certs{$hostid}) ) {
+        if( exists( $certs{$hostid}->{'CERT'} ) ) {
+            YaPI::HTTPD->WriteServerCert( $hostid, $certs{$hostid}->{'CERT'} );
+        }
+        if( exists( $certs{$hostid}->{'KEY'} ) ) {
+            YaPI::HTTPD->WriteServerKey( $hostid, $certs{$hostid}->{'KEY'} );
+        }
+        if( exists( $certs{$hostid}->{'CA'} ) ) {
+            YaPI::HTTPD->WriteServerCA( $hostid, $certs{$hostid}->{'CA'} );
         }
     }
-    print "\n";
 }
+
+#######################################################
+# apache2 cert stuff end
+#######################################################
+
+
+# void InitializeDefaults ();
+BEGIN { $TYPEINFO{InitializeDefaults} = ["function", "void" ]; }
+sub InitializeDefaults {
+    use Data::Dumper ;
+    
+    my $self = shift;
+
+    my @knownModules = @{YaPI::HTTPD->GetKnownModules()}; 
+    
+    @oldModules = ();
+    %newModules = ();
+    %delModules = ();
+
+    foreach my $mod ( @knownModules ) {
+	my %module_hash = %{ $mod };
+	
+	if ( $module_hash{"default"} )
+	{
+	    push(@oldModules, $module_hash{"name"});
+	}
+    }
+    
+    @oldListen = ();
+    %newListen = ();
+    %delListen = ();
+
+    $serviceState = 0;
+
+    %hosts = ();
+    %certs = ();
+}
+
 1;

@@ -160,6 +160,38 @@ global define boolean Read() ``{
 	string ip = NetworkDevices::GetValue(dev, "IPADDR");
 	if(ip != nil && ip != "") ip2device[ip] = dev;
     });
+    // add DHCP ones, if we can find out the current IP
+    devs = NetworkDevices::Locate("BOOTPROTO", "dhcp");
+    foreach(string dev, devs, {
+	// first, convert to the current name
+	map output = (map)SCR::Execute (.target.bash_output,
+    	"/sbin/getcfg-interface " + dev);
+
+        if (output["exit"]:-1 != 0 || output["stdout"]:"" == "0" )
+	{
+	    continue;
+	}
+
+        string device = output["stdout"]:"";
+
+	output = (map)SCR::Execute (.target.bash_output, "/sbin/ifconfig "+device, $["LC_MESSAGES":"C"] );
+	if (output["exit"]:-1 == 0)
+	{
+	    // lookup the correct line first
+	    list<string> line = splitstring ( output["stdout"]:"", "\n" );
+	    string addr = nil;
+	    foreach ( string ln, line, ``{
+		if ( regexpmatch ( ln, "^[ \t]*inet addr:" ) )
+		{
+		    addr = regexpsub ( ln, "^[ \t]*inet addr:([0-9\\.]+)[ \t]*", "\\1" );
+		    y2milestone ("Found addr: %1",addr);
+		    break;
+		}
+	    });
+	    
+	    if(addr != nil && addr != "") ip2device[addr] = dev;
+	}
+    });
 
     y2milestone ("Mapping of IP addresses and network devices: %1", ip2device);    
 
@@ -258,6 +290,24 @@ Install them now?
 	// translators: error message
 	Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
     }
+    
+    if ( YaST::HTTPDData::GetService () )
+    {
+	// this will reload the configuration and start httpd
+	if ( !Service::Restart ("apache2") )
+	{
+	    // translators: error message
+	    Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
+	}
+    }
+    else
+    {
+	if ( !Service::Stop ("apache2") )
+	{
+	    // translators: error message
+	    Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
+	}
+    }
 
     // translators: progress finished
     ProgressNextStage(_("Finished"));
@@ -287,6 +337,9 @@ map<string,any> find_known_module (list< map<string,any> > known_modules, string
  * @return boolean True on success
  */
 global define boolean Import (map s) ``{
+
+    YaST::HTTPDData::InitializeDefaults ();
+    
     string version = s["version"]:"unknown";
     
     // setup modules
@@ -341,7 +394,7 @@ This can cause inconsistent module configuration."), mod));
 	}
 	else
 	{
-	    YaST::HTTPDData::CreateListen(l["PORT"]:0, l["PORT"]:0, l["ADDRESS"]:"" ); 
+	    YaST::HTTPDData::CreateListen(tointeger(l["PORT"]:"0"), tointeger(l["PORT"]:"0"), l["ADDRESS"]:"" ); 
 	}
     });
 
@@ -374,26 +427,33 @@ This can cause inconsistent module configuration."), mod));
  */
 global define map Export () ``{
     list < map <string,any> > known_modules = YaST::HTTPDData::GetKnownModules();
+    
     list <string> enabled_modules = YaST::HTTPDData::GetModuleList();
+    
+    y2milestone ("Enabled modules: %1", enabled_modules);
 
     // walk over the known modules    
     list <map <string,any> > modules = maplist (map<string, any> desc, known_modules, ``(
 	$[  "name" : desc["name"]:"", 
-	    "change" : desc["default"]:nil == "1" ? 
+	    "change" : (desc["default"]:nil == "1") ? 
 	    // default is true
 	    (
-		contains (enabled_modules, desc["name"]:"") ? "nochange" : "enable"
+		contains (enabled_modules, desc["name"]:"") ? "nochange" : "disable"
 	    )
 	    :
 	    // default is false
 	    (
-		contains (enabled_modules, desc["name"]:"") ? "disable" : "nochange"
+		contains (enabled_modules, desc["name"]:"") ? "enable" : "nochange"
 	    ),
 	    "default" : desc["default"]: "1"
-	] ));
+	]));
+	
+    // filter out not changed
+    modules = filter ( map<string,any> desc, modules, ``(desc["change"]:nil != "nochange") );
+    
     // store the user defined ones
     foreach (string mod, enabled_modules, ``{
-	if( find_known_module(known_modules, mod) != nil )
+	if( find_known_module(known_modules, mod) == nil )
 	{
 	    // user-defined
 	    modules = add (modules, $[
