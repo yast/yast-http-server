@@ -196,7 +196,7 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 220
+                    position  => 355
     },
     'cache' => {
                     summary   => 'Content cache keyed to URIs',
