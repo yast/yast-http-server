@@ -14,9 +14,12 @@ textdomain "http-server";
 import "Label";
 import "Sequencer";
 import "Wizard";
+import "Directory";
 
 include "http-server/complex.ycp";
 include "http-server/dialogs.ycp";
+include "http-server/wizard-dialog.ycp";
+
 
 /**
  * Main workflow of the http-server configuration
@@ -102,11 +105,71 @@ symbol MainSequence() {
  * Whole configuration of http-server
  * @return sequence result
  */
+
+symbol WizardSequence() {
+	map aliases = $[
+		"network-device":``(WizardSequence1()),
+	        "modules"       :``(WizardSequence2()),
+                "defhost"       :``(WizardSequence3()),
+                "hosts"	        :``(WizardSequence4()),
+                "summary"       :``(WizardSequence5()),
+		"addhost"		: ``(AddHost()),
+	        "ssl"           :   ``( SSLDialog () ),
+	        "main"  :   ``( MainSequence() )
+
+
+	];
+
+	map sequence =	$[
+		"ws_start" : "network-device",
+		"network-device"  : $[
+		`abort	   : `abort,
+		`next	   : "modules"
+		],
+               "modules"  : $[
+                `abort     : `abort,
+                `next      : "defhost"
+		],
+               "defhost"  : $[
+                `abort     : `abort,
+                `next      : "hosts",
+		`ssl	   : "ssl"
+                ],
+	       "ssl"	  : $[
+		`abort	  : `abort,
+		`next	  : "defhost"
+		],
+               "hosts"  : $[
+                `abort     : `abort,
+                `next      : "summary",
+                `add        : "addhost"
+                ],
+		"addhost"  : $[
+		`abort	   : `abort,
+		`next	   : "hosts"
+		],
+               "summary"  : $[
+                `abort     : `abort,
+		`next	  : `next,
+		`expert	  : "main"
+                ],
+	       "main"	  : $[
+		`abort	  : `abort, 
+		`next	  : `next
+		]
+	];
+
+        symbol ret = Sequencer::Run(aliases, sequence);
+        return ret;
+}
+
+
 boolean HttpServerSequence() {
 
     map aliases = $[
 	"read"	: [ ``( ReadDialog() ), true ],
 	"main"	:   ``( MainSequence() ),
+	"wizard" : ``( WizardSequence() ),
 	"write"	: [ ``( WriteDialog() ), true ]
     ];
 
@@ -120,6 +183,10 @@ boolean HttpServerSequence() {
 	    `abort	: `abort,
 	    `next	: "write"
 	],
+	"wizard" : $[
+	    `abort	: `abort,
+	    `next	: "write"
+	],
 	"write" : $[
 	    `abort	: `abort,
 	    `next	: `next
@@ -128,6 +195,12 @@ boolean HttpServerSequence() {
 
     Wizard::CreateDialog();
     Wizard::SetDesktopIcon("http-server");
+
+       if ($[] == SCR::Read (.target.stat, Directory::vardir + "/http_server"))
+        {
+y2internal("wizard mode");
+	 sequence["read", `next] = "wizard";
+        }
 
     symbol ret = Sequencer::Run(aliases, sequence);
 

@@ -23,9 +23,25 @@
     import "CWM";
     import "Wizard";
 
+
+
+
+
+
+    /**
+      * Ask for confirmation (always)
+      * @return true if abort is confirmed
+      */
+    boolean ReallyAbortAlways () ``{
+        return Popup::ReallyAbort (true);
+    }
+
+
     boolean Abort () {
 	return ( !HttpServer::modified || Popup::ReallyAbort(true) );
     }
+
+
 
     /**
       * Run server overview dialog
@@ -73,7 +89,12 @@
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 
-	return CWM::Run (w, $[`abort : Abort]);
+	symbol ret = CWM::Run (w, $[`abort : Abort]);
+	if (ret == `back) {
+y2internal("Pressing back button %1", HttpServerWidgets::currenthost);
+	HttpServerWidgets::setHostOptions(nil);
+			}
+	return ret;
     }
 
     /**
@@ -301,7 +322,7 @@
 
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
-
+y2internal("Product features - %1", ProductFeatures::ui_mode);
 	if (ProductFeatures::ui_mode != "simple")
 	{
 	    UI::ReplaceWidget( `id(`_tp_table_repl),

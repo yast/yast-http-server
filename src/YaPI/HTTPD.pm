@@ -306,6 +306,7 @@ use YaST::httpdUtils;
 YaST::YCP::Import ("SCR");
 YaST::YCP::Import ("Service");
 YaST::YCP::Import ("SuSEFirewall");
+textdomain "http-server";
 
 #######################################################
 # temoprary solution end
@@ -1250,7 +1251,9 @@ sub GetModulePackages {
     my %uniq;
 
     foreach my $mod ( @$mods ) {
+    if ( exists($YaPI::HTTPDModules::modules{$mod}) ) {
         @uniq{@{$YaPI::HTTPDModules::modules{$mod}->{packages}}} = ();
+	}
     }
     return [ keys(%uniq) ];
 }

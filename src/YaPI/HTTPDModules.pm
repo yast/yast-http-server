@@ -35,7 +35,7 @@ package YaPI::HTTPDModules;
     'auth_dbm' => {
                     summary   => 'Provides for user authentication using DBM files',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 50,
@@ -73,7 +73,7 @@ package YaPI::HTTPDModules;
     'env' => {
                     summary   => 'Modifies the environment passed to CGI scripts and SSI pages',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 90
@@ -81,7 +81,7 @@ package YaPI::HTTPDModules;
     'expires' => {
                     summary   => 'Generation of Expires HTTP headers according to user-specified criteria',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 100,
@@ -142,7 +142,7 @@ package YaPI::HTTPDModules;
     'suexec' => {
                     summary   => 'Allows CGI scripts to run as a specified user and group',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 0,
@@ -169,7 +169,7 @@ package YaPI::HTTPDModules;
     'auth_anon' => {
                     summary   => 'Allows "anonymous" user access to authenticated areas',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 200,
@@ -185,7 +185,7 @@ package YaPI::HTTPDModules;
     'auth_digest' => {
                     summary   => 'User authentication using MD5 Digest Authentication',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 210
@@ -193,7 +193,7 @@ package YaPI::HTTPDModules;
     'auth_ldap' => {
                     summary   => 'Allows an LDAP directory to be used to store the database for HTTP Basic authentication',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 355
@@ -201,7 +201,7 @@ package YaPI::HTTPDModules;
     'cache' => {
                     summary   => 'Content cache keyed to URIs',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 230
@@ -209,7 +209,7 @@ package YaPI::HTTPDModules;
     'charset_lite' => {
                     summary   => 'Specify character set translation or recoding',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 240
@@ -217,7 +217,7 @@ package YaPI::HTTPDModules;
     'dav' => {
                     summary   => 'Distributed Authoring and Versioning (WebDAV) functionality',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 250,
@@ -230,7 +230,7 @@ package YaPI::HTTPDModules;
     'dav_fs' => {
                     summary   => 'File system provider for mod_dav',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 260,
@@ -241,7 +241,7 @@ package YaPI::HTTPDModules;
     'deflate' => {
                     summary   => 'Compress content before it is delivered to the client',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 270,
@@ -256,7 +256,7 @@ package YaPI::HTTPDModules;
     'disk_cache' => {
                     summary   => 'Content cache storage manager keyed to URIs',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 280
@@ -264,7 +264,7 @@ package YaPI::HTTPDModules;
     'echo' => {
                     summary   => 'A simple echo server to illustrate protocol modules',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 290
@@ -272,7 +272,7 @@ package YaPI::HTTPDModules;
     'ext_filter' => {
                     summary   => 'Pass the response body through an external program before delivery to the client',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 300,
@@ -284,7 +284,7 @@ package YaPI::HTTPDModules;
     'file_cache' => {
                     summary   => 'Caches a static list of files in memory',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 310
@@ -292,7 +292,7 @@ package YaPI::HTTPDModules;
     'headers' => {
                     summary   => 'Customization of HTTP request and response headers',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 320,
@@ -312,7 +312,7 @@ package YaPI::HTTPDModules;
     'info' => {
                     summary   => 'Provides a comprehensive overview of the server configuration',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 340,
@@ -321,7 +321,7 @@ package YaPI::HTTPDModules;
     'ldap' => {
                     summary   => 'LDAP connection pooling and result caching services for use by other LDAP modules',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 350
@@ -329,7 +329,7 @@ package YaPI::HTTPDModules;
     'logio' => {
                     summary   => 'Logging of input and output bytes per request',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 360
@@ -337,7 +337,7 @@ package YaPI::HTTPDModules;
     'mem_cache' => {
                     summary   => 'Content cache keyed to URIs',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 370
@@ -345,7 +345,7 @@ package YaPI::HTTPDModules;
     'mime_magic' => {
                     summary   => 'Determines the MIME type of a file by looking at a few bytes of its contents',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 380,
@@ -354,7 +354,7 @@ package YaPI::HTTPDModules;
     'proxy' => {
                     summary   => 'HTTP/1.1 proxy/gateway server',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 390,
@@ -380,7 +380,7 @@ package YaPI::HTTPDModules;
     'proxy_connect' => {
                     summary   => 'mod_proxy extension for CONNECT request handling',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 400,
@@ -389,7 +389,7 @@ package YaPI::HTTPDModules;
     'proxy_ftp' => {
                     summary   => 'FTP support module for mod_proxy',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 410
@@ -397,7 +397,7 @@ package YaPI::HTTPDModules;
     'proxy_http' => {
                     summary   => 'HTTP support module for mod_proxy',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 420
@@ -405,7 +405,7 @@ package YaPI::HTTPDModules;
     'rewrite' => {
                     summary   => 'Provides a rule-based rewriting engine to rewrite requested URLs on the fly',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 430,
@@ -424,7 +424,7 @@ package YaPI::HTTPDModules;
     'speling' => {
                     summary   => 'Attempts to correct mistaken URLs that users might have entered',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 440,
@@ -433,7 +433,7 @@ package YaPI::HTTPDModules;
     'ssl' => {
                     summary   => 'Strong cryptography using the Secure Sockets Layer (SSL) and Transport Layer Security (TLS) protocols',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 450,
@@ -474,7 +474,7 @@ package YaPI::HTTPDModules;
     'unique_id' => {
                     summary   => 'Provides an environment variable with a unique identifier for each request',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 460
@@ -482,7 +482,7 @@ package YaPI::HTTPDModules;
     'usertrack' => {
                     summary   => 'Clickstream logging of user activity on a site',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 470,
@@ -497,7 +497,7 @@ package YaPI::HTTPDModules;
     'vhost_alias' => {
                     summary   => 'Provides support for dynamically configured mass virtual hosting',
                     packages  => [],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 480,
@@ -511,7 +511,7 @@ package YaPI::HTTPDModules;
     'php4' => {
                     summary   => 'Provides support for PHP4 dynamically generated pages',
                     packages  => ["apache2-mod_php4"],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 490
@@ -519,7 +519,7 @@ package YaPI::HTTPDModules;
     'perl' => {
                     summary   => 'Provides support for Perl dynamically generated pages',
                     packages  => ["apache2-mod_perl"],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 500
@@ -527,7 +527,7 @@ package YaPI::HTTPDModules;
     'python' => {
                     summary   => 'Provides support for Python dynamically generated pages',
                     packages  => ["apache2-mod_python"],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 510
@@ -535,7 +535,7 @@ package YaPI::HTTPDModules;
     'ruby' => {
                     summary   => 'Provides support for Ruby dynamically generated pages',
                     packages  => ["apache2-mod_ruby"],
-                    default   => 1,
+                    default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 520

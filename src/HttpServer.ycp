@@ -24,6 +24,7 @@ import "Require";
 import "Service";
 import "Summary";
 import "Message";
+//import "HttpServerWidgets";
 
 /**
  * Abort function
@@ -139,11 +140,11 @@ global define boolean Read() ``{
     }
     
     import "SuSEFirewall";
-    Progress::off();
+    Progress::set(false);	//off();
     SuSEFirewall::Read();
-    Progress::on();
+    Progress::set(true);	//on();
     
-    firewall_started = Service::Enabled( "SuSEfirewall2_final" );
+    firewall_started = SuSEFirewall::IsEnabled();			//Service::Enabled( "SuSEfirewall2_final" );
 
     // read current settings from httpd.conf and sysconfig
     Progress::NextStage();
@@ -180,7 +181,7 @@ global define boolean Read() ``{
     Progress::NextStage();
 
     // read current settings for firewall and network
-    Progress::off();
+    Progress::set(false);	//off();
     NetworkDevices::Read();
 
     // generate the map: static IP -> device
@@ -249,7 +250,7 @@ global define boolean Read() ``{
 	    break;
     });
 
-    Progress::on();
+    Progress::set(true);	//on();
 
     // translators: progress step
     ProgressNextStage(_("Finished"));
@@ -300,6 +301,7 @@ global define boolean Write() ``{
 	""
     );
 
+y2internal("After progress");
     // write Apache2 settings
 
     list<string> rpms = YaPI::HTTPD::GetModulePackages();
@@ -317,11 +319,10 @@ Install them now?
     YaST::HTTPDData::WriteHosts ();
     
     import "SuSEFirewall";
-    
-    Progress::off ();
+	Progress::set(false);//    Progress::off ();
 
     // always adapt firewall
-    if (YaST::HTTPDData::WriteListen (true) == nil)
+    if (YaST::HTTPDData::WriteListen (false) == nil)
     {
 	// FIXME: show popup
 	
@@ -345,12 +346,12 @@ Install them now?
 	{
 	    y2milestone ("Adding service %1:%2", ip, port);
 	    SuSEFirewall::AddService ( port, "TCP", ip2device[ip]:"all");
+
 	}
     });
-    
     SuSEFirewall::Write ();
 
-    Progress::on ();
+	Progress::set(true);//    Progress::on ();
 
     YaST::HTTPDData::WriteModuleList ();
 
@@ -393,6 +394,8 @@ Install them now?
 	    Report::Error( Message::CannotAdjustService("apache2") );
 	}
     }
+
+SCR::Write ( .target.string, Directory::vardir + "/http_server", "");
 
     // translators: progress finished
     ProgressNextStage(_("Finished"));
@@ -584,7 +587,43 @@ global define list Summary() ``{
         // summary item: an option is turned on
         if( YaST::HTTPDData::GetService()!=nil && YaST::HTTPDData::GetService() )
 	    // translators: autoyast summary text, server status
-            summary = Summary::AddLine(summary, _("Apache2 server is <i>enabled</i>") );
+	   {
+//            summary = Summary::AddLine(summary, _("Apache2 server is <i>enabled</i>") );
+	    summary = Summary::AddLine(summary, _("<h3>Listen on</h3>") );
+            string port       = nil;
+            string interfaces = "";
+            foreach(map listens, YaST::HTTPDData::GetCurrentListen(),
+                {
+                 port = listens["PORT"]:"80";
+                 if (listens["ADDRESS"]:"" == "" ) interfaces = "all";
+                        else interfaces = interfaces + listens["ADDRESS"]:"";
+                } );
+	    summary = Summary::AddLine(summary, interfaces + ", port " + port );
+	    summary = Summary::AddLine(summary, "<h3>Default Host</h3>" ); 
+string serv_name = "";
+string doc_root = "";
+boolean ssl = false;
+	     foreach(map<string, any> params, YaST::HTTPDData::GetHost("default"), {
+		if ( params["KEY"]:"" == "ServerName" ) serv_name = params["VALUE"]:"";
+		if ( params["KEY"]:"" == "DocumentRoot" ) doc_root = params["VALUE"]:"";
+		if ( params["KEY"]:"" == "SSL" && params["VALUE"]:""=="1") ssl = true;
+			});
+            summary = Summary::AddLine(summary, serv_name + _(" in ") + doc_root);
+            summary = Summary::AddLine(summary, "SSL " + ((ssl)?_("enabled"):_("disabled")));
+
+            summary = Summary::AddLine(summary, "<h3>Virtual Hosts</h3>");
+
+foreach(string host, YaST::HTTPDData::GetHostsList (), {
+		if (host == "default") continue;
+             foreach(map<string, any> params, YaST::HTTPDData::GetHost(host), {
+                if ( params["KEY"]:"" == "ServerName" ) serv_name = params["VALUE"]:"";
+                if ( params["KEY"]:"" == "DocumentRoot" ) doc_root = params["VALUE"]:"";
+                if ( params["KEY"]:"" == "SSL" && params["VALUE"]:""=="1") ssl = true;
+                        });
+            summary = Summary::AddLine(summary, serv_name + _(" in ") + doc_root + ", SSL " + ((ssl)?_("enabled"):_("disabled")));
+
+});
+	   }
         else
 	    // translators: autoyast summary text, server status
             summary = Summary::AddLine(summary, _("Apache2 server is <i>disabled</i>") );

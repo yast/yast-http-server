@@ -595,8 +595,9 @@ sub GetPackagesForModule {
     my $mod = shift;
     my %uniq;
 
-    @uniq{@{$YaPI::HTTPDModules::modules{$mod}->{packages}}} = ();
-
+    if ( exists($YaPI::HTTPDModules::modules{$mod}) ) {
+	@uniq{@{$YaPI::HTTPDModules::modules{$mod}->{packages}}} = ();
+}
     return [ keys(%uniq) ];
 }
 
