@@ -1,7 +1,13 @@
 -------------------------------------------------------------------
+Fri Aug 27 15:16:12 CEST 2004 - visnov@suse.cz
+
+- merged proofread texts 
+- fixing SSL option handling (#42783)
+
+-------------------------------------------------------------------
 Thu Aug 26 18:52:29 CEST 2004 - visnov@suse.cz
 
-- allow the same option multiple times 
+- allow the same option multiple times (#42783)
 
 -------------------------------------------------------------------
 Wed Aug 25 18:23:16 CEST 2004 - visnov@suse.cz

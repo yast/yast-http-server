@@ -707,8 +707,8 @@ global map listenwidget = $[
 global symbol handleSSLTable(string key, map event );
 global list SSLTableContents (map descr);
 global void SSLInit (string key);
-global void SSLTypeInit (any opt_key, string opt_id);
-global void SSLTypeStore (any widget, string opt_id);
+global void SSLTypeInit (any option_id, string option_type);
+global void SSLTypeStore (any option_id, string option_type);
 
 map<string, map> edit_ssl = $[
     "table" : $[
@@ -737,8 +737,10 @@ map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	, $[
 	    "init" : HttpServerWidgets::SSLInit,
 	    "handle" : HttpServerWidgets::handleSSLTable,
+	    "store" : HttpServerWidgets::HostStore,
 	    "options" : union( ssl_options, $[ "SSL":edit_ssl ] ),
 	    "ids" : HttpServerWidgets::SSLTableContents,
+	    "id2key" : HttpServerWidgets::HostId2Key,
 	    "fallback" : $[
 		"init" : HttpServerWidgets::DefaultHostPopupInit,
 		"store" : HttpServerWidgets::DefaultHostPopupStore,
@@ -848,35 +850,10 @@ global symbol handleSSLTable( string key, map event )
     return TablePopup::TableHandle( sslwidget, key, event );
 }
 
-global list SSLTableContents (map descr)
-{
-    // translators: unknown table entry value
-    list<string> ret = maplist (map<string, any> option, YaST::HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
-    
-    // filter out unneeded options - only those with SSL are interesting
-    ret = filter (string key, ret, ``( issubstring( key, "SSL" )));
-    return ret;
-}
-
 global void SSLInit (string widget)
 {
     TablePopup::TableInit(sslwidget, widget);
 }
-
-global void SSLTypeInit (any key_id, string opt_id)
-{
-    // it is a radio button group
-    UI::ChangeWidget (`id(key_id), `CurrentButton, tostring( get_host_value( "SSL", YaST::HTTPDData::GetHost(currenthost), "0" ) ) );
-}
-
-
-global void SSLTypeStore (any widget, string id)
-{
-    // it is a radio button group
-    YaST::HTTPDData::ModifyHost( currenthost, set_host_value ("SSL", YaST::HTTPDData::GetHost(currenthost), UI::QueryWidget( `id(widget), `CurrentButton ) ) );
-    HttpServer::modified = true;
-}
-
 
 /******************************** Listen popup ****************************/
 
@@ -1186,7 +1163,7 @@ define string item2listen( string network, string port ) ``{
 	    boolean documentroot = false;
     
 	    list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
-	
+	    
 	    foreach (map<string, any> option, host, ``{
 		string key = option["KEY"]: "unknown";
 		
@@ -1217,6 +1194,13 @@ define string item2listen( string network, string port ) ``{
 		// skip SECTIONS
 		else if ( key == "_SECTION" ) 
 		{
+		    option_counter = option_counter + 1;
+		    continue;
+		}
+		// skip HostIP for default host
+		else if (currenthost == "default" && key == "HostIP")
+		{
+		    host_options[option_counter] = option;
 		    option_counter = option_counter + 1;
 		    continue;
 		}
@@ -1273,6 +1257,48 @@ define string item2listen( string network, string port ) ``{
 	}
     }
     
+    /**
+      * Function for getting contents of the default host table
+      * @param descr map description map of the table
+      * @return list of items for the table
+      */
+    global define list SSLTableContents (map descr) ``{
+	if (host_options == nil)
+	{
+	    // fill the data
+	    option_counter = 0;
+	    host_options = $[];
+	    deleted_options = [];
+	    list res = [];
+	    
+	    list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+	    
+	    foreach (map<string, any> option, host, ``{
+		string key = option["KEY"]: "unknown";
+		
+		// skip non-SSL options
+		if ( key == "SSL" || ssl_options[key]:nil != nil ) 
+		{
+		    host_options[option_counter] = option;
+		    res = add (res, option_counter);
+		    option_counter = option_counter + 1;
+		}
+		else 
+		{
+		    option_counter = option_counter + 1;
+		    continue;
+		}
+	    });
+	    
+	    return res;
+	}
+	else
+	{
+	    // just generate the list of ids
+	    return maplist( integer id, map<string,any> value, host_options,
+		``(id));
+	}
+    }
     /**
       * Delete function of the global table
       * @param opt_id any option id of selected option
@@ -1405,6 +1431,23 @@ define string item2listen( string network, string port ) ``{
 	{
 	    return host_options[ (integer)option_id, "VALUE" ]: "";
 	}
+    }
+
+
+    global void SSLTypeInit (any option_id, string option_type)
+    {
+	// it is a radio button group
+	UI::ChangeWidget (`id(option_type), `CurrentButton
+	    , tostring( host_options[(integer)option_id, "VALUE"]:"0" ) );
+    }
+
+
+    global void SSLTypeStore (any option_id, string option_type)
+    {
+	// it is a radio button group
+	host_options[(integer)option_id, "VALUE"] = 
+	    UI::QueryWidget( `id(option_type), `CurrentButton );
+	HttpServer::modified = true;
     }
 
 
