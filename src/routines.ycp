@@ -72,6 +72,26 @@ global define term listen2item( string arg, integer id ) ``{
 }
 
 /**
+ * Convert a Listen string to a pair: $[ "port": port, "address": network ]
+ *
+ * @param arg		the Listen string
+ * @return term		term for the table
+ */
+global define map listen2map( string arg ) ``{
+    integer colon = find( arg, ":" );
+
+    string address = "all";
+    string port = arg;
+    
+    if( colon != -1 ) {
+	// address is present
+	address = substring( arg, 0, colon );
+	port = substring( arg, colon+1 );
+    }
+    return $[ "port": port, "address": address ];
+}
+
+/**
  * Convert a Listen string to an item for table. Splits by the colon.
  *
  * @param network	network address

@@ -47,14 +47,15 @@
       * @return symbol for wizard sequencer
       */
     global define symbol DefaultHostDialog () ``{
-	list w = CWM::CreateWidgets (["server_enable", "global_table" ],
+	list w = CWM::CreateWidgets (["server_enable", "firewall_adapt", "global_table" ],
 	    HttpServerWidgets::widgets);
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
 	    w[0, "widget"]:`VSpacing (0),
 	    `VSpacing (1),
-	    w[1, "widget"]:`VSpacing (0),
-	    `VSpacing (1)
+	    `Left(w[1, "widget"]:`VSpacing (0)),
+	    `VSpacing (1),
+	    w[2,"widget"]:`VSpacing (0)
 	), `HSpacing (1));
 	// dialog caption
 	string caption = _("HTTP server configuration");

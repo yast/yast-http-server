@@ -7,80 +7,310 @@
 
 $[
 	"access" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Provides access control based on client hostname, IP address, etc.")
 	],
 	"actions" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Executing CGI scripts based on media type or request method")
 	],
 	"alias" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Mapping different parts of the host filesystem in the document tree and for URL redirection")
 	],
 	"auth" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("User authentication using text files")
         ],
 	"auth_dbm" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Provides for user authentication using DBM files")
         ],
 	"autoindex" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Generates directory indexes, automatically, similar to the Unix ls command")
 	],
 	"cgi" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Execution of CGI scripts")
 	],
 	"dir" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Provides for \"trailing slash\" redirects and serving directory index files")
 	],
 	"env" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Modifies the environment which is passed to CGI scripts and SSI pages")
 	],
 	"expires" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Generation of Expires HTTP headers according to user-specified criteria")
 	],
 	"include" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Server-parsed html documents (Server Side Includes)")
 	],
 	"log_config" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Logging of the requests made to the server")
 	],
 	"mime" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Associates the requested filename's extensions with the file's behavior and content")
 	],
 	"negotiation" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Provides for content negotiation")
 	],
 	"setenvif" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Allows the setting of environment variables based on characteristics of the request")
 	],
-	"default" : $[
+	"status"  : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Provides information on server activity and performance")
 	],
 	"suexec" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("Allows CGI scripts to run as a specified user and Group")
 	],
 	"userdir" : $[
+	    "status": true,
 	    "default": true,
+	    // translators: Apache2 module description (from apache2 docs)
 	    "description" : _("User-specific directories")
 	],
-	"status"  : $[
-	    "default": true,
-	    "description" : _("Provides information on server activity and performance")
+	"asis"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Sends files that contain their own HTTP headers"),
+	],
+	"auth_anon"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Allows \"anonymous\" user access to authenticated areas"),
+	],
+	"auth_digest"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("User authentication using MD5 Digest Authentication")
+	],
+	"auth_ldap"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Allows an LDAP directory to be used to store the database for HTTP Basic authentication")
+	],
+	"cache"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Content cache keyed to URIs")
+	],
+	"charset_lite"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Specify character set translation or recoding")
+	],
+	"dav"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Distributed Authoring and Versioning (WebDAV) functionality")
+	],
+	"dav_fs"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Filesystem provider for mod_dav")
+	],
+	"deflate"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Compress content before it is delivered to the client")
+	],
+	"disk_cache"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Content cache storage manager keyed to URIs")
+	],
+	"echo"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("A simple echo server to illustrate protocol modules")
+	],
+	"ext_filter"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Pass the response body through an external program before delivery to the client")
+	],
+	"file_cache"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Caches a static list of files in memory")
+	],
+	"headers"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Customization of HTTP request and response headers")
+	],
+	"imap"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Server-side imagemap processing")
+	],
+	"info"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Provides a comprehensive overview of the server configuration")
+	],
+	"ldap"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("LDAP connection pooling and result caching services for use by other LDAP modules")
+	],
+	"logio"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Logging of input and output bytes per request")
+	],
+	"mem_cache"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Content cache keyed to URIs")
+	],
+	"mime_magic"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Determines the MIME type of a file by looking at a few bytes of its contents")
+	],
+	"proxy"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("HTTP/1.1 proxy/gateway server")
+	],
+	"proxy_connect"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("mod_proxy extension for CONNECT request handling")
+	],
+	"proxy_ftp"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("FTP support module for mod_proxy")
+	],
+	"proxy_http"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("HTTP support module for mod_proxy")
+	],
+	"rewrite"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Provides a rule-based rewriting engine to rewrite requested URLs on the fly")
+	],
+	"setenvif"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Allows the setting of environment variables based on characteristics of the request")
+	],
+	"speling"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Attempts to correct mistaken URLs that users might have entered")
+	],
+	"ssl"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Strong cryptography using the Secure Sockets Layer (SSL) and Transport Layer Security (TLS) protocols")
+	],
+	"unique_id"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Provides an environment variable with a unique identifier for each request")
+	],
+	"usertrack"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Clickstream logging of user activity on a site ")
+	],
+	"vhost_alias"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description (from apache2 docs)
+	    "description" : _("Provides for dynamically configured mass virtual hosting")
+	],
+	"php4"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description 
+	    "description" : _("Provides for PHP4 dynamically generated pages")
+	],
+	"perl"  : $[
+	    "status": false,
+	    "default": false,
+	    // translators: Apache2 module description 
+	    "description" : _("Provides for Perl dynamically generated pages")
 	],
 ]
 

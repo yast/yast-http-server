@@ -1,6 +1,6 @@
 Return	nil
 Dump	true
-Dump	$["enabled":true]
+Dump	$["enabled":true, "firewall":true]
 Return	nil
 Dump	true
-Dump	$["enabled":false]
+Dump	$["enabled":false, "firewall":true]

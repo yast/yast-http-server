@@ -96,18 +96,21 @@ global map moduleslistwidget = $[
 	    "widget" : `custom,
 	    "custom_widget" : `VBox (
 		`Table (`id (`modules), `header (
-		    // table header: module status
-		    _("Status"),
 		    // table header: module name
 		    _("Name"),
+		    // table header: module status
+		    _("Status")+"    ",
 		    // table header: module description
 		    _("Description")
 		), []),
 		`HBox (
-		    `PushButton (`id (`toggle), `opt (`key_F3),
+		    `PushButton (`id (`toggle),
 		    // translators: toggle button label
 			_("&Toggle status") ),
-		    `HStretch ()
+		    `HStretch (),
+		    `PushButton (`id (`add_user),
+		    // translators: add user-defined module button label
+			_("&Add module") )
 		)
 	    ),
 	    "init" : ``(HttpServerWidgets::initModules ()),
@@ -163,6 +166,14 @@ global map widgets = $[
 		"opt" : [ `notify ],
 		"help" : HELPS["server_enable"]:"",
 	    ],
+	    "firewall_adapt" : $[
+		"widget" : `checkbox,
+		// translators: checkbox label
+		"label"	 : _("Adapt &firewall"),
+		"help"	 : HELPS["firewall_adapt"]:"",
+		"init"	: ``(HttpServerWidgets::initAdaptFirewall() ),
+		"store"	 : ``(HttpServerWidgets::storeAdaptFirewall() ),
+	    ],
 	    "global_table" : defaulthostwidget,
 	    "modules" : moduleslistwidget,
 	    "listen" : listenwidget,
@@ -170,68 +181,55 @@ global map widgets = $[
 
 /******************************** Listen popup ****************************/
 
-    define map AskListen( string network, string port ) ``{
+    define string AskListen( string network, string port ) ``{
 	// translators: all network addresses Listen type
 	boolean adr_type = ( network == _("All addresses") || network == "" );
 	if( port == nil ) port = "";
+	
+	// translators: Listen type for all addresses;
+	string aa =  _("All addresses");
+	
+	list ips = union( [ aa ], maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) );
+
 	UI::OpenDialog( `VBox(
-	    `RadioButtonGroup( `id(`address_type), 
-	    `VBox(
-		// translators: text entry label
-		`TextEntry( `id(`port), _("&Port:"), port ),
-		// translators: radio button when editting a Listen statement type
-		`Left(`RadioButton( `id(`all_addresses), `opt(`notify), _("&All addresses"), adr_type )),
-		// translators: radio button when editting a Listen statement type
-		`Left(`RadioButton( `id(`single_address), `opt(`notify), _("&This address:"), !adr_type  )),
-		`TextEntry( `id(`address), "", adr_type ? "" : network )
-	    )),
+	    // translators: text entry label
+	    `TextEntry( `id(`port), _("&Port:"), port ),
+	    // translators: combo box label for list of configured IPs
+	    `Left( `ComboBox( `id(`address), _("Network &address:"), ips ) ),
+	    `VSpacing(),
 	    `HBox( 
 		`PushButton( `id(`ok), Label::OKButton() ),
 		`PushButton( `id(`cancel), Label::CancelButton() )
-	    )
+	     )
 	));
+	
+	if( !adr_type ) {
+	    UI::ChangeWidget( `id( `address ), `Value, network );
+	}
 	
 	symbol ret = nil;
 	string network = nil;
-	string res = nil;
+	string res = "";
 	do {
-	    UI::ChangeWidget( `id( `address ), `Enabled, 
-		(UI::QueryWidget( `id(`address_type), `CurrentButton ) != `all_addresses )
-	    );
+
 	    ret = UI::UserInput();
 	    
 	    if( ret == `ok ) {
 		network = UI::QueryWidget( `id(`address), `Value );
 		res = UI::QueryWidget( `id(`port), `Value );
-		boolean single_address = UI::QueryWidget( `id(`single_address ), `Value );
+		boolean single_address = ( network != aa );
 		
 		// validation
-		if( ! regexpmatch( res, "^[ \t]*[0-9]+[ \t]*$" ) ) {
+		if( ! regexpmatch( res["result"]:"", "^[ \t]*[0-9]+[ \t]*$" ) ) {
 		    // translators: error message when validating Listen statement
 		    Popup::Error( _("Invalid port number.") );
 		    ret = nil;
 		    continue;
 		}
 		
-		if( single_address ) {
-		    // validate IP
-		    if( ! IP::Check4( network ) ) {
-			// IPv6 format
-			string ipv6 = regexpsub( network, "^[ \t]*\[([0-9a-f:]+)\][ \t]*$", "\1" );
-			if( ! regexpmatch( network, "^[ \t]*\[[0-9a-f]+\][ \t]*$" || ipv6 == nil ||
-			  ! IP::Check6( ipv6 ) ) ) {
-			    // translators: error message when validating Listen statement
-			    Popup::Error( _("Invalid network address." ) );
-			    ret = nil;
-			    continue;
-			}
-		    }
-		}
-
 		if( size(network) != 0 && single_address ) {
 		    res = network +":"+ res;
 		}
-		
 	    }
 	} while( ret != `ok && ret != `cancel );
 	
@@ -266,7 +264,7 @@ global map widgets = $[
 			"rcapache2 reload");}],
 		// menubutton entry, try to keep short
 		[ _("Save settings and re&start HTTP server"),
-		    ``{HttpServer::Write ();} ],
+		    ``{HttpServer::Write ();}, true ],
 	    ],
 	]);
 	return nil;
@@ -434,6 +432,46 @@ global map widgets = $[
 	    HttpServer::modified = true;
 	    HttpServer::modules_modified = true;
         }
+	else if (event["ID"]:nil == `add_user)
+        {
+	   UI::OpenDialog(
+            `VBox(
+                `TextEntry(`id(`mod), _("Enter new module name:" )),
+                `HBox(
+                    `PushButton(`id(`ok), `opt(`default), Label::OKButton() ),
+                    `PushButton(`id(`cancel), Label::CancelButton() )
+            	    )
+        	)
+    	    );
+	    
+	    UI::SetFocus( `id( `mod ) );
+
+	    symbol ret = UI::UserInput();
+	    
+	    if( ret == `ok ) {
+		string mod = String::CutBlanks( UI::QueryWidget( `id(`mod), `Value ) );
+		if( mod == "" ) {
+		    Report::Error( _("You cannot add a module with empty name" ) );
+		    UI::CloseDialog();
+		} else if( haskey( HttpServer::settings["modules"]:$[], mod )  ) {
+		    Report::Error( _("The module is already in the list.") );
+		    UI::CloseDialog();
+		} else {
+		    HttpServer::settings["modules", mod] = $[
+			"status" : true,
+			"description" :  _("User-defined module"),
+		    ];
+
+		    HttpServer::modified = true;
+		    HttpServer::modules_modified = true;
+		    
+		    UI::CloseDialog();
+		    
+		    HttpServerWidgets::initModules(nil);
+		}
+	    }
+        }
+
     }
 
 // ************************************ listen settings ************************
@@ -443,6 +481,7 @@ global map widgets = $[
       * @param key any widget key of widget that is processed
       */
     global define void initListenSettings (any key) ``{
+
 	integer id = -1;
 	list listen = HttpServer::settings[currenthost, "Listen"]:[];
 	list items = maplist( string litem, listen, ``{ id = id+1; return listen2item(litem, id); } );
@@ -564,6 +603,29 @@ global map widgets = $[
 
     global define string summaryGenericList( any key, any id ) ``{
 	return mergestring( HttpServer::settings[currenthost, key]:[], " ");
+    }
+
+// ************************************ Adapt firewall widget ********************
+
+    /**
+      * Initialization function for firewall adapting
+      * @param opt_id any option id
+      * @param opt_key any option key
+      */
+    global define void initAdaptFirewall (any key) ``{
+	UI::ChangeWidget (`id (key), `Value,
+	    HttpServer::settings["settings", "firewall"]:false);
+	UI::SetFocus (`id (key));
+    }
+
+    /**
+      * Store function for firewall adapting
+      * @param opt_id any option id
+      * @param opt_key any option key
+      */
+    global define void storeAdaptFirewall (any opt_id, map event) ``{
+	HttpServer::settings["settings", "firewall"] = UI::QueryWidget (`id (opt_id), `Value);
+	HttpServer::modified = true;
     }
 
 /* EOF */
