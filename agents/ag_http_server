@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 package ag_http_server;
+BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
 use ycp;
 use YaST::SCRAgent;
 use YaPI;
@@ -168,7 +169,14 @@ sub sectionParser {
     my $key  = {};
     while( my $line = <FILE> ) {
         last if( $line =~ /^\s*<\s*\/\w+/ ); # end of section
-        if( $line =~ /^\s*<(\w+)\s*([^\s>]+)\s*>/ ) { # new Subsection?
+        if( $line =~ /^\s*<(\w+)\s*>/ ) { # new Subsection? no param
+            $key->{KEY} = '_SECTION';
+            $key->{SECTIONNAME} = $1;
+            $key->{SECTIONPARAM} = '';
+            $key->{VALUE} = sectionParser();
+            push( @$keys, $key );
+            $key = {};
+        } elsif( $line =~ /^\s*<(\w+)\s*([^\s>]*?)\s*>/ ) { # new Subsection?
            $key->{KEY} = '_SECTION';
            $key->{SECTIONNAME} = $1;
            $key->{SECTIONPARAM} = $2;
@@ -223,8 +231,6 @@ sub write_vhost_files {
             print FILE "<VirtualHost $entry->{HostIP}>\n" if( $entry->{HostIP} );
             foreach my $data ( @{$entry->{DATA}} ) {
                 next if( $data->{KEY} eq 'HostIP' ); # just for internal use
-                # FIXME: subsections in vhosts possible?
-                # subsections in vhosts must be written here via section2string
                 if( $data->{KEY} eq '_SECTION' ) {
                     print FILE section2string( [ $data ], 1 ); # ??? lost in my own data structures
                 } else {
@@ -312,12 +318,12 @@ sub Write {
             my $filename = $1;
             if( ref($args[0]) eq 'ARRAY' ) {
                 $vhost_files{$filename} = $args[0];
-                write_vhost_files(); # FIXME: write just one file
+                return $class->write_vhost_files(); # FIXME: write just one file
             }
         } else {
             if( ref($args[0]) eq 'HASH' ) {
                 %vhost_files = %{$args[0]};
-                write_vhost_files();
+                return $class->write_vhost_files();
             }
         }
     } elsif( $path eq '.listen' ) {
