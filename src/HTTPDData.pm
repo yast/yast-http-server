@@ -88,14 +88,14 @@ sub ReadService {
 #list<string> GetHostList();
 BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
-    return keys(%hosts);
+    return [keys(%hosts)];
 }
 
 #map GetHost( string hostid );
 BEGIN { $TYPEINFO{GetHost} = ["function", ["list", [ "map", "string", "any" ] ], "string"]; }
 sub GetHost {
     my $hostid = shift;
-    return exists($hosts{$hostid})?(@{$hosts{$hostid}}):();
+    return exists($hosts{$hostid})?($hosts{$hostid}):[];
 }
 
 #boolean ModifyHost( string hostid, list hostdata );
@@ -349,7 +349,7 @@ sub GetCurrentListen {
         }
         push( @new, $old );
     }
-    return @new;
+    return \@new;
 }
 
 sub WriteListen {
@@ -393,7 +393,7 @@ sub GetModulePackages {
             push( @ret, @{$HTTPDModules::modules{$mod}->{packages}} );
         }
     }
-    return @ret;
+    return \@ret;
 }
 
 #######################################################

@@ -261,7 +261,7 @@ the default host.")),
     } while (ret != nil);
     
     UI::CloseDialog ();
-    return ret != `cancel ? $[ "name": servername, "ip" : ip ] : nil;
+    return ret != `cancel ? $[ "name": servername, "ip" : ip ] : (map<string,string>)nil;
 }
 
 symbol HostsHandle (string table, map event)
