@@ -278,9 +278,18 @@ sub GetKnownModules {
 # bool ModifyModuleList( list<string>, bool )
 BEGIN { $TYPEINFO{ModifyModuleList} = ["function", "boolean", [ "list","string" ], "boolean" ]; }
 sub ModifyModuleList {
-    my $list = shift;
+    my $newModules = shift;
+    my $enable = shift;
+    my %uniq = ();
 
-    SCR::Write('.sysconfig.apache2.APACHE_MODULES', [ join(' ',@$list) ] ); #FIXME: Error handling
+    @uniq{GetModuleList()} = ();
+    if( $enable ) {
+        @uniq{@$newModules} = ();
+    } else {
+        delete(@uniq{@$newModules});
+    }
+
+    SCR::Write('.sysconfig.apache2.APACHE_MODULES', [ join(' ',keys(%uniq)) ]);
     return 1;
 }
 
