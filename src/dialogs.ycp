@@ -18,6 +18,7 @@
 
     import "Mode";
     import "Popup";
+    import "ProductFeatures";
     import "Label";
     import "CWM";
     import "Wizard";
@@ -301,12 +302,15 @@
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 
-	UI::ReplaceWidget( `id(`_tp_table_repl),
-	    `MenuButton( _("Certificates"),
+	if (ProductFeatures::ui_mode != "simple")
+	{
+	    UI::ReplaceWidget( `id(`_tp_table_repl),
+		`MenuButton( _("Certificates"),
 		[
 		    `item (`id( `import_certificate ), _("&Import Server Certificate...") ),
 		    `item (`id( `common_certificate ), _("&Use Common Server Certificate") ),
 		]));
+	}
 
 	return CWM::Run (w, $[`abort : Abort]);
     }

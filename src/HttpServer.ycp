@@ -194,6 +194,9 @@ global define boolean Read() ``{
     });
 
     y2milestone ("Mapping of IP addresses and network devices: %1", ip2device);    
+    
+    // now, check the firewall status to set up the original status correctly
+    // FIXME:
 
     Progress::on();
 
