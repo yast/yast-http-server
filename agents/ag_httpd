@@ -1,0 +1,266 @@
+#!/usr/bin/perl -w
+#
+# $Id$
+# Author: Martin Vidner <mvidner@suse.cz>
+#         Stanislav Visnovsky <visnov@suse.cz>
+#
+
+# A trivial agent for reading/modifying Apache2 httpd.conf file
+# supports only DocumentRoot, ServerAdmin, ServerName and Listen on top-level
+
+use ycp;
+use strict;
+use File::Temp;
+
+# known values which can be read
+my @known_values = qw( Listen DocumentRoot ServerName ServerAdmin );
+
+#
+# MAIN cycle
+#
+
+# read the agent arguments
+$_ = <STDIN>;
+
+my $httpd_conf = "/etc/apache2/httpd.conf" ; #ycp::ParseCommand ($_);
+if( not open( CONF, $httpd_conf ) ) {
+    die "Cannot open configuration file '$httpd_conf'";
+}
+# read the configuration
+
+my @listen = ();
+my $line = "";
+my $new_listen = "";
+my $size = "";
+my $servername = "";
+my $serveradmin = "";
+my $documentroot = "";
+
+my @section_stack = ();
+my $stack_size = 0;
+
+while( $line = <CONF> ) {
+    chomp( $line );
+    
+    # section start
+    if( $line =~ /^\s*<([^\/\s]+).*>/ ) {
+	y2debug( "Pushing $1" );
+	push( @section_stack, $1 );
+	$stack_size = $stack_size+1;
+    }
+    
+    # section end
+    if( $line =~ /^\s*<\/([^\s]+).*>/ ) {
+	my $found_sect = $1;
+	my $exp_sect = pop( @section_stack );
+	y2debug( "Popped $1" );
+	if( $found_sect ne $exp_sect ) {
+	    y2error( "Non-matching section: found '$found_sect', expected '$exp_sect'" );
+	    push( @section_stack, $exp_sect );
+	} else {
+	    $stack_size = $stack_size-1;
+	}
+    }
+    
+    # only top-level values
+    if( $stack_size == 0 ) {
+	if( $line =~ /^[ \t]*Listen[ \t]+([^ \t]+)/ ) {
+	    push( @listen, $1 );
+	}
+    
+	if( $line =~ /^[ \t]*ServerName[ \t]+([^ \t]+)/ ) {
+	    $servername = $1;
+	    y2debug( "Found server name $servername" );
+	}
+
+	if( $line =~ /^[ \t]*ServerAdmin[ \t]+([^ \t]+)/ ) {
+	    $serveradmin = $1;
+	    y2debug( "Found server admin $serveradmin" );
+	}
+
+	if( $line =~ /^[ \t]*DocumentRoot[ \t]+([^ \t]+)/ ) {
+	    $documentroot = $1;
+	    y2debug( "Found document root $documentroot" );
+	}
+    }
+
+}
+
+if( $stack_size != 0 ) {
+    y2error( "Unclosed sections: $stack_size" );
+}
+
+close( CONF );
+
+# no input at all - simply exit
+# exit if ! defined $_;
+# reply to the client (this actually gets eaten by the ScriptingAgent)
+ycp::Return (undef);
+
+while ( <STDIN> )
+{
+    y2debug( "Got $_" );
+    my ($command, $path, $argument) = ycp::ParseCommand ($_);
+    
+    if ($command eq "Write")
+    {
+	if( $path eq ".Listen" or $path eq ".\"Listen\"" )
+	{
+	    @listen = @{$argument};
+	    ycp::Return ( "true" );
+	}
+	elsif ( $path eq ".DocumentRoot" or $path eq ".\"DocumentRoot\"" )
+	{
+	    $documentroot = $argument;
+	    ycp::Return ( "true" );
+	}
+	elsif ( $path eq ".ServerName" or $path eq ".\"ServerName\"" )
+	{
+	    $servername = $argument;
+	    ycp::Return ( "true" );
+	}
+	elsif ( $path eq ".ServerAdmin" or $path eq ".\"ServerAdmin\"" )
+	{
+	    $serveradmin = $argument;
+	    ycp::Return ( "true" );
+	}
+	elsif ( $path eq "." )
+	{
+	    # create a temporary file, then copy it over
+	    my ($newconf, $filename) = mkstemp("/tmp/httpd.XXXXXXXX");
+	    
+	    y2debug( "Temporary file is $filename" );
+
+	    if( not defined $newconf ) {
+		y2error( "Cannot write to configuration file ''$httpd_conf'" );
+		ycp::Return ("false");
+	    } elsif( not open( ORIGCONF, $httpd_conf ) ) {
+		y2error( "Cannot write to configuration file ''$httpd_conf'" );
+		close( $newconf );
+		system( "rm -f $filename" );
+		ycp::Return ("false");
+	    }
+	    else
+	    {
+		# copy the original, filter known values
+		@section_stack = ();
+		
+		while( $line = <ORIGCONF> ) {
+		    # section start
+		    if( $line =~ /^\s*<([^\/\s]+).*>/ ) {
+			y2debug( "Pushing $1" );
+			push( @section_stack, $1 );
+			$stack_size = $stack_size+1;
+		    }
+    
+		    # section end
+		    if( $line =~ /^\s*<\/([^\s]+).*>/ ) {
+			my $found_sect = $1;
+			my $exp_sect = pop( @section_stack );
+			y2debug( "Popped $1" );
+			if( $found_sect ne $exp_sect ) {
+		    	    y2error( "Non-matching section: found '$found_sect', expected '$exp_sect'" );
+			    push( @section_stack, $exp_sect );
+			} else {
+			    $stack_size = $stack_size-1;
+			}
+		    }
+    
+		    # only top-level values
+		    if( $stack_size == 0 ) {
+			if( not ( $line =~ /^\s*(Listen|ServerName|ServerAdmin|DocumentRoot)\s+[^\s]+/ ) ) {
+			    print $newconf $line;
+			}
+		    } else { 
+			print $newconf $line;
+		    }
+		}
+	    
+		# insert new config values
+		foreach my $i ( @listen ) {
+		    print $newconf "Listen $i\n";
+		}
+		if( $serveradmin ne "" ) {
+		    print $newconf "ServerAdmin $serveradmin\n";
+		}
+		if( $servername ne "" ) {
+		    print $newconf "ServerName $servername\n";
+		}
+		if( $documentroot ne "" ) {
+		    print $newconf "DocumentRoot $documentroot\n";
+		}
+	    
+		close( $newconf );
+		close( ORIGCONF );
+	    
+		# copy the file
+		# what about access rights?
+		my $exit = system( "cp -f $filename $httpd_conf" );
+		if( $exit == 0 and -s $httpd_conf ) {
+		    system( "rm -f $filename" );
+		    ycp::Return ( "true" );
+		} else {
+		    y2error( "Cannot copy new configuration file to '$httpd_conf'" );
+		    system( "rm -f $filename" );
+		    ycp::Return ( "false" );
+		}
+	    }
+	}
+	else 
+	{
+	    y2error ("Unrecognized path! '$path'");
+	    ycp::Return (undef);
+	}
+    }
+
+    elsif ($command eq "Read")
+    {
+
+	if( $path eq ".Listen" or $path eq ".\"Listen\"" )
+	{
+	    ycp::Return (\@listen, 1 );
+	}
+	elsif ( $path eq ".DocumentRoot" or $path eq ".\"DocumentRoot\"" )
+	{
+	    ycp::Return( \$documentroot, 1 );
+	}
+	elsif ( $path eq ".ServerName" or $path eq ".\"ServerName\"" )
+	{
+	    ycpReturnSkalarAsString( $servername );
+	}
+	elsif ( $path eq ".ServerAdmin" or $path eq ".\"ServerAdmin\"" )
+	{
+	    ycpReturnSkalarAsString( $serveradmin );
+	}
+	else
+	{
+	    ycp::Return (undef);
+	}
+    }
+    
+    elsif ($command eq "Dir" )
+    {
+	if ($path eq ".") {
+	    ycpReturnArrayAsList (@known_values);
+	}
+	else 
+	{
+	    y2error ("Don't know what to Dir from '$path'");
+	    ycp::Return (undef);
+	}
+    }
+
+    elsif ($command eq "result")
+    {
+	# FIXME: should write as well
+	exit;
+    }
+
+    # Unknown command
+    else
+    {
+	y2error ("Unknown instruction $command or argument: ", ref ($argument));
+	ycp::Return (undef);
+    }
+    print "\n";
+}

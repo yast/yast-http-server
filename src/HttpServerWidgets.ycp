@@ -1,0 +1,509 @@
+/**
+ * File:	modules/HttpServerWidgets.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Widgets used by HTTP server configuration
+ * Authors:	Jiri Srain <jsrain@suse.cz>
+ *		Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ */
+
+{
+    module "HttpServerWidgets";
+
+    textdomain "http-server";
+
+    import "Label";
+    import "Popup";
+    import "LogView";
+    import "CWM";
+    import "HttpServer";
+    
+    include "http-server/routines.ycp";
+    include "http-server/helps.ycp";
+
+global string currenthost = "defaulthost";
+
+/**
+ * Map of popups for CWM
+ */
+global map popups = $[
+	    "ServerName" : $[
+		"table" : $[
+		    // table cell, label
+		    "label" : _("Server name"),
+		    "optional" : false,
+		],
+		"popup" : $[
+		    "widget" : `textentry,
+		],
+	    ],
+	    "DocumentRoot" : $[
+		"table" : $[
+		    // table cell
+		    "label" : _("Document root"),
+		    "optional" : false,
+		],
+		"popup" : $[
+		    "widget" : `textentry,
+		],
+            ],
+	    "ServerAdmin" : $[
+		"table" : $[
+		    // table cell
+		    "label" : _("Server administrator e-mail"),
+		    "optional" : false,
+		],
+		"popup" : $[
+		    "widget" : `textentry,
+		],
+            ],
+            "Listen" : $[
+                "table" : $[
+                    // table cell
+                    "label" : _("Listen on"),
+                    "handle" : `listen,
+                    "optional" : false,
+		    "summary" : ``( HttpServerWidgets::summaryGenericList() ),
+                ],
+	    ],
+	];
+
+
+global map defaulthostwidget = union ( CWM::CreateTable (
+	    $["add_delete" : true, 
+	      "up_down" : false, 
+	      "unique_keys" : true]
+	), $[
+	    "init" : ``(CWM::TableInit (
+		HttpServerWidgets::widgets["global_table"]:$[])),
+	    "handle" : ``(HttpServerWidgets::handleDefaultHostTable()),
+	    "options" : popups,
+	    "ids" : ``(HttpServerWidgets::DefaultHostTableContents ()),
+	    "fallback" : $[
+		"init" : ``(HttpServerWidgets::DefaultHostPopupInit ()),
+		"store" : ``(HttpServerWidgets::DefaultHostPopupStore ()),
+		"summary" : ``(HttpServerWidgets::DefaultHostTableEntrySummary ()),
+	    ],
+	    "option_delete" : ``(HttpServerWidgets::DefaultHostTableEntryDelete ()),
+	    "add_items" : [ "ServerName", "DocumentRoot", "ServerAdmin",],
+	    "help" : HELPS["global_table"]:"",
+	]);
+
+
+global map moduleslistwidget = $[
+	    "widget" : `custom,
+	    "custom_widget" : `VBox (
+		`Table (`id (`modules), `header (
+		    // table header: module status
+		    _("Status"),
+		    // table header: module name
+		    _("Name"),
+		    // table header: module description
+		    _("Description")
+		), []),
+		`HBox (
+		    `PushButton (`id (`toggle), `opt (`key_F3),
+			_("Toggle status") ),
+		    `HStretch ()
+		)
+	    ),
+	    "init" : ``(HttpServerWidgets::initModules ()),
+	    "store" : ``(HttpServerWidgets::storeModules ()),
+	    "handle" : ``(HttpServerWidgets::handleModules ()),
+	    "help" : HELPS["modules"]:"",
+	];
+
+global map listenwidget = $[
+	    "widget" : `custom,
+	    "custom_widget" : `VBox (
+		`Left(`Label( _("Listen on ports:") ) ),
+		`Table (`id (`listen), `header (
+		    // table header
+		    _("Network address"),
+		    // table header
+		    _("Port")
+		), []),
+		`HBox (
+		    `PushButton (`id (`add), `opt (`key_F3),
+			Label::AddButton ()),
+		    `PushButton (`id (`edit), `opt (`key_F4),
+			Label::EditButton ()),
+		    `PushButton (`id (`delete), `opt (`key_F5),
+			Label::DeleteButton ()),
+		    `HStretch ()
+		)
+	    ),
+	    "init" : ``(HttpServerWidgets::initListenSettings ()),
+	    "store" : ``(HttpServerWidgets::storeListenSettings ()),
+	    "handle" : ``(HttpServerWidgets::handleListenSettings ()),
+	    "help" : HELPS["listen"]:"",
+	];
+/**
+ * Map of widgets for CWM
+ */
+global map widgets = $[
+	    "log_button" : $[
+		"widget" : `push_button,
+		// push button
+		"label" : _("&Display log"),
+		"handle" : ``(HttpServerWidgets::showLogPopup ()),
+		"handle_events" : [ "log_button" ],
+		"help" : HELPS["log_button"]:"",
+	    ],
+	    "server_enable" : $[
+		"widget" : `radio_buttons,
+		"label"	 : _("HTTP service"),
+		"items"	 : [
+		    [ `disabled, _("Disabled" ) ],
+		    [ `enabled, _("Enabled" ) ]
+		],
+		"init"	: ``(HttpServerWidgets::initServiceStatus() ),
+		"handle" : ``(HttpServerWidgets::handleServiceStatus()),
+		"store"	 : ``(HttpServerWidgets::storeServiceStatus() ),
+		"handle_events" : [ `enabled, `disabled ],
+		"opt" : [ `notify ],
+		"help" : HELPS["server_enable"]:"",
+	    ],
+	    "global_table" : defaulthostwidget,
+	    "modules" : moduleslistwidget,
+	    "listen" : listenwidget,
+	];
+
+/******************************** Listen popup ****************************/
+
+    define map AskListen( string network, string port ) ``{
+	boolean adr_type = ( network == _("All addresses") || network == "" );
+	if( port == nil ) port = "";
+	UI::OpenDialog( `VBox(
+	    `RadioButtonGroup( `id(`address_type), 
+	    `VBox(
+		`TextEntry( `id(`port), _("Port:"), port ),
+		`Left(`RadioButton( `id(`all_addresses), `opt(`notify), _("All addresses"), adr_type )),
+		`Left(`RadioButton( `id(`single_address), `opt(`notify), _("This address:"), !adr_type  )),
+		`TextEntry( `id(`address), "", adr_type ? "" : network )
+	    )),
+	    `HBox( 
+		`PushButton( `id(`ok), Label::OKButton() ),
+		`PushButton( `id(`cancel), Label::CancelButton() )
+	    )
+	));
+	
+	symbol ret = nil;
+	string network = nil;
+	string res = nil;
+	do {
+	    UI::ChangeWidget( `id( `address ), `Enabled, 
+		(UI::QueryWidget( `id(`address_type), `CurrentButton ) != `all_addresses )
+	    );
+	    ret = UI::UserInput();
+	    
+	    if( ret == `ok ) {
+		network = UI::QueryWidget( `id(`address), `Value );
+		res = UI::QueryWidget( `id(`port), `Value );
+		
+		// validation
+		if( ! regexpmatch( res, "^[ \t]*[0-9]+[ \t]*$" ) {
+		    Popup::Error( _("Invalid port number.") );
+		    ret = nil;
+		    continue;
+		}
+		
+		// TODO: validate IP addess
+
+		if( size(network) != 0 && UI::QueryWidget( `id(`single_address ), `Value ) ) {
+		    res = network +":"+ res;
+		}
+		
+	    }
+	} while( ret != `ok && ret != `cancel );
+	
+	if( ret == `cancel ) res = nil;
+	
+	UI::CloseDialog();
+	
+	return res;
+    }	
+    
+// *************************************** log popup **************************
+
+    /**
+      * Handle function of the log button
+      * @param key any key of the widget
+      * @param event any event that occured
+      * @return value for wizard sequencer, always nil
+      */
+    global define any showLogPopup (any key, any event) ``{
+	LogView::Display ($[
+	    "file" : "/var/log/apache2/access_log",
+	    "save" : true,
+	    "actions" : [
+		// menubutton entry, try to keep short
+		[ _("Restart HTTP server"),
+		    ``{SCR::Execute (.target.bash,
+			"rcapache2 restart");}],
+		// menubutton entry, try to keep short
+		[ _("Save settings and restart HTTP server"),
+		    ``{HttpServer::Write ();} ],
+	    ],
+	]);
+	return nil;
+    }
+
+// ************************************ default host table ********************
+
+    /**
+      * Function for getting contents of the default host table
+      * @param descr map description map of the table
+      * @return list of items for the table
+      */
+    global define list DefaultHostTableContents (map descr) ``{
+	list ret = maplist (`k, `v, HttpServer::settings[currenthost]:$[], ``(k));
+	// required entries
+	ret = union (["ServerName", "ServerAdmin", "DocumentRoot", "Listen" ], ret);
+	return ret;
+    }
+    
+    /**
+      * Delete function of the global table
+      * @param opt_id any option id of selected option
+      * @param opt_key any option key of selected option
+      * @return boolean true if was really deleted
+      */
+    global define boolean DefaultHostTableEntryDelete (any opt_id, any opt_key) ``{
+	// message popup
+	if (! Popup::YesNo (_("Delete selected entry?")))
+	    return false;
+	HttpServer::settings[currenthost]
+	    = filter (`k, `v, HttpServer::settings[currenthost]:$[], ``(k != opt_id));
+	return true;
+    }
+
+    global define symbol handleDefaultHostTable( any key, symbol event ) ``{
+	// handle menu button entries
+	if( event == `modules ) 
+	    return `modules;
+	if( event == `show_log ) {
+	    return showLogPopup( key, event );
+	}
+	if( event == `listen )
+	    return `listen;
+
+	// default handling
+	return CWM::TableHandle( widgets["global_table"]:$[], key, event );
+    }
+
+    /**
+      * Fallback initialization function of a table entry / popup
+      * @param opt_id any option id
+      * @param opt_key any option key
+      */
+    global define void DefaultHostPopupInit (any opt_id, any opt_key) ``{
+	UI::ChangeWidget (`id (opt_key), `Value,
+	    HttpServer::settings[currenthost, opt_key]:"not found");
+	UI::SetFocus (`id (opt_key));
+    }
+
+    /**
+      * Fallback store function of a table entry / popup
+      * @param opt_id any option id
+      * @param opt_key any option key
+      */
+    global define void DefaultHostPopupStore (any opt_id, any opt_key) ``{
+	HttpServer::settings[currenthost, opt_key] = UI::QueryWidget (`id (opt_key), `Value);
+	HttpServer::modified = true;
+    }
+
+    /**
+      * Fallback summary function of a table entry / popup
+      * @param opt_id any option id
+      * @param opt_key any option key
+      * @return string table entry summary
+      */
+    global define string DefaultHostTableEntrySummary (any opt_id, any opt_key) ``{
+	return sformat ("%1", HttpServer::settings[currenthost, opt_key]:"");
+    }
+
+
+// ************************************ modules list ***************************
+
+    /**
+      * Initialize function of a widget
+      * @param key any widget key of widget that is processed
+      */
+    global define void initModules (any key) ``{
+	integer index = -1;
+	list items = maplist (string mod, map z, HttpServer::settings["modules"]:$[], ``{
+	    index = index + 1;
+	    return `item (`id (index), mod, z["status"]:false ? _("Enabled") : _("Disabled"), z["description"]:"" );
+	});
+	UI::ChangeWidget (`id (`modules), `Items, items);
+	UI::SetFocus (`id (`modules));
+    }
+
+    /**
+      * Store function of a widget
+      * @param key any widget key of widget that is processed
+      * @param event any event that occured
+      */
+    global define void storeModules (any key, any event) ``{
+	integer i = size(HttpServer::settings["modules"]:$[]);
+	while( i>0 ) {
+	    term item = UI::QueryWidget( `id(`modules), `Item(i-1) );
+	    string mod = select( item, 1, "" );
+	    y2debug( "Changing %1 to %2", mod, (select( item, 2, "" ) == _("Enabled") ) );
+	    HttpServer::settings["modules", mod, "status"] = (select( item, 2, "" ) == _("Enabled") );	
+	    i = i-1;
+	}
+	
+	y2debug( "%1", HttpServer::settings["modules"]:$[] );
+    }
+
+    /**
+      * Handle function of a widget
+      * @param key any widget key of widget that is processed
+      * @param event any event that occured
+      * @return symbol symbol for WS or nil
+      */
+    global define symbol handleModules (any key, any event) ``{
+	UI::SetFocus (`id (`modules));
+	integer current = UI::QueryWidget (`id (`modules), `CurrentItem);
+        if (event == `toggle)
+        {
+	    integer ci = UI::QueryWidget( `id( `modules ), `CurrentItem );
+	    string status = select( UI::QueryWidget( `id(`modules), `Item(ci) ), 2, _("Enabled") );
+	    y2debug( "Status of module: %1", status );
+	    if( status == _("Enabled" ) ) status = _("Disabled");
+	    else status = _("Enabled");
+	    UI::ChangeWidget( `id( `modules ), `Item( ci , 1 ) , status );
+	    
+	    HttpServer::modified = true;
+	    HttpServer::modules_modified = true;
+        }
+    }
+
+// ************************************ listen settings ************************
+
+    /**
+      * Initialize function of a widget
+      * @param key any widget key of widget that is processed
+      */
+    global define void initListenSettings (any key) ``{
+	integer id = -1;
+	list listen = HttpServer::settings[currenthost, "Listen"]:[];
+	list items = maplist( string litem, listen, ``{ id = id+1; return listen2item(litem, id); } );
+	UI::ChangeWidget (`id (`listen), `Items, items);
+	UI::SetFocus (`id (`listen));
+    }
+
+    /**
+      * Store function of a widget
+      * @param key any widget key of widget that is processed
+      * @param event any event that occured
+      */
+    global define void storeListenSettings (any key, any event) ``{
+	integer i = size(HttpServer::settings[currenthost, "Listen"]:[]);
+	list newlisten = [];
+	while( i>0 ) {
+	    term item = UI::QueryWidget( `id(`listen), `Item(i-1) );
+	    newlisten = add( newlisten, item2listen( select(item,1,""), select(item,2,"") ) );
+	    i = i-1;
+	}
+	
+	HttpServer::modified = (HttpServer::settings[currenthost, "Listen"]:[] == newlisten );
+	HttpServer::settings[currenthost, "Listen"] = newlisten;
+    }
+
+    /**
+      * Handle function of a widget
+      * @param key any widget key of widget that is processed
+      * @param event any event that occured
+      * @return symbol symbol for WS or nil
+      */
+    global define symbol handleListenSettings (any key, any event) ``{
+	UI::SetFocus (`id (`listen));
+	integer current = UI::QueryWidget (`id (`listen), `CurrentItem);
+	term currentitem = UI::QueryWidget( `id(`listen), `Item(current) );
+	string network = select(currentitem, 1, "");
+	if( network == _("All addresses" ) ) network = "";
+	string port = select(currentitem, 2, "");
+
+        if (event == `add)
+        {
+	    string res = AskListen( _("All addresses"), "" );
+	    if( res != nil ) {
+		if( contains( HttpServer::settings[currenthost, "Listen"]:[], res )  )
+		{
+		    Popup::Error( sformat(_("The entry '%1' already exists."), res) );
+		} 
+		else
+		{
+		    HttpServer::settings[currenthost,"Listen"] = 
+			add( HttpServer::settings[currenthost, "Listen"]:[], res );
+		}
+	    }
+        }
+	else if( event == `delete )
+	{
+	    string res = item2listen( network, port );
+	    HttpServer::settings[currenthost, "Listen"] = 
+		filter( string litem, HttpServer::settings[currenthost, "Listen"]:[], ``(litem != res) );
+	}
+	else if( event == `edit )
+	{
+	    string res = AskListen( network, port );
+	    if( res != nil ) {
+		HttpServer::settings[currenthost, "Listen"] = add( 
+		    filter( string litem, HttpServer::settings[currenthost, "Listen"]:[], ``(litem != item2listen(network, port)) ),
+		    res );
+	    }
+	}
+	
+	initListenSettings(nil);
+    }
+
+    
+// ************************************ server status ***********************
+
+    /**
+      * Initialize function of a widget
+      * @param key any widget key of widget that is processed
+      */
+    global define void initServiceStatus (any key) ``{
+	if( HttpServer::settings["settings", "enabled"]:false  ) {
+	    UI::ChangeWidget (`id (`enabled), `Value, true);
+	}
+	else 
+	{
+	    UI::ChangeWidget (`id (`disabled), `Value, true);
+	}
+    }
+
+    /**
+      * Store function of a widget
+      * @param key any widget key of widget that is processed
+      * @param event any event that occured
+      */
+    global define void storeServiceStatus (any key, any event) ``{
+	HttpServer::enableService( UI::QueryWidget ( `id(`enabled), `Value ) );
+    }
+
+    /**
+      * Handle function of a widget
+      * @param key any widget key of widget that is processed
+      * @param event any event that occured
+      * @return symbol symbol for WS or nil
+      */
+    global define symbol handleServiceStatus (any key, any event) ``{
+	boolean current = UI::QueryWidget (`id (`enabled), `Value);
+	HttpServer::settings["enabled"] = current;
+    }
+// *********************************** Listen widget ***************************
+
+    global define string summaryGenericList( any key, any id ) ``{
+	return mergestring( HttpServer::settings[currenthost, key]:[], " ");
+    }
+
+/* EOF */
+}
+

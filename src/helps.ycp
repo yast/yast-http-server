@@ -1,0 +1,73 @@
+/**
+ * File:	include/http-server/helps.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Help texts of all the dialogs
+ * Authors:	Jiri Srain <jsrain@suse.cz>
+ *		Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ */
+
+{
+
+    textdomain "http-server";
+
+    /**
+      * All helps are here
+      */
+    global map HELPS = $[
+
+	/* Read dialog help 1/2 */
+	"read" : _("<p><b><big>Initializing HTTP server configuration</big></b>
+<br>
+Please wait for a while...<br></p>") +
+
+	/* Read dialog help 2/2 */
+	_("<p><b><big>Aborting the initialization:</big></b><br>
+Safely abort the configuration utility by pressing the <b>Abort</b> now.</p>"),
+
+	/* Write dialog help 1/2 */
+	"write" : _("<p><b><big>Saving HTTP server configuration</big></b><br>
+Please wait for a while...<br></p>") +
+
+	/* Write dialog help 2/2 */
+	_("<p><b><big>Aborting the saving:</big></b><br>
+You can abort the saving by pressing the <b>Abort</b> button.
+An additional dialog will inform you whether it is safe to do so or not.</p>"),
+
+	// module dialog help 1/1
+	"modules" : _("<p><b><big>Editing HTTP server modules</big></b><br>
+The table contains list of all available Apache2 modules.
+The first column contains the name of the module, 
+The second column shows the information if the module should be
+loaded by the server. Enabled modules will be loaded. The last column displays a short description
+of the module purpose.</p>") 
+	+ _("To change the status of a module, 
+choose the appropriate entry of the table and click <b>Toggle status</b>.</p>"),
+
+	// apache service enabling help 1/1
+	"server_enable" : _("<p><b><big>HTTP server and default host settings</big></b><br>
+The HTTP server can be activated by choosing <b>Enabled</b>. To deactive it, choose
+<b>Disabled</b>.<p>"),
+
+	// default host editing help 1/1
+	"global_table": _("To edit the default host settings, choose the appropriate entry of the table then click <b>Edit</b>.
+To add a new option, click <b>Add</b>. To remove an option, select it and click <b>Delete</b>.</p>"),
+
+	// help of menu button for default host 1/1
+	"additional_default" : _("<p>The <b>Advanced</b> button contains
+entries for controlling the HTTP server. <b>Show log</b> shows a popup
+dialog with contents of the server logs. <b>Server modules</b> allows
+to configure which modules should be loaded by the server.</p>."),
+
+	// listen dialog editor help 1/2
+	"listen" : _("<p><b><big><i>Listen</i> settings for a host</big></b><br>
+The <i>Listen</i> directive allows to select ports and network interfaces,
+where should the HTTP server listen for incoming requests.<p>")
+	// listen dialog editor help 2/2
+	+ _("Choose an appropriate entry of the table and click <b>Edit</b> to change the entry.
+To add a new entry, click <b>Add</b>. To remove an entry, select it and click <b>Delete</b>.</p>"),
+    ];
+
+/* EOF */
+}

@@ -1,0 +1,55 @@
+/**
+ * File:	include/http-server/complex.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Dialogs definitions
+ * Authors:	Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ */
+
+{
+
+textdomain "http-server";
+
+import "Wizard";
+import "Wizard_hw";
+
+import "HttpServer";
+
+import "Label";
+
+include "http-server/helps.ycp";
+include "http-server/routines.ycp";
+
+/**
+ * Return a modification status
+ * @return true if data was modified
+ */
+global define boolean Modified() ``{
+    return HttpServer::Modified();
+}
+
+/**
+ * Read settings dialog
+ * @return `abort if aborted and `next otherwise
+ */
+global define symbol ReadDialog() ``{
+    Wizard::RestoreHelp(HELPS["read"]:"");
+    HttpServer::AbortFunction = ``{ return PollAbort();};
+    boolean ret = HttpServer::Read();
+    return ret ? `next : `abort;
+}
+
+/**
+ * Write settings dialog
+ * @return `abort if aborted and `next otherwise
+ */
+global define symbol WriteDialog() ``{
+    Wizard::RestoreHelp(HELPS["write"]:"");
+    HttpServer::AbortFunction = ``{ return PollAbort();};
+    boolean ret = HttpServer::Write();
+    return ret ? `next : `abort;
+}
+
+/* EOF */
+}

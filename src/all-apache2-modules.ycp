@@ -1,0 +1,86 @@
+/**
+ * File:	all-apache2-modules.ycp
+ * Summary:	List of all known Apache2 modules
+ * Authors:	Stanislav Visnovsky <visnov@suse.cz>
+ * $Id$
+ */
+
+$[
+	"access" : $[
+	    "default": true,
+	    "description" : _("Provides access control based on client hostname, IP address, etc.")
+	],
+	"actions" : $[
+	    "default": true,
+	    "description" : _("Executing CGI scripts based on media type or request method")
+	],
+	"alias" : $[
+	    "default": true,
+	    "description" : _("Mapping different parts of the host filesystem in the document tree and for URL redirection")
+	],
+	"auth" : $[
+	    "default": true,
+	    "description" : _("User authentication using text files")
+        ],
+	"auth_dbm" : $[
+	    "default": true,
+	    "description" : _("Provides for user authentication using DBM files")
+        ],
+	"autoindex" : $[
+	    "default": true,
+	    "description" : _("Generates directory indexes, automatically, similar to the Unix ls command")
+	],
+	"cgi" : $[
+	    "default": true,
+	    "description" : _("Execution of CGI scripts")
+	],
+	"dir" : $[
+	    "default": true,
+	    "description" : _("Provides for \"trailing slash\" redirects and serving directory index files")
+	],
+	"env" : $[
+	    "default": true,
+	    "description" : _("Modifies the environment which is passed to CGI scripts and SSI pages")
+	],
+	"expires" : $[
+	    "default": true,
+	    "description" : _("Generation of Expires HTTP headers according to user-specified criteria")
+	],
+	"include" : $[
+	    "default": true,
+	    "description" : _("Server-parsed html documents (Server Side Includes)")
+	],
+	"log_config" : $[
+	    "default": true,
+	    "description" : _("Logging of the requests made to the server")
+	],
+	"mime" : $[
+	    "default": true,
+	    "description" : _("Associates the requested filename's extensions with the file's behavior and content")
+	],
+	"negotiation" : $[
+	    "default": true,
+	    "description" : _("Provides for content negotiation")
+	],
+	"setenvif" : $[
+	    "default": true,
+	    "description" : _("Allows the setting of environment variables based on characteristics of the request")
+	],
+	"default" : $[
+	    "default": true,
+	    "description" : _("Provides information on server activity and performance")
+	],
+	"suexec" : $[
+	    "default": true,
+	    "description" : _("Allows CGI scripts to run as a specified user and Group")
+	],
+	"userdir" : $[
+	    "default": true,
+	    "description" : _("User-specific directories")
+	],
+	"status"  : $[
+	    "default": true,
+	    "description" : _("Provides information on server activity and performance")
+	],
+]
+

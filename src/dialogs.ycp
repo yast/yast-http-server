@@ -1,0 +1,118 @@
+/**
+ * File:	include/http-server/dialogs.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Dialogs definitions
+ * Authors:	Jiri Srain <jsrain@suse.cz>
+ *		Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ */
+
+{
+
+    textdomain "http-server";
+
+    import "HttpServer";
+    import "HttpServerWidgets";
+
+    import "Popup";
+    import "Label";
+    import "CWM";
+    import "Wizard";
+
+    /**
+      * Read settings dialog
+      * @return `abort if aborted and `next otherwise
+      */
+    global define symbol ReadDialog() ``{
+	Wizard::RestoreHelp (HELPS["read"]:"");
+	boolean ret = HttpServer::Read();
+	return ret ? `next : `abort;
+    }
+
+    /**
+      * Write settings dialog
+      * @return `abort if aborted and `next otherwise
+      */
+    global define symbol WriteDialog() ``{
+	Wizard::RestoreHelp (HELPS["write"]:"");
+	boolean ret = HttpServer::Write();
+	if (! ret && cfg_restart_wanted)
+	    return `back;
+	return ret ? `next : `abort;
+    }
+
+    /**
+      * Run default host dialog
+      * @return symbol for wizard sequencer
+      */
+    global define symbol DefaultHostDialog () ``{
+	list w = CWM::CreateWidgets (["server_enable", "global_table" ],
+	    HttpServerWidgets::widgets);
+	term contents = `HBox (`HSpacing (1), `VBox (
+	    `VSpacing (1),
+	    w[0, "widget"]:`VSpacing (0),
+	    `VSpacing (1),
+	    w[1, "widget"]:`VSpacing (0),
+	    `VSpacing (1)
+	), `HSpacing (1));
+	// dialog caption
+	string caption = _("HTTP server configuration");
+	string help = CWM::MergeHelps (w) + HELPS["additional_default"]:"";
+
+	Wizard::SetContentsButtons (caption, contents, help,
+	    Label::BackButton (), Label::FinishButton ());
+	    
+	UI::ReplaceWidget( `id(`_tp_table_repl), 
+	    `MenuButton( _("Advanced"), 
+		[ `item( `id( `show_log ), "&Show log" ), 
+		  `item( `id( `modules ), "Server &modules" ),
+	    ] ) );
+
+	return CWM::Run (w, $[]);
+    }
+
+    /**
+      * Run modules dialog
+      * @return symbol for wizard sequencer
+      */
+    global define symbol ModulesDialog () ``{
+	list w = CWM::CreateWidgets (["modules"], HttpServerWidgets::widgets );
+	term contents = `HBox (`HSpacing (1), `VBox (
+	    `VSpacing (1),
+	    w[0, "widget"]:`VSpacing (0),
+	    `VSpacing (1)
+	), `HSpacing (1));
+	// dialog caption
+	string caption = _("Server modules");
+	string help = CWM::MergeHelps (w);
+
+	Wizard::SetContentsButtons (caption, contents, help,
+	    Label::BackButton (), Label::OKButton ());
+
+	return CWM::Run (w, $[]);
+    }
+
+    /**
+      * Run server settings edit dialog
+      * @return symbol for wizard sequencer
+      */
+    global define symbol ListenDialog () ``{
+	list w = CWM::CreateWidgets (["listen"],
+	    HttpServerWidgets::widgets);
+	term contents = `HBox (`HSpacing (1), `VBox (
+	    `VSpacing (1),
+	    w[0, "widget"]:`VSpacing (0),
+	    `VSpacing (1)
+	), `HSpacing (1));
+	string caption = sformat(_("Listen for '%1'"), HttpServerWidgets::currenthost == "defaulthost" ? _("Default host") : HttpServerWidgets::currenthost );
+	string help = CWM::MergeHelps (w);
+
+	Wizard::SetContentsButtons (caption, contents, help,
+	    Label::BackButton (), Label::OKButton ());
+
+	return CWM::Run (w, $[]);
+    }
+
+/* EOF */
+}

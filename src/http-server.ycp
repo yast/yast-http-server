@@ -1,0 +1,77 @@
+/**
+ * File:	clients/http-server.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Main file
+ * Authors:	Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ *
+ * Main file for http-server configuration. Uses all other files.
+ */
+
+{
+
+/***
+ * <h3>Configuration of the http-server</h3>
+ */
+
+textdomain "http-server";
+
+import "Require";
+
+include "commandline/commandline.ycp";
+
+map cmdline_description = $[
+    "id" 	: "http-server",
+    "help"	: _("Configuration of HTTP server (Apache2)"),
+    "guihandler"        : ``(HttpServerSequence()),
+    "initialize"        : ``(HttpServer::Read()),
+    "finish"            : ``(HttpServer::Write()),
+    "actions"           : $[
+    ],
+    "options"		: $[
+    ],
+    "mapping"		: $[
+    ]
+];
+
+/* The main () */
+y2milestone ("----------------------------------------");
+y2milestone ("HttpServer module started");
+
+include "http-server/wizards.ycp";
+
+/* is this proposal or not? */
+boolean propose = false;
+list args = WFM::Args();
+if(size(args) > 0) {
+    if(is(WFM::Args(0), path) && WFM::Args(0) == .propose) {
+        y2milestone("Using PROPOSE mode");
+        propose = true;
+    }
+}
+
+// check rpms
+if( !Require::RequireAndConflictTarget( ["apache2"], [],
+    _("<p>To configure the HTTP server, the <b>%1</b> package must be installed.</p>") +
+    // notification 2/2
+    _("<p>Do you want to install it now?</p>")) )
+{
+    return false;
+}
+
+/* main ui function */
+any ret = nil;
+
+if(propose) ret = HttpServerAutoSequence();
+else ret = CommandLineRun(cmdline_description);
+y2debug("ret=%1", ret);
+
+/* Finish */
+y2milestone("HttpServer module finished");
+y2milestone("----------------------------------------");
+
+return ret;
+
+/* EOF */
+}

@@ -1,0 +1,306 @@
+/**
+ * File:	modules/HttpServer.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Data for configuration of http-server, input and output functions.
+ * Authors:	Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ *
+ * Representation of the configuration of http-server.
+ * Input and output routines.
+ */
+
+{
+
+module "HttpServer";
+textdomain "http-server";
+
+import "Progress";
+import "Report";
+import "Summary";
+import "Runlevel";
+
+include "http-server/routines.ycp";
+
+/**
+ * Abort function
+ * return boolean return true if abort
+ */
+global block AbortFunction = nil;
+
+/**
+ * Data was modified?
+ */
+global boolean modified = false;
+
+global boolean proposal_valid = false;
+
+/**
+ * Write only, used during autoinstallation.
+ * Don't run services and SuSEconfig, it's all done at one place.
+ */
+global boolean write_only = false;
+
+/**
+ * Data was modified?
+ * @return true if modified
+ */
+global define boolean Modified() ``{
+    y2debug("modified=%1",modified);
+    return modified;
+};
+
+/**
+ * HTTP server settings
+ */
+global map settings = $[
+    "modules" : $[
+    ],
+    "defaulthost" : $[
+	"ServerName" : "www.example.com:80",
+	"DocumentRoot" : "/srv/www/htdocs",
+	"ServerAdmin" : "webmaster@example.com",
+	"Listen" : "80",
+    ],
+    "virtualhosts" : $[],
+    "settings" : $[
+	"enabled" : false
+    ]
+];
+
+/**
+ * Is status of modules modified?
+ */
+global boolean modules_modified = false;
+
+/**
+ * Description of all known modules
+ */
+global map all_modules = $[];
+
+/****************************** local data ************************************/
+
+/**
+ * List of httpd.conf options to be stored in settings part, not in hosts
+ */
+list server_settings = [];
+
+/**
+ * List of options which allow multiple keys
+ */
+list multiple_settings = ["Listen", "Include"];
+
+/************************** end of local data *********************************/
+
+
+/**
+ * Read all http-server settings
+ * @return true on success
+ */
+global define boolean Read() ``{
+
+    /* HttpServer read dialog caption */
+    string caption = _("Initializing HTTP server configuration");
+
+    integer steps = 3;
+
+    // We do not set help text here, because it was set outside
+    Progress::New( caption, " ", steps, [
+	    _("Check the environment"),
+	    _("Read Apache2 configuration")
+	], [
+	    _("Checking the environment..."),
+	    _("Reading Apache2 configuration..."),
+	    _("Finished")
+	],
+	""
+    );
+
+    // check the environment
+    if(Abort()) return false;
+    Progress::NextStep();
+
+    // check httpd.conf
+    if( SCR::Read( .target.lstat, "/etc/apache2/httpd.conf" ) == $[] ) {
+	Report::Error( sformat( _("The configuration file '%1' does not exist."), "/etc/apache2/httpd.conf" )  );
+	return false;
+    }
+    
+    // check sysconfig
+    if( SCR::Read( .target.lstat, "/etc/sysconfig/apache2" ) == $[] ) {
+	if( SCR::Execute( .target.bash, "cp /var/adm/fillup-templates/sysconfig.apache2 /etc/sysconfig/apache2" )
+	    != 0 ) {
+	    Report::Error( sformat( _("Cannot create sysconfig file '%1'."), "/etc/sysconfig/apache2" ) );
+	    return false;
+	}
+    }
+
+    // read module descriptions
+    all_modules = GetModules();
+    
+    if(all_modules == nil) {
+	Report::Error(_("Cannot read the Apache2 modules descriptions."));
+	all_modules = $[];
+    }
+
+    // read current settings from httpd.conf and sysconfig
+    Progress::NextStage();
+
+    // read the top level options
+    list toplevel_opts = SCR::Dir( .etc.httpd );
+    foreach( string opt, toplevel_opts, ``{
+	any res = SCR::Read( add( .etc.httpd, opt ) );
+	if( contains( multiple_settings, opt ) && ! is( res, list ) ) res = [ res ];
+
+	// server settings to "settings", rest to "defaulthost"
+	if( contains( server_settings, opt ) ) 
+	    settings["settings", opt] = res;
+	else
+	    settings["defaulthost", opt] = res;
+    });
+    
+    // read modules from sysconfig
+    // TODO: find out all installed modules
+    list modules = splitstring( SCR::Read( .sysconfig.apache2."APACHE_MODULES" ), " " );
+    settings["modules"] = listmap( string mod, modules, ``{
+	if( !haskey( all_modules, mod ) ) {
+	    Report::Error( sformat( _("The configuration file appear to load module '%1', but YaST2 does not know the module."), mod ) );
+	    return nil;
+	}
+	return [ mod, $[ "status" : true, "description": all_modules[mod,"description"]:_("Apache2 module") ] ];
+    } );
+    
+    // check the service status
+    settings["settings", "enabled" ] = Runlevel::ServiceEnabled( "apache2" );
+    
+    if(false) Report::Error(_("Cannot read current settings!"));
+
+    if(Abort()) return false;
+    ProgressNextStage(_("Finished"));
+
+    if(Abort()) return false;
+    modified = false;
+    
+    return true;
+}
+
+/**
+ * Write all http-server settings
+ * @return true on success
+ */
+global define boolean Write() ``{
+
+    /* HttpServer read dialog caption */
+    string caption = _("Saving HTTP server configuration");
+
+    integer steps = 3;
+
+    // We do not set help text here, because it was set outside
+    Progress::New(caption, " ", steps, [
+	    _("Write the Apache2 settings"),
+	    _("Run SuSEconfig"),
+	    settings["settings", "enabled"]:false ? _("Enable Apache2 service") : _("Disable Apache2 service")
+	], [
+	    _("Writing the settings..."),
+	    _("Running SuSEconfig..."),
+	    settings["settings", "enabled"]:false ? _("Enabling Apache2 service") : _("Disabling Apache2 service"),
+	    _("Finished")
+	],
+	""
+    );
+
+    // write Apache2 settings
+    
+    // write sysconfig
+    list modlist = [];
+    foreach( string mod, map status, settings["modules"]:$[], ``{
+	if( status["status"]:false ) modlist = add( modlist, mod );
+    });
+    SCR::Write( .sysconfig.apache2."APACHE_MODULES", mergestring( modlist, " " ) );
+    if( !SCR::Write( .sysconfig.apache2, nil ) ) {
+	Report::Error( sformat(_("Cannot write '%1'."), "/etc/sysconfig/apache2" ) );
+    }
+    
+    // write httpd.conf
+    // default host
+    foreach( string key, any value, settings["defaulthost"]:$[], ``{
+	SCR::Write( add(.etc.httpd, key), value );
+    });
+    // global settings
+    foreach( string key, any value, settings["settings"]:$[], ``{
+	// filter internal options
+	if( !contains( ["enabled"], key ) ) 
+	    SCR::Write( add(.etc.httpd, key), value );
+    });
+    // TODO: virtual hosts, SSL etc
+    if( !SCR::Write( .etc.httpd, nil ) ) {
+	// TODO: configuration file placing can change
+	Report::Error( sformat(_("Cannot write '%1'."), "/etc/apache2/httpd.conf" ) );
+    }
+    
+    Progress::NextStage();
+
+    // run SuSEconfig
+    if( SCR::Execute( .target.bash, "/sbin/SuSEconfig --module apache2" ) != 0 )
+	Report::Error(_("SuSEconfig script failed!") );
+
+    Progress::NextStage();
+    
+    // service enable or disable
+    boolean res = true;
+    if( settings["settings", "enabled"]:false ) {
+	res = res && Runlevel::ServiceAdjust( "apache2", "enable" );
+	res = res && (Runlevel::RunInitScript( "apache2", "restart" ) == 0);
+    } else {
+	res = res && Runlevel::ServiceAdjust( "apache2", "disable" );
+	res = res && (Runlevel::RunInitScript( "apache2", "stop" ) == 0);
+    }
+    if( !res ) Report::Error( sformat( _( "Cannot adjust '%1' service."), "apache2" ) );
+    
+    ProgressNextStage(_("Finished"));
+
+    if(Abort()) return false;
+    return true;
+}
+
+/**
+ * Get all http-server settings from the first parameter
+ * (For use by autoinstallation.)
+ * @param settings The YCP structure to be imported.
+ * @return boolean True on success
+ */
+global define boolean Import (map settings) ``{
+    // TODO FIXME: your code here (fill the above mentioned variables)...
+    sleep(3000);
+    return true;
+}
+
+/**
+ * Dump the http-server settings to a single map
+ * (For use by autoinstallation.)
+ * @return map Dumped settings (later acceptable by Import ())
+ */
+global define map Export () ``{
+    // TODO FIXME: your code here (return the above mentioned variables)...
+    sleep(3000);
+    return $[];
+}
+
+/**
+ * Create a textual summary and a list of unconfigured cards
+ * @param split split configured and unconfigured?
+ * @return summary of the current configuration
+ */
+global define list Summary() ``{
+    // TODO FIXME: your code here...
+    return [ _("Configuration summary ..."), [] ];
+}
+
+global define void enableService(boolean on) ``{
+    if( settings["settings", "enabled"]:false == on ) return;
+    settings["settings", "enabled"] = on;
+    modified = true;
+}
+
+/* EOF */
+}

@@ -1,0 +1,119 @@
+/**
+ * File:	include/http-server/wizards.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Wizards definitions
+ * Authors:	Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ */
+
+{
+
+textdomain "http-server";
+
+import "Wizard";
+
+include "wizard/sequencer.ycp";
+
+include "http-server/complex.ycp";
+include "http-server/dialogs.ycp";
+
+/**
+ * Whole configuration of http-server
+ * @return sequence result
+ */
+global define symbol HttpServerSequence() ``{
+
+    map aliases = $[
+	"read"	: [ ``( ReadDialog() ), true ],
+	"main"	:   ``( MainSequence() ),
+	"write"	: [ ``( WriteDialog() ), true ]
+    ];
+
+    map sequence = $[
+	"ws_start" : "read",
+	"read" : $[
+	    `abort	: `abort,
+	    `next	: "main"
+	],
+	"main" : $[
+	    `abort	: `abort,
+	    `next	: "write"
+	],
+	"write" : $[
+	    `abort	: `abort,
+	    `next	: `next
+	]
+    ];
+
+    string caption = _("HttpServer configuration");
+    term contents = `Label(_("Initializing ..."));
+
+    Wizard::CreateDialog();
+    Wizard::SetContentsButtons(caption, contents, "",
+	    Label::BackButton(), Label::NextButton());
+
+    any ret = WizardSequencer(aliases, sequence);
+
+    UI::CloseDialog();
+    return ret;
+}
+
+/**
+ * Whole configuration of http-server but without reading and writing.
+ * For use with autoinstallation.
+ * @return sequence result
+ */
+global define symbol HttpServerAutoSequence() ``{
+    string caption = _("HttpServer configuration");
+    term contents = `Label(_("Initializing ..."));
+
+    Wizard::CreateDialog();
+    Wizard::SetContentsButtons(caption, contents, "",
+	    Label::BackButton(), Label::NextButton());
+
+    any ret = MainSequence();
+
+    UI::CloseDialog();
+    return ret;
+}
+
+/**
+ * Main workflow of the http-server configuration
+ * @return sequence result
+ */
+global define symbol MainSequence() ``{
+
+    map aliases = $[
+	"defaults"	:   ``( DefaultHostDialog() ),
+	"listen"	:   ``( ListenDialog() ),
+	"modules"	:   ``( ModulesDialog() ),
+    ];
+
+    map sequence = $[
+	"ws_start" : "defaults",
+	"defaults" : $[
+	    `abort	: `abort,
+	    `next	: `next,
+	    `modules	: "modules",
+	    `listen	: "listen",
+	],
+	"modules" : $[
+	    `abort	: `abort,
+	    `next	: "defaults",
+	    `back	: "defaults",
+	],
+	"listen" : $[
+	    `abort	: `abort,
+	    `next	: "defaults",
+	    `back	: "defaults",
+	],
+    ];
+
+    any ret = WizardSequencer(aliases, sequence);
+
+    return ret;
+}
+
+/* EOF */
+}
