@@ -438,14 +438,17 @@ Install them now?
         
     Progress::NextStage();
 
-    // in autoyast, quit here    
-    if( write_only ) return true;
+    // in autoyast, quit here
+    // Wrong, service still has to be enabled...
+    // if( write_only ) return true;
     
     // run SuSEconfig
+	if (!write_only) {
     if( SCR::Execute( .target.bash, "/sbin/SuSEconfig --module apache2" ) != 0 ) {
 	// translators: error message
 	Report::Error(_("SuSEconfig script failed!") );
     }
+	}
 
     Progress::NextStage();
         
@@ -453,10 +456,12 @@ Install them now?
     boolean res = true;
     if( settings["settings", "enabled"]:false ) {
 	res = res && Runlevel::ServiceAdjust( "apache2", "enable" );
-	res = res && (Runlevel::RunInitScript( "apache2", "restart" ) == 0);
+	if (!write_only)
+		res = res && (Runlevel::RunInitScript( "apache2", "restart" ) == 0);
     } else {
 	res = res && Runlevel::ServiceAdjust( "apache2", "disable" );
-	res = res && (Runlevel::RunInitScript( "apache2", "stop" ) == 0);
+	if (!write_only)
+		res = res && (Runlevel::RunInitScript( "apache2", "stop" ) == 0);
     }
     // translators: error message
     if( !res ) Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
@@ -476,8 +481,6 @@ Install them now?
  */
 global define boolean Import (map s) ``{
 
-    if( size( s ) == 0 ) return false;
-    
     map old_modules = GetModules();
 
     settings[ "settings" ] = s[ "settings" ]: $[ "enabled" : false ];
@@ -569,7 +572,12 @@ global define void enableService(boolean on) ``{
  * @return map of packages to be installed and to be removed
  */
 global define map AutoPackages() ``{
-	return ($["install": required_packages, "remove": []]);
+       if( !Require::IsAnyPackageInstalledTarget( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
+           // add a default MPM - prefork because of the PHP4 compatibility
+        required_packages = union (required_packages, ["apache2-prefork"] );
+       }
+
+       return ($["install": required_packages, "remove": []]);
 
 }
 

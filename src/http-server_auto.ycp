@@ -58,6 +58,7 @@ else if (func == "Change") {
 }
 /* Import configuration */
 else if (func == "Import") {
+    HttpServer::configured = false;
     ret = HttpServer::Import(param);
 }
 /* Return required packages */
