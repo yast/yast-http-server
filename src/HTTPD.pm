@@ -1,12 +1,10 @@
 package HTTPD;
 
-BEGIN {
-    $TYPEINFO{run} = ["function", "void"];
-}
 use YaST::YCP;
 YaST::YCP::Import ("SCR");
 
 our $VERSION="0.01";
+our %TYPEINFO;
 
 use strict;
 use Errno qw(ENOENT);
@@ -32,8 +30,9 @@ sub getFileByHostid {
     return undef;
 }
 
-#list<string> getHostlist();
-sub GetHostlist {
+#list<string> GetHostList();
+BEGIN { $TYPEINFO{GetHostList} = ["function", [ "list", "string"] ]; }
+sub GetHostList {
     my @ret = ();
     foreach my $hostList ( values(%$vhost_files) ) {
         foreach my $hostentryHash ( @$hostList ) {
@@ -43,7 +42,8 @@ sub GetHostlist {
     return \@ret;
 }
 
-#map getHost( string hostid );
+#map GetHost( string hostid );
+BEGIN { $TYPEINFO{GetHost} = ["function", [ "map", "string", "any" ], "string"]; }
 sub GetHost {
     my $hostid = shift;
 
@@ -61,7 +61,8 @@ sub GetHost {
     return {};
 }
 
-#bool ModifyHost( string hostid, map hostdata );
+#boolean ModifyHost( string hostid, map hostdata );
+BEGIN { $TYPEINFO{ModifyHost} = ["function", "boolean", "string", [ "map", "string", "any" ] ]; }
 sub ModifyHost {
     my $hostid = shift;
     my $data = shift;
@@ -80,6 +81,7 @@ sub ModifyHost {
 }
 
 #bool CreateHost( string hostid, map hostdata );
+BEGIN { $TYPEINFO{CreateHost} = ["function", "boolean", "string", [ "map", "string", "any" ] ]; }
 sub CreateHost {
     my $hostid = shift;
     my $data = shift;
@@ -109,6 +111,7 @@ sub CreateHost {
 }
 
 #bool DeleteHost( string hostid );
+BEGIN { $TYPEINFO{DeleteHost} = ["function", "boolean", "string"]; }
 sub DeleteHost {
     my $hostid = shift;
 
@@ -125,7 +128,8 @@ sub DeleteHost {
     return 1;
 }
 
-#bool WriteHost( string hostid );
+#boolean WriteHost( string hostid );
+BEGIN { $TYPEINFO{WriteHost} = ["function", "boolean", "string"]; }
 sub WriteHost {
     my $hostid = shift;
 
@@ -134,18 +138,19 @@ sub WriteHost {
     return 1;
 }
 
+BEGIN { $TYPEINFO{run} = ["function", "void"]; }
 sub run {
     my @data = SCR::Read('.httpd.vhosts');
     $vhost_files = $data[0];
 
-    print "-------------- GetHostlist\n";
-    foreach my $h ( @{GetHostlist()} ) {
+    print "-------------- GetHostList\n";
+    foreach my $h ( @{GetHostList()} ) {
         print "ID: $h\n";
     }
     print "\n";
 
     print "-------------- GetHost Number 0\n";
-    my $hostid = GetHostlist()->[0];
+    my $hostid = GetHostList()->[0];
     my $hostHash = GetHost( $hostid );
     foreach my $k ( keys(%$hostHash) ) {
         print "$k = $hostHash->{$k}\n";
@@ -156,7 +161,7 @@ sub run {
     DeleteHost( $hostid );
 
     print "-------------- ModifyHost Number 0\n";
-    $hostid = GetHostlist()->[0];
+    $hostid = GetHostList()->[0];
     $hostHash = GetHost( $hostid );
     $hostHash->{'ErrorLog'} = '/modified/now/error.log';
     ModifyHost( $hostid, $hostHash );
@@ -165,14 +170,14 @@ sub run {
     my %temp = ( ServerName => 'createTest.suse.de', VirtualByName => 1, ServerAdmin => 'no@one.de' );
     CreateHost( '192.168.1.1/createTest.suse.de', \%temp );
 
-    print "-------------- GetHostlist\n";
-    foreach my $h ( @{GetHostlist()} ) {
+    print "-------------- GetHostList\n";
+    foreach my $h ( @{GetHostList()} ) {
         print "ID: $h\n";
     }
     print "\n";
 
     print "-------------- GetHost Number 0\n";
-    $hostid = GetHostlist()->[0];
+    $hostid = GetHostList()->[0];
     $hostHash = GetHost( $hostid );
     foreach my $k ( keys(%$hostHash) ) {
         print "$k = $hostHash->{$k}\n";
