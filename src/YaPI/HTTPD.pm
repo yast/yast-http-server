@@ -751,6 +751,8 @@ sub writeHost {
                           'KEY'          => '_SECTION',
                           'VALUE'        => [ \%h ]
                 } );
+            } elsif( $data->{KEY} eq 'HostIP' ) {
+                $host->{HostIP} = $data->{VALUE};
             } else {
                 push( @newData, $data );
             }
@@ -1019,7 +1021,7 @@ sub selections2modules {
     my $list = shift;
     my @ret;
     foreach my $sel ( @$list ) {
-        if( exists( $YaPI::HTTPDModules::selection{$sel} ) ) {
+        if( $sel and exists( $YaPI::HTTPDModules::selection{$sel} ) ) {
             push( @ret, @{$YaPI::HTTPDModules::selection{$sel}->{modules}} );
         }
     }

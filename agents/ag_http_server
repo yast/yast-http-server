@@ -66,7 +66,7 @@ sub parse_vhost_files {
                 $tmpOverhead .= section2string( [$vhost] );
                 next;
             } elsif( not exists( $vhost->{'SECTIONNAME'} ) ) {
-                $tmpOverhead .= $vhost->{'OVERHEAD'};
+                $tmpOverhead .= $vhost->{'OVERHEAD'} if( $vhost->{'OVERHEAD'} );
                 $tmpOverhead .= $vhost->{KEY}." ".$vhost->{VALUE}."\n";
                 next;
             }
@@ -220,7 +220,7 @@ sub write_vhost_files {
         };
         foreach my $entry ( @{$vhost_files{$file}} ) {
             print FILE $entry->{OVERHEAD} if($entry->{OVERHEAD});
-            print FILE "<VirtualHost $entry->{VHOST}>\n" if( $entry->{VHOST} );
+            print FILE "<VirtualHost $entry->{HostIP}>\n" if( $entry->{HostIP} );
             foreach my $data ( @{$entry->{DATA}} ) {
                 next if( $data->{KEY} eq 'HostIP' ); # just for internal use
                 # FIXME: subsections in vhosts possible?
@@ -232,7 +232,7 @@ sub write_vhost_files {
                     print FILE " ".$data->{KEY}." ".$data->{VALUE}."\n" if( $data->{KEY} );
                 }
             }
-            print FILE "</VirtualHost>\n" if( $entry->{VHOST} );
+            print FILE "</VirtualHost>\n" if( $entry->{HostIP} );
         }
         close(FILE);
     }
