@@ -301,6 +301,7 @@ use YaST::httpdUtils;
 @YaPI::HTTPD::ISA = qw( YaPI YaST::httpdUtils );
 YaST::YCP::Import ("SCR");
 YaST::YCP::Import ("Service");
+YaST::YCP::Import ("SuSEFirewall");
 
 #######################################################
 # temoprary solution end
@@ -1102,7 +1103,7 @@ sub DeleteListen {
     my @listenEntries = @{$self->GetCurrentListen()};
     my @newListenEntries = ();
     foreach my $listen ( @listenEntries ) {
-        if( defined($ip) and (not exists($listen->{'ADDRESS'}) or $listen->{'ADDRESS'} ne $ip) ) {
+        if( $ip and (not exists($listen->{'ADDRESS'}) or $listen->{'ADDRESS'} ne $ip) ) {
             push( @newListenEntries, $listen );
             next;
         }
@@ -1111,7 +1112,7 @@ sub DeleteListen {
         push( @newListenEntries, $listen );
     }
     if( @listenEntries == @newListenEntries ) {
-        return SetError( summary => _('listen value to delete not found'), code => "CHECK_PARAM_FAILED" );
+        return $self->SetError( summary => _('listen value to delete not found'), code => "CHECK_PARAM_FAILED" );
     }
 
     SCR->Write( ".http_server.listen", \@newListenEntries );
