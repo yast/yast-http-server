@@ -52,7 +52,7 @@ global string get_host_value ( string keyword, list< map<string, any> > host, st
     return ret;
 }
 
-list< map<string,any> > set_host_value ( string keyword, list< map<string, any> > host, any value )
+global list< map<string,any> > set_host_value ( string keyword, list< map<string, any> > host, any value )
 {
     integer index = 0;
     foreach( map<string, any> option, host, ``{
@@ -371,7 +371,6 @@ global boolean HostTableEntryDelete (any opt_id, string opt_key);
 global void initModules (any key);
 global symbol handleModules (any key, map event);
 global void initListenSettings (any key);
-global void storeListenSettings (any key, map event);
 global symbol handleListenSettings (any key, map event);
 global void initServiceStatus (any key);
 global void storeServiceStatus (any key, map event);
@@ -510,7 +509,6 @@ global map listenwidget = $[
 		)
 	    ),
 	    "init" : HttpServerWidgets::initListenSettings,
-	    "store" : HttpServerWidgets::storeListenSettings,
 	    "handle" : HttpServerWidgets::handleListenSettings,
 	    "help" : HELPS["listen"]:"",
 	];
@@ -997,6 +995,7 @@ define string item2listen( string network, string port ) ``{
 
 	integer id = -1;
 	list< map<string,any> > listen = HTTPDData::GetCurrentListen();
+	y2error ("Listen: %1", listen);
 	list<term> items = maplist( map<string,any> litem, listen, ``{ id = id+1; return listen2item(litem, id); } );
 	UI::ChangeWidget (`id (`listen), `Items, items);
 	
@@ -1005,25 +1004,6 @@ define string item2listen( string network, string port ) ``{
 	
 	// set focus
 	UI::SetFocus (`id (`listen));
-    }
-
-    /**
-      * Store function of a widget
-      * @param key any widget key of widget that is processed
-      * @param event map event that occured
-      */
-    global define void storeListenSettings (any key, map event) ``{
-	// FIXME:
-	integer i = size(HttpServer::settings["Listen"]:[]);
-	list newlisten = [];
-	while( i>0 ) {
-	    term item = (term) UI::QueryWidget( `id(`listen), `Item(i-1) );
-	    newlisten = add( newlisten, item2listen( select(item,1,""), select(item,2,"") ) );
-	    i = i-1;
-	}
-	
-	HttpServer::modified = (HttpServer::settings["Listen"]:[] == newlisten );
-	HttpServer::settings["Listen"] = newlisten;
     }
 
     /**
@@ -1125,8 +1105,7 @@ listen cannot be empty.
       */
     global define void initAdaptFirewall (any key) ``{
 	if( Service::Enabled( "SuSEfirewall2_final" ) ) {
-	    UI::ChangeWidget (`id (key), `Value,
-		HttpServer::settings["settings", "firewall"]:false);
+	    UI::ChangeWidget (`id (key), `Value, HttpServer::firewall);
 	    UI::ChangeWidget (`id (key), `Enabled, true );
 	} else {
 	    // disable the widget
@@ -1140,8 +1119,8 @@ listen cannot be empty.
       * @param event map event description
       */
     global define void storeAdaptFirewall (any opt_id, map event) ``{
-	if( HttpServer::settings["settings", "firewall_started"]:false ) {
-	    HttpServer::settings["settings", "firewall"] = UI::QueryWidget (`id (opt_id), `Value);
+	if( HttpServer::firewall_started ) {
+	    HttpServer::firewall = (boolean)UI::QueryWidget (`id (opt_id), `Value);
 	    HttpServer::modified = true;
 	}
     }

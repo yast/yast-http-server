@@ -18,7 +18,7 @@
 textdomain "http-server";
 
 import "CommandLine";
-import "HttpServer";
+import "HTTPD";
 import "Popup";
 import "Require";
 import "Report";
@@ -47,25 +47,26 @@ define boolean ConfigureHandler(map<string, any> options) ``{
 	return false;
     }
 
-    string host = options["host"]:"defaulthost";
+    string host = "default";
+
+    list< map<string,any> > hostconfig = HTTPD::GetHost (host);
     
     string value = options["servername"]:"";
     if( value != "" ) {
-	HttpServer::settings[host, "servername"] = value;
-	HttpServer::modified = true;
+	hostconfig = HttpServerWidgets::set_host_value ( "ServerName", hostconfig, value );
     }
 
     value = options["serveradmin"]:"";
     if( value != "" ) {
-	HttpServer::settings[host, "serveradmin"] = value;
-	HttpServer::modified = true;
+	hostconfig = HttpServerWidgets::set_host_value ( "ServerAdmin", hostconfig, value );
     }
 
     value = options["documentroot"]:"";
     if( value != "" ) {
-	HttpServer::settings[host, "documentroot"] = value;
-	HttpServer::modified = true;
+	hostconfig = HttpServerWidgets::set_host_value ( "DocumentRoot", hostconfig, value );
     }
+    
+    HTTPD::ModifyHost (host, hostconfig);
 
     return true;
 }
@@ -84,27 +85,24 @@ define boolean ModulesHandler(map<string, string> options) ``{
 
     if( command == "enable" ) {
 	list<string> mods = splitstring( options["enable"]:"", "," );
-	
-	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = true; });
-	
-	HttpServer::modified = true;
+	HTTPD::ModifyModuleList (mods, true);	
     }
     else if( command == "disable" ) {
 	list<string> mods = splitstring( options["disable"]:"", "," );
-	
-	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = false; });
-
-	HttpServer::modified = true;
+	HTTPD::ModifyModuleList (mods, false);	
     }
     else if( command == "list" ) {
         // translators: heading for the "modules list" command line action output
 	// please, try to align the texts if possible.
 	CommandLine::Print( _("Status \tModule
 =================="));
+
+	list<string> enabled = HTTPD::GetModuleList();
 	
-	foreach( string mod, map status, HttpServer::settings["modules"]:$[], ``{
+	foreach( map<string,any> mod, HTTPD::GetKnownModules(), ``{
 	    // translators: status of a module
-	    CommandLine::Print( sformat( "%1\t%2", status["status"]:false ? _("Enabled") : _("Disabled"), mod ) );
+	    CommandLine::Print( sformat( "%1\t%2", 
+		contains( enabled, mod["name"]:"" ) ? _("Enabled") : _("Disabled"), mod["name"]:_("unknown") ) );
 	});
     }
 
@@ -123,7 +121,8 @@ define boolean ListenHandler(map<string, string> options) ``{
     string command = CommandLine::UniqueOption( options,
         ["add", "delete", "list" ] );
     if( command == nil ) return false;
-    
+
+/* FIXME:    
     if( command == "add" ) {
 	if( contains( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" ) )
 	{
@@ -167,7 +166,7 @@ define boolean ListenHandler(map<string, string> options) ``{
 	});
 
     }
-
+*/
     return true;
 }
 

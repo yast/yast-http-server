@@ -349,9 +349,11 @@ sub GetCurrentListen {
         }
         push( @new, $old );
     }
+    print STDERR join (' ', @new);
     return \@new;
 }
 
+BEGIN { $TYPEINFO{WriteListen} = ["function", "boolean", "boolean" ]; }
 sub WriteListen {
     my $doFirewall = shift;
 
