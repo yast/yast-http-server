@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Aug 21 14:53:16 CEST 2003 - visnov@suse.de
+
+- Add error popup if packages are not installed
+
+-------------------------------------------------------------------
 Wed Aug 20 15:39:48 CEST 2003 - visnov@suse.de
 
 - Do not show Initializing... dialog
