@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Sat Sep 13 18:19:14 CEST 2003 - nashif@suse.de
+
+- Enable service in autoinst mode
+- Fixed package list for autoinstall
+- 2.8.13
+
+-------------------------------------------------------------------
 Fri Sep 12 09:29:21 CEST 2003 - visnov@suse.de
 
 - first test installed MPMs, then try to install at least one (#30567)
