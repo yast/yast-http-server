@@ -3,6 +3,8 @@
  * Summary:	List of all known Apache2 modules
  * Authors:	Stanislav Visnovsky <visnov@suse.cz>
  * $Id$
+ *
+   textdomain "http-server"
  */
 
 $[
