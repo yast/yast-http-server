@@ -15,7 +15,7 @@
 module "HttpServer";
 textdomain "http-server";
 
-import "HTTPDData";
+import "YaST::HTTPDData";
 import "NetworkDevices";
 import "Progress";
 import "Report";
@@ -140,10 +140,10 @@ global define boolean Read() ``{
     Progress::NextStage();
     
     // read hosts
-    HTTPDData::ReadHosts();
-    HTTPDData::ReadListen();
-    HTTPDData::ReadModules();
-    HTTPDData::ReadService();
+    YaST::HTTPDData::ReadHosts();
+    YaST::HTTPDData::ReadListen();
+    YaST::HTTPDData::ReadModules();
+    YaST::HTTPDData::ReadService();
     
     Progress::NextStage();
 
@@ -191,7 +191,7 @@ global define boolean Write() ``{
 	    _("Write the Apache2 settings"),
 	    // translators: progress stage 2/3
 	    _("Run SuSEconfig"),
-	    HTTPDData::GetService() ?
+	    YaST::HTTPDData::GetService() ?
 		// translators: progress stage 3/3
 		_("Enable Apache2 service")
 		// translators: progress stage 3/3
@@ -201,7 +201,7 @@ global define boolean Write() ``{
 	    _("Writing the settings..."),
 	    // translators: progress step 2/3
 	    _("Running SuSEconfig..."),
-	    HTTPDData::GetService() ?
+	    YaST::HTTPDData::GetService() ?
 		// translators: progress step 3/3
 		_("Enabling Apache2 service...")
 		// translators: progress step 3/3
@@ -214,7 +214,7 @@ global define boolean Write() ``{
 
     // write Apache2 settings
 
-    list<string> rpms = HTTPDData::GetModulePackages();
+    list<string> rpms = YaST::HTTPDData::GetModulePackages();
 
     // install required RPMs for modules
     Require::RequireAndConflictTarget( rpms, [], _("The enabled modules require
@@ -226,9 +226,9 @@ Install them now?
     // write httpd.conf
 
     // write hosts
-    HTTPDData::WriteHosts ();
-    HTTPDData::WriteListen (firewall && firewall_started);
-    HTTPDData::WriteModuleList ();
+    YaST::HTTPDData::WriteHosts ();
+    YaST::HTTPDData::WriteListen (firewall && firewall_started);
+    YaST::HTTPDData::WriteModuleList ();
 
     Progress::NextStage();
 
@@ -246,7 +246,7 @@ Install them now?
 
     Progress::NextStage();
     
-    if( ! HTTPDData::WriteService(write_only) )
+    if( ! YaST::HTTPDData::WriteService(write_only) )
     {
 	// translators: error message
 	Report::Error( sformat( _("Cannot adjust '%1' service."), "apache2" ) );
@@ -283,7 +283,7 @@ global define boolean Import (map s) ``{
     string version = s["version"]:"unknown";
     
     // setup modules
-    list <map <string,any> > known_modules = HTTPDData::GetKnownModules();
+    list <map <string,any> > known_modules = YaST::HTTPDData::GetKnownModules();
     list <map <string,any> > modules = s["modules"]: [];
     foreach (map<string,any> desc, modules, ``{
 	string mod = desc["name"]:"";
@@ -308,7 +308,7 @@ global define boolean Import (map s) ``{
 	    }
 	    
 	    // just change the status
-	    HTTPDData::ModifyModuleList( [mod], change_string == "enable" );
+	    YaST::HTTPDData::ModifyModuleList( [mod], change_string == "enable" );
 	}
 	else
 	{
@@ -330,18 +330,18 @@ This can cause inconsistent module configuration."), mod));
 	}
 	else
 	{
-	    HTTPDData::CreateListen(l["PORT"]:0, l["PORT"]:0, l["ADDRESS"]:"" ); 
+	    YaST::HTTPDData::CreateListen(l["PORT"]:0, l["PORT"]:0, l["ADDRESS"]:"" ); 
 	}
     });
 
     // setup hosts
     map <string, list<map<string, any> > > hosts = s["hosts"]:$[];
-    foreach (string host, list<map<string, any> > desc, hosts, ``{ HTTPDData::CreateHost(host,desc); }); // check host name
+    foreach (string host, list<map<string, any> > desc, hosts, ``{ YaST::HTTPDData::CreateHost(host,desc); }); // check host name
     
     // setup service
     if (haskey( s, "service" ))
     {
-	HTTPDData::ModifyService (s["service"]:false);
+	YaST::HTTPDData::ModifyService (s["service"]:false);
     }
     
     // setup firewall
@@ -362,8 +362,8 @@ This can cause inconsistent module configuration."), mod));
  * @return map Dumped settings (later acceptable by Import ())
  */
 global define map Export () ``{
-    list < map <string,any> > known_modules = HTTPDData::GetKnownModules();
-    list <string> enabled_modules = HTTPDData::GetModuleList();
+    list < map <string,any> > known_modules = YaST::HTTPDData::GetKnownModules();
+    list <string> enabled_modules = YaST::HTTPDData::GetModuleList();
 
     // walk over the known modules    
     list <map <string,any> > modules = maplist (map<string, any> desc, known_modules, ``(
@@ -394,16 +394,16 @@ global define map Export () ``{
     });
     
     // hosts
-    map <string, list< map<string,any> > > hosts = listmap (string host, HTTPDData::GetHostsList(), ``(
-	$[ host : HTTPDData::GetHost(host) ]
+    map <string, list< map<string,any> > > hosts = listmap (string host, YaST::HTTPDData::GetHostsList(), ``(
+	$[ host : YaST::HTTPDData::GetHost(host) ]
     ));
 
     map result = $[
 	"version" : "2.9",
 	"modules": modules,
 	"hosts" : hosts,
-	"Listen": HTTPDData::GetCurrentListen(),
-	"service" : HTTPDData::GetService (),
+	"Listen": YaST::HTTPDData::GetCurrentListen(),
+	"service" : YaST::HTTPDData::GetService (),
 	"firewall" : firewall,
     ];
 
@@ -424,7 +424,7 @@ global define list Summary() ``{
 
     if( configured ) {
         // summary item: an option is turned on
-        if( HTTPDData::GetService() )
+        if( YaST::HTTPDData::GetService() )
 	    // translators: autoyast summary text, server status
             summary = Summary::AddLine(summary, _("Apache2 server is <i>enabled</i>") );
         else

@@ -12,7 +12,7 @@
 
     textdomain "http-server";
 
-    import "HTTPDData";
+    import "YaST::HTTPDData";
     import "HttpServer";
     import "HttpServerWidgets";
 
@@ -64,7 +64,7 @@
 	string caption = sformat(_("Host '%1' Configuration"), 
 	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") 
 		: HttpServerWidgets::get_host_value ( "ServerName"
-		, HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ));
+		, YaST::HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ));
 
 	string help = CWM::MergeHelps (w);
 
@@ -234,7 +234,7 @@
         	    continue;
     		}
 
-		HTTPDData::CreateHost ( ip+"/"+servername, 
+		YaST::HTTPDData::CreateHost ( ip+"/"+servername, 
 		    [
 			$[ "KEY": "DocumentRoot", "VALUE" : documentroot ],
 			$[ "KEY": "ServerName", "VALUE" : servername ],
@@ -267,7 +267,7 @@
 	string caption = sformat( _("SSL Configuration for '%1'"),
 	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") 
 		: HttpServerWidgets::get_host_value ( "ServerName"
-		, HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ) );
+		, YaST::HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ) );
 
 	string help = CWM::MergeHelps (w);
 
