@@ -12,6 +12,7 @@
 
     textdomain "http-server";
 
+    import "HTTPDData";
     import "HttpServer";
     import "HttpServerWidgets";
 
@@ -26,16 +27,10 @@
     }
 
     /**
-      * Run default host dialog
+      * Run server overview dialog
       * @return symbol for wizard sequencer
       */
     symbol OverviewDialog () {
-	// fix the help for document root, it defined
-	if( size(HttpServer::document_root) > 0 ) {
-	    HttpServerWidgets::widgets["server_enable", "help" ] = HELPS[ "server_enable" ]:"" + sformat( _("<p>The documents served by
-the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
-	}
-
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
 	    "server_enable",
@@ -50,7 +45,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	return CWM::ShowAndRun (["server_enable", "firewall_adapt", "overview_widget" ]
 	    ,HttpServerWidgets::widgets
 	    ,contents, caption,
-	    Label::BackButton (), Label::FinishButton (), $["abort" : Abort]);
+	    Label::BackButton (), Label::FinishButton (), $[`abort : Abort]);
     }
 
     /**
@@ -72,7 +67,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 
-	return CWM::Run (w, $["abort" : Abort]);
+	return CWM::Run (w, $[`abort : Abort]);
     }
 
     /**
@@ -90,7 +85,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	string caption = _("Server Modules");
 
 	return CWM::ShowAndRun (["modules"], HttpServerWidgets::widgets, contents, caption,
-	  Label::BackButton(), Label::OKButton(), $["abort" : Abort]);
+	  Label::BackButton(), Label::OKButton(), $[`abort : Abort]);
     }
 
     /**
@@ -117,7 +112,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	    // menu button label
 	    `PushButton( `id( `set_default ), _("Set as De&fault") ) );
 
-	return CWM::Run (w, $["abort" : Abort]);
+	return CWM::Run (w, $[`abort : Abort]);
     }
 
     /**
@@ -141,7 +136,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 
-	return CWM::Run (w, $["abort" : Abort]);
+	return CWM::Run (w, $[`abort : Abort]);
     }
 
     symbol AddHost () {
@@ -164,7 +159,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 		`RadioButtonGroup(
 		    `id ( `resolution ),
 		    `VBox (
-			`Left(`RadioButton ( `id ( `name_based ), _("Determine Request Server by HTTP Headers") ) ),
+			`Left(`RadioButton ( `id ( `name_based ), _("Determine Request Server by HTTP Headers"), true ) ),
 			`Left(`RadioButton ( `id ( `ip_based ), _("Determine Request Server by Server IP Address") ) )
 		    )
 		)))), `HSpacing (0.5)
@@ -196,11 +191,54 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	    if (ret == `next )
 	    {
 		// FIXME: Do checks about the IP address availability
-		y2debug("");
+		string ip = (string) UI::QueryWidget ( `ipaddress, `Value );
+		string servername = (string) UI::QueryWidget( `servername, `Value );
+		string documentroot = (string) UI::QueryWidget( `documentroot, `Value );
+		string admin = (string) UI::QueryWidget( `admin, `Value );
+		boolean virtualbyname = (boolean) UI::QueryWidget( `name_based, `Enabled );
+		
+		HTTPDData::CreateHost ( ip+"/"+servername, 
+		    [
+			$[ "KEY": "DocumentRoot", "VALUE" : documentroot ],
+			$[ "KEY": "ServerName", "VALUE" : servername ],
+			$[ "KEY": "ServerAdmin", "VALUE" : admin ],
+			$[ "KEY": "VirtualByName", "VALUE" : virtualbyname ],
+			$[ "KEY": "HostIP", "VALUE" : ip ],
+			$[ "KEY": "SSL", "VALUE" : 0 ],	// No SSL
+		    ]);
 	    }
 	} while (ret == nil);
 
 	return ret;
+    }
+
+    /**
+      * Run host SSL dialog
+      * @return symbol for wizard sequencer
+      */
+    symbol SSLDialog () {
+	list< map<string,any> > w = CWM::CreateWidgets (["ssl"],
+	    HttpServerWidgets::widgets);
+	term contents = `HBox (`HSpacing (1), `VBox (
+	    `VSpacing (1),
+	    w[0, "widget"]:`VSpacing (0),
+	    `VSpacing (1)
+	), `HSpacing (1));
+
+	// dialog caption
+	// dialog caption, %1 is the host name
+	string caption = sformat( _("SSL Configuration for '%1'"), HttpServerWidgets::currenthost );
+
+	string help = CWM::MergeHelps (w);
+
+	Wizard::SetContentsButtons (caption, contents, help,
+	    Label::BackButton (), Label::OKButton ());
+
+	UI::ReplaceWidget( `id(`_tp_table_repl),
+	    // menu button label
+	    `PushButton( `id( `generate_certificate ), _("&Generate Certificate") ) );
+
+	return CWM::Run (w, $[`abort : Abort]);
     }
 
 /* EOF */

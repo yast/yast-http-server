@@ -18,6 +18,4 @@ Read	.etc.install_inf.UseSSH nil
 Read	.etc.install_inf.InstMode nil
 Read	.target.tmpdir nil
 Log	Failed to set temporary directory: nil
-Read	.sysconfig.personal-firewall.REJECT_ALL_INCOMING_CONNECTIONS "yes"
-Read	.target.ycp "/usr/share/YaST2/data/all-apache2-modules.ycp" nil
 Return	$["Listen":$[], "default":$[], "modules":[$["name":"negotiation", "state":false], $["name":"ssl", "state":true]], "settings":$["enabled":true, "firewall":false]]

@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Mon Mar  8 17:42:30 CET 2004 - visnov@suse.cz
+
+- added list of options for hosts (#31438)
+- configuration of SSL
+- wizard icon added
+- general functionality is there
+- removed obsolete agents and code 
+
+-------------------------------------------------------------------
 Wed Mar  3 08:48:58 CET 2004 - visnov@suse.cz
 
 - fix build

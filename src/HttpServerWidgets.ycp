@@ -13,11 +13,13 @@
 
     textdomain "http-server";
 
+    import "Directory";
     import "Mode";
     import "IP";
     import "Label";
     import "Popup";
     import "Report";
+    import "Service";
     import "String";
     import "LogView";
     import "TablePopup";
@@ -27,6 +29,8 @@
     include "http-server/helps.ycp";
 
 global string currenthost = "default";
+
+map<string, any> ssl_options = (map<string, any>)SCR::Read (.target.ycp, Directory::datadir + "/all-ssl-options.ycp");
 
 string item2listen( string network, string port );
 
@@ -48,15 +52,28 @@ string get_host_value ( string keyword, list< map<string, any> > host, string de
     return ret;
 }
 
-void set_host_value ( string keyword, list< map<string, any> > host, any value )
+list< map<string,any> > set_host_value ( string keyword, list< map<string, any> > host, any value )
 {
+    integer index = 0;
     foreach( map<string, any> option, host, ``{
 	if (option["KEY"]:nil == keyword)
 	{
-	    option["VALUE"] = value;
 	    break;
 	}
+	index = index + 1;
     });
+    
+    if (index >= size(host))
+    {
+	// adding a new option
+	host[index] = $[ "KEY" : keyword , "VALUE" : value ];
+    }
+    else
+    {
+	host[index, "VALUE"] = value;
+    }
+
+    return host;
 }
 
 /*********************************** inital overview table ********************************/
@@ -146,7 +163,7 @@ map<string, any> overview_widget = $[
 void HostsInit (string widget);
 symbol HostsHandle (string table, map event);
 list HostsContents (map descr);
-boolean HostsDelete (any opt_id, any opt_key);
+boolean HostsDelete (any opt_id, string opt_key);
 
 map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 	$["add_delete" : true, 
@@ -199,13 +216,11 @@ list HostsContents (map descr) {
     return res;
 }
 
-boolean HostsDelete (any opt_id, any opt_key) {
+boolean HostsDelete (any opt_id, string opt_key) {
     // message popup
     if (! Popup::YesNo (_("Delete selected host?")))
 	return false;
-    // FIXME:
-
-    return true;
+    return HTTPDData::DeleteHost (opt_key);
 }
 
 /******************************************************************************************/
@@ -230,10 +245,10 @@ global void storeAdaptFirewall (any opt_id, map event);
 /**
  * Map of popups for CWM
  */
-global map popups = $[
+global map<string,map> popups = $[
 	    "ServerName" : $[
 		"table" : $[
-		    // table cell, label
+		    // table cell description
 		    "label" : _("Server Name"),
 		    "optional" : false,
 		],
@@ -241,9 +256,9 @@ global map popups = $[
 		    "widget" : `textentry,
 		],
 	    ],
-/*	    "DocumentRoot" : $[
+	    "DocumentRoot" : $[
 		"table" : $[
-		    // table cell
+		    // table cell description
 		    "label" : _("Document Root"),
 		    "optional" : false,
 		    "immutable" : true,
@@ -251,10 +266,10 @@ global map popups = $[
 		"popup" : $[
 		    "widget" : `textentry,
 		],
-            ],*/
+            ],
 	    "ServerAdmin" : $[
 		"table" : $[
-		    // table cell
+		    // table cell description
 		    "label" : _("Server Administrator E-Mail"),
 		    "optional" : false,
 		],
@@ -262,6 +277,19 @@ global map popups = $[
 		    "widget" : `textentry,
 		],
             ],
+	    "VirtualByName" : $[
+		"table" : $[
+		    // table cell description
+		    "label"  :_("Server Resolution"),
+		    "optional" : false,
+		],
+	    ],
+	    "SSL" : $[
+		"table" : $[
+		    "handle" : `ssl,
+		    "optional" : false,
+		]
+	    ],
 	];
 
 define void HostInit (any key);
@@ -269,11 +297,11 @@ define void HostInit (any key);
 global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	    $["add_delete" : true, 
 	      "up_down" : false, 
-	      "unique_keys" : true]
+	      "unique_keys" : false]
 	, $[
 	    "init" : HttpServerWidgets::HostInit,
 	    "handle" : HttpServerWidgets::handleHostTable,
-	    "options" : popups,
+	    "options" : union( popups, (map)SCR::Read (.target.ycp, Directory::datadir + "/all-host-options.ycp") ),
 	    "ids" : HttpServerWidgets::HostTableContents,
 	    "fallback" : $[
 		"init" : HttpServerWidgets::DefaultHostPopupInit,
@@ -281,7 +309,8 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 		"summary" : HttpServerWidgets::HostTableEntrySummary,
 	    ],
 	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
-	    "add_items" : [ "ServerName", "ServerAdmin",],
+	    "add_items" : 
+		maplist( string key, any value, (map<string,any>)SCR::Read (.target.ycp, Directory::datadir + "/all-host-options.ycp"), ``(key) ),
 	    "help" : HELPS["global_table"]:"",
 	]);
 
@@ -342,6 +371,32 @@ global map listenwidget = $[
 	    "handle" : HttpServerWidgets::handleListenSettings,
 	    "help" : HELPS["listen"]:"",
 	];
+
+
+global symbol handleSSLTable( any key, map event );
+global list<string> SSLTableContents (map descr);
+global void SSLInit (any key);
+
+map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
+	    $["add_delete" : true, 
+	      "up_down" : false, 
+	      "unique_keys" : true]
+	, $[
+	    "init" : HttpServerWidgets::SSLInit,
+	    "handle" : HttpServerWidgets::handleSSLTable,
+	    "options" : ssl_options,
+	    "ids" : HttpServerWidgets::SSLTableContents,
+	    "fallback" : $[
+		"init" : HttpServerWidgets::DefaultHostPopupInit,
+		"store" : HttpServerWidgets::DefaultHostPopupStore,
+		"summary" : HttpServerWidgets::HostTableEntrySummary,
+	    ],
+	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
+	    "add_items" : maplist( string key, any value, ssl_options, ``(key) ),
+	    "help" : HELPS["ssl"]:"",
+	]);
+
+
 /**
  * Map of widgets for CWM
  */
@@ -375,7 +430,37 @@ global map widgets = $[
 	    "listen" : listenwidget,
 	    "overview_widget" : overview_widget,
 	    "hosts"	: hosts_widget,
+	    "ssl" : sslwidget,
 	];
+
+
+/******************************** SSL widget ****************************/
+
+global symbol handleSSLTable( any key, map event )
+{
+    if ( event["ID"]:nil == `generate_certificate )
+    {
+	// FIXME: generate it
+	return nil;
+    }
+    return TablePopup::TableHandle( sslwidget, key, event );
+}
+
+global list<string> SSLTableContents (map descr)
+{
+    list<string> ret = maplist (map<string, any> option, HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
+    
+    // filter out unneeded options - only those with SSL are interesting
+    ret = filter (string key, ret, ``( issubstring( key, "SSL" )));
+    return ret;
+}
+
+global void SSLInit (any widget)
+{
+    TablePopup::TableInit(sslwidget, widget);
+}
+
+
 
 /******************************** Listen popup ****************************/
 
@@ -569,7 +654,7 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
 	list<string> ret = maplist (map<string, any> option, HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
 
 	// filter out unneeded options
-	ret = filter (string key, ret, ``( ! contains( ["_SECTION"], key )));
+	ret = filter (string key, ret, ``( ! contains( ["_SECTION"], key ) && ! haskey( ssl_options, key ) ) );
 	// FIXME: replace VirtualByName
 	// required entries
 	ret = (list<string>)union (["ServerName", "ServerAdmin" ], ret);
@@ -609,7 +694,7 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
 	}
 
 	// default handling
-	return TablePopup::TableHandle( widgets["global_table"]:$[], key, event );
+	return TablePopup::TableHandle( widgets["host"]:$[], key, event );
     }
 
     /**
@@ -630,7 +715,7 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
       */
     global define void DefaultHostPopupStore (any opt_id, string opt_key) ``{
 	list< map<string, any> >options = HTTPDData::GetHost (currenthost);
-	set_host_value( opt_key, options, UI::QueryWidget (`id (opt_key), `Value) );
+	options = set_host_value( opt_key, options, UI::QueryWidget (`id (opt_key), `Value) );
 	HTTPDData::ModifyHost (currenthost, options);
     }
 
@@ -776,6 +861,7 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
       * @param event map event that occured
       */
     global define void storeListenSettings (any key, map event) ``{
+	// FIXME:
 	integer i = size(HttpServer::settings["Listen"]:[]);
 	list newlisten = [];
 	while( i>0 ) {
@@ -879,8 +965,6 @@ listen cannot be empty.
 	HTTPDData::ModifyService( (boolean) UI::QueryWidget ( `id("enabled"), `Value ) );
     }
 
-// *********************************** Listen widget ***************************
-
 // ************************************ Adapt firewall widget ********************
 
     /**
@@ -888,9 +972,10 @@ listen cannot be empty.
       * @param key any option key to be initialized
       */
     global define void initAdaptFirewall (any key) ``{
-	if( HttpServer::settings["settings", "firewall_started"]:false ) {
+	if( Service::Enabled( "SuSEfirewall2_final" ) ) {
 	    UI::ChangeWidget (`id (key), `Value,
 		HttpServer::settings["settings", "firewall"]:false);
+	    UI::ChangeWidget (`id (key), `Enabled, true );
 	} else {
 	    // disable the widget
 	    UI::ChangeWidget (`id (key), `Enabled, false );
