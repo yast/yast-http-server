@@ -163,14 +163,14 @@ sub GetModuleList {
     foreach my $mod ( sort( @oldModules, keys(%newModules) ) ) {
         push( @ret, $mod ) unless( exists( $delModules{$mod} ) );
     }
-    return @ret;
+    return \@ret;
 }
 
 # list<map> GetKnownModules()
 BEGIN { $TYPEINFO{GetKnownModules} = ["function", [ "list", ["map","string","any"] ] ]; }
 sub GetKnownModules {
     # no state anyway, so we call the stateless API directly
-    return @{HTTPD::GetKnownModules()}; 
+    return \@{HTTPD::GetKnownModules()}; 
 }
 
 # bool ModifyModuleList( list<string>, bool )
@@ -214,7 +214,7 @@ sub GetModuleSelectionsList {
     foreach my $mod ( sort( @oldModuleSelections, keys(%newModuleSelections) ) ) {
         push( @ret, $mod ) unless( exists( $delModuleSelections{$mod} ) );
     }
-    return @ret;
+    return \@ret;
 }
 
 # bool ModifyModuleSelectionList( list<string>, bool )
@@ -381,7 +381,7 @@ sub WriteListen {
 # list<string> GetServicePackages();
 BEGIN { $TYPEINFO{GetServicePackages} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetServicePackages {
-    return @{HTTP::GetServicePackages()}; # no state here anyway
+    return \@{HTTP::GetServicePackages()}; # no state here anyway
 }
 
 # list<string> GetModulePackages
