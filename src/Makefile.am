@@ -23,6 +23,7 @@ desktop_DATA =			\
 
 module_DATA =			\
 	HTTPD.pm		\
+	HTTPDData.pm		\
 	HTTPDModules.pm		\
 	HttpServerWidgets.ycp	\
 	HttpServer.ycp		
