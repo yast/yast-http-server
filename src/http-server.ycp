@@ -19,6 +19,7 @@ textdomain "http-server";
 
 import "CommandLine";
 import "HttpServer";
+import "Popup";
 import "Require";
 import "Report";
 
@@ -254,7 +255,7 @@ if(size(args) > 0) {
 if( !Require::IsPackageAvailable( "apache2" ) ) {
     Popup::Error( _("<p>The package <b>%1</b> is not available.<br>
 YaST2 cannot continue the configuration
-without installing the package.<p>") );
+without installing the package.</p>") );
 }
 
 if( !Require::RequireAndConflictTarget( ["apache2"], [],
@@ -267,7 +268,7 @@ if( !Require::RequireAndConflictTarget( ["apache2"], [],
 	// translators: error popup before aborting the module
 	Popup::Error( sformat( _("<p>The package <b>%1</b> is not available.<br>
 YaST2 cannot continue the configuration
-without installing the package.<p>"), "apache2" ) );
+without installing the package.</p>"), "apache2" ) );
     } else {
 	// translators: error popup before aborting the module
 	Popup::Error( sformat( _("YaST2 cannot continue the configuration
