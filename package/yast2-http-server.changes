@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Aug 29 13:45:30 CEST 2003 - visnov@suse.de
+
+- Do not check availability of apache2 package, first try to install it (#29577)
+- Install all Apache2 MPMs, because package manager does not handle user
+  choices (#29573)
+
+-------------------------------------------------------------------
 Mon Aug 25 16:49:13 CEST 2003 - visnov@suse.de
 
 - 2.8.6
