@@ -135,6 +135,8 @@ global define boolean Read() ``{
 	    return false;
 	}
     }
+    
+    firewall_started = Service::Enabled( "SuSEfirewall2_final" );
 
     // read current settings from httpd.conf and sysconfig
     Progress::NextStage();
