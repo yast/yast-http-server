@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Sep 24 12:36:54 CEST 2004 - visnov@suse.cz
+
+- quoting bug in directory path fixed (#45922)
+- 2.10.7 
+
+-------------------------------------------------------------------
 Mon Sep 20 17:16:12 CEST 2004 - jsrain@suse.cz
 
 - fixed Table/Popup's complains about unknown attributes (#45613)
