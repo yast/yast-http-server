@@ -35,23 +35,42 @@ include "http-server/wizards.ycp";
  */
 define boolean ConfigureHandler(map<string, any> options) ``{
 
-    if( options["host"]:nil != "defaulthost" ) {
-	if( ! haskey( options, "host" ) ) {
-	    // translators: error message in configure command line action
-	    Report::Error( _("Configured host not specified") );
-	}
-	else 
-	{
-	    // translators: error message in configure command line action
-	    Report::Error( _("Only \"defaulthost\" can be specified as the host to configure") );
-	}
-	return false;
+    list <string> hosts = YaST::HTTPDData::GetHostsList ();
+
+/*
+    if (!haskey(options, "host") && options["list"]:""=="")
+     {
+      CommandLine::Print( _("Hosts list:"));
+      CommandLine::Print   ("==================");
+      foreach( string host, hosts, {
+      	CommandLine::Print(host);
+       });
+      return true;
+     }
+*/
+
+    if( !contains(hosts, (string) options["host"]:"")  ) {
+        if( ! haskey( options, "host" ) ) {
+            // translators: error message in configure command line action
+            Report::Error( _("Configured host not specified") );
+        }
+	 else
+          {
+              // translators: error message in configure command line action
+              Report::Error( _("Only existing hosts can be specified as the host to configure") );
+          }
+        return false;
     }
 
-    string host = "default";
-
+    string host = options["host"]:"";
     list< map<string,any> > hostconfig = YaPI::HTTPD::GetHost (host);
-    
+    if (haskey(options, "list"))
+     {
+      CommandLine::Print(sformat("ServerName: %1", HttpServerWidgets::get_host_value("ServerName", hostconfig, "")));
+      CommandLine::Print(sformat("ServerAdmin: %1", HttpServerWidgets::get_host_value("ServerAdmin", hostconfig, "")));
+      CommandLine::Print(sformat("DocumentRoot: %1", HttpServerWidgets::get_host_value("DocumentRoot", hostconfig, "")));
+     }
+
     string value = options["servername"]:"";
     if( value != "" ) {
 	hostconfig = HttpServerWidgets::set_host_value ( "ServerName", hostconfig, value );
@@ -126,53 +145,63 @@ define boolean ListenHandler(map<string, string> options) ``{
     // check the command to be present exactly once
     string command = CommandLine::UniqueOption( options,
         ["add", "delete", "list" ] );
+    list< map<string,any> > all_listens = YaST::HTTPDData::GetCurrentListen();
     if( command == nil ) return false;
 
-/* FIXME:    
+	   else if( command == "list" ) {
+	        // translators: heading for the "listen list" command line action output
+	        // please, try to align the texts if possible.
+	        CommandLine::Print( _("Listen Statements:"));
+		CommandLine::Print   ("==================");
+	        foreach( map<string, any> listen, all_listens, {
+	        CommandLine::Print(sformat("%1:%2", listen["ADDRESS"]:_("All interfaces"), listen["PORT"]:"80"));
+	        });
+	     return true;
+	    }
+
+	string address = "";
+	string port = "";
+        list listens = splitstring(options[command]:"", ":");
+        if (size(listens)==1) port = select(listens,0,"");
+         else if (size(listens)==2)
+                {
+                 address = select(listens, 0, "");
+                 port   = select(listens, 1, "");
+                }
+          else return false;
+
+        boolean finded=false;
+        foreach( map<string, any> listen, all_listens, ``{
+         if (listen["ADDRESS"]:""==address && listen["PORT"]:""==port) finded=true;
+        });
+
     if( command == "add" ) {
-	if( contains( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" ) )
-	{
-	    // translators: error message in "listen add" command line action
-	    Report::Error( sformat( _("The listen statement '%1' is already configured.") , options["add"]:"") );
-	    return false;
-	}
-	
-	HttpServer::settings["defaulthost", "Listen"] = 
-	    add( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" );
+	//FIXME:  check, if new address and port are correct values (if address is from machine's interfaces)
+    if (size(address)>0 && !contains(maplist( string ip, string dev, HttpServer::ip2device, ``( ip )), address))
+     {
+      Report::Error(_("Can use only exsists interfaces"));
+      return false;
+     }
+       if (finded)
+         {
+          // translators: error message in "listen add" command line action
+          Report::Error( sformat( _("The listen statement '%1' is already configured.") , options["add"]:"") );
+          return false;
+         }
+	YaST::HTTPDData::CreateListen(tointeger(port), tointeger(port), address);
 	HttpServer::modified = true;
+
     }
     else if( command == "delete" ) {
-	if( !contains( HttpServer::settings["defaulthost", "Listen"]:[], options["delete"]:"" ) )
-	{
-	    // translators: error message in "listen delete" command line action
-	    Report::Error( sformat( _("Cannot delete unconfigured listen statement '%1'") , options["delete"]:"") );
-	    return false;
-	}
-
-	HttpServer::settings["defaulthost", "Listen"] = 
-	    filter( string value, HttpServer::settings["defaulthost", "Listen"]:[], ``( value != options["delete"]:"" ) );
+	if (!finded)
+	 {
+         // translators: error message in "listen delete" command line action
+	  Report::Error(_("Can remove only existing listeners"));
+	  return false;
+	 }
+	YaST::HTTPDData::DeleteListen(tointeger(port), tointeger(port), address);
 	HttpServer::modified = true;
     }
-    else if( command == "list" ) {
-        // translators: heading for the "listen list" command line action output
-	// please, try to align the texts if possible.
-	CommandLine::Print( _("Listen Statements:
-==================
-"));
-	
-	foreach( string listen, HttpServer::settings["defaulthost", "Listen"]:[], ``{
-	    if( issubstring( listen, ":" ) ) {
-		CommandLine::Print( listen );
-	    }
-	    else
-	    {
-		// translators: listen statement for all available interfaces
-		CommandLine::Print( sformat( _("All Interfaces: %1"), listen ) );
-	    }
-	});
-
-    }
-*/
     return true;
 }
 
@@ -219,7 +248,7 @@ map cmdline_description = $[
 	"host"		: $[
 	    "type"	: "string",
 	    // translators: help text for host option (configure command line action)
-	    "help"	: _("Name of the host to configure. Only \"defaulthost\" is valid at the moment.")
+	    "help"	: _("Name of the host to configure.")
 	],
 	"add"		: $[
 	    "type"	: "regex",
@@ -251,7 +280,7 @@ map cmdline_description = $[
 	]
     ],
     "mappings"		: $[
-	"configure"	: [ "host", "servername", "serveradmin", "documentroot" ],
+	"configure"	: [ "host", "servername", "serveradmin", "documentroot", "list" ],
 	"modules"	: [ "enable", "disable", "list" ],
 	"listen"	: [ "add", "delete", "list" ]
     ]
