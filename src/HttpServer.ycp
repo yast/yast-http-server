@@ -472,7 +472,7 @@ This can cause inconsistent module configuration."), mod));
     // setup firewall
     if (haskey( s, "firewall" ))
     {
-	firewall = s["firewal"]:false;
+	firewall = s["firewall"]:false;
     }
 
     modified = false;
