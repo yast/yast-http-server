@@ -163,6 +163,8 @@ Each hash has at least the following keys:
 the following keys are optional
 
  OVERHEAD => a comment in the config file above the KEY/VALUE directive
+ SECTIONNAME  => in case of a subsection, this is the sections name
+ SECTIONPARAM => in case of a subsection, this is the section parameter
 
 The following keys are not mapped 1:1 from the configfile, but are
 derived from real apache2 directives
@@ -183,6 +185,35 @@ turns on/off SSL for the host.
 
 indicates if this is a virtual by name host. If this is 0, it's an
 IP based virtual host.
+
+If you want to create subsections, the hash must look like this:
+
+ { 
+     KEY => '_SECTION',
+     SECTIONNAME => 'Directory',
+     SECTIONPARAM => '/srv/www/vhost13',
+     OVERHEAD => "# vhost13 document root\n";
+     VALUE => [
+                {
+                  KEY => 'Order',
+                  VALUE => 'allow,deny'
+                },
+                {
+                  ...
+                }
+              ]
+ }
+
+That will create a Directory subsection like this:
+
+ # vhost13 document root
+ <Directory /srv/www/vhost13>
+   Order allow,deny
+   ...
+ </Directory>
+
+Section can be nested as deep as you want. So a subsection
+can contain further subsections.
 
 B<Host id>
 
@@ -219,6 +250,41 @@ is more than just a simple host. It can also contain server directives
 that aims for all vhosts too and for which no API function exists at
 the moment (like alias creation for example).
 You can not create or delete the default host id.
+
+B<Example Code using the API>
+
+ #!/usr/bin/perl -w
+
+ use strict;
+ # add YaST2 module path to the perl module path
+ BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
+
+ # load the HTTPD API
+ use YaPI::HTTPD;
+
+ # create the Host Data array 
+ # see above for the data structure explanation
+ my @temp = (
+             { KEY => "ServerName",    VALUE => 'createTest2.suse.de' },
+             { KEY => "VirtualByName", VALUE => 0 },
+             { KEY => "ServerAdmin",   VALUE => 'no@one.de' },
+             { KEY => "HostIP",        VALUE => '*:80' }
+            );
+
+ # create the host now. This will directly affect the config files of
+ # the apache2. So, after this call, there will be a new vhost in
+ # /etc/apache2/vhosts.d/yast2_vhosts.conf
+ my $ret = YaPI::HTTPD->CreateHost( '*:80/createTest2.suse.de', \@temp );
+
+ # the CreateHost call will return "undef" in case of an error. We should
+ # check this here and print all error information we can get
+ unless( $ret ) {
+     my %error = %{YaPI::HTTPD->Error()};
+     foreach(keys %error) {
+         print "$_ = $error{$_}\n";
+     }
+ }
+
 
 =head1 DESCRIPTION
 
@@ -263,6 +329,22 @@ sub getFileByHostid {
     }
     return $self->SetError( summary => _('host not found'),
                             code => 'PARAM_CHECK_FAILED' );
+}
+
+sub isVirtualByName {
+    my $self = shift;
+    my $addr = shift;
+
+    my $filename = $self->getFileByHostid( 'default' );
+    return 0 if( not ref($vhost_files->{$filename}) or
+                 not ref($vhost_files->{$filename}->[0]) );
+    foreach my $e ( @{$vhost_files->{$filename}->[0]->{DATA}} ) {
+        if( $e->{KEY} eq 'NameVirtualHost' and
+            $e->{VALUE} eq $addr ) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 # internal only
@@ -404,7 +486,6 @@ sub GetHost {
             } elsif( $sslEngine eq 'on' ) {
                 $sslHash->{'VALUE'} = 1;
             }
-#            print Data::Dumper->Dump( [@{$hostHash->{'DATA'}}, $sslHash, $vbnHash] );
             return [ @{$hostHash->{'DATA'}}, $sslHash, $vbnHash, $ipHash ];
         }
     }
@@ -479,19 +560,12 @@ sub ModifyHost {
     } else {
         return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
     }
-use Data::Dumper;
-#print Data::Dumper->Dump( [ $newData ] );
 
     my $filename = $self->getFileByHostid( $hostid );
     return undef if( not $self->checkHostmap( $newData ) );
     foreach my $entry ( @{$vhost_files->{$filename}} ) {
         if( $entry->{HOSTID} eq $hostid ) {
             my @tmp;
-            foreach my $tmp ( @{$entry->{DATA}} ) {
-                next unless( $tmp->{KEY} eq 'DocumentRoot' );
-#                $self->delDir( $tmp->{VALUE} );
-                last;
-            }
             foreach my $tmp ( @$newData ) {
                 if( $tmp->{'KEY'} eq 'VirtualByName' ) {
                     $entry->{VirtualByName} = $tmp->{'VALUE'};
@@ -510,9 +584,6 @@ use Data::Dumper;
                     # illegal keys in vhost
                     return $self->SetError( summary => sprintf( _("illegal key in vhost '%s'"),$tmp->{KEY}),
                                             code    => "CHECK_PARAM_FAILED" );
-                } elsif( $tmp->{'KEY'} eq 'DocumentRoot' ) {
-#                    $self->addDir( $tmp->{'VALUE'} );
-                    push( @tmp, $tmp );
                 } else {
                     push( @tmp, $tmp );
                 }
@@ -581,8 +652,6 @@ sub CreateHost {
         return $self->SetError( summary => sprintf(_("data must be an array ref and not %s"),ref($data)), 
                                 code => "CHECK_PARAM_FAILED" );
     }
-use Data::Dumper;
-#print Data::Dumper->Dump( [ $data ] );
     my $sslHash = { KEY => 'SSLEngine' , VALUE => 'off' };
     my @tmp = ( $sslHash );
     my $VirtualByName = 0;
@@ -640,6 +709,13 @@ use Data::Dumper;
         }
     }
 
+    if( $self->isVirtualByName($vhost) and !$VirtualByName) {
+        return $self->SetError( summary => _('ip based host on virtual by name interface'), code => "CHECK_PARAM_FAILED");
+    }
+    if( ! $self->isVirtualByName($vhost) and $VirtualByName) {
+        return $self->SetError( summary => _('name based host on none name based interface'), code => "CHECK_PARAM_FAILED");
+    }
+
     if( ref($vhost_files->{'yast2_vhosts.conf'}) eq 'ARRAY' ) {
         # merge new entry with existing entries in yast2_vhosts.conf
         push( @{$vhost_files->{'yast2_vhosts.conf'}}, $entry );
@@ -647,9 +723,7 @@ use Data::Dumper;
         # create new yast2_vhosts.conf
         $vhost_files->{'yast2_vhosts.conf'} = [ $entry ];
     }
-#    $self->addDir( $docRoot );
-    $self->writeHost( 'yast2_vhosts.conf' );
-    return 1;
+    return $self->writeHost( 'yast2_vhosts.conf' );
 }
 
 =item *
@@ -688,13 +762,7 @@ sub DeleteHost {
         if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} ne $hostid ) {
             push( @newList, $hostHash );
         } else {
-            foreach my $dat ( @{$hostHash->{DATA}} ) {
-                if( $dat->{KEY} eq 'DocumentRoot' ) {
-#                    $self->delDir( $dat->{VALUE} );
-                    $found = 1;
-                    last;
-                }
-            }
+            $found = 1;
         }
     }
     return $self->SetError( summary => _('hostid not found'), code => "CHECK_PARAM_FAILED" ) unless( $found );
@@ -703,8 +771,7 @@ sub DeleteHost {
     } else {
         delete($vhost_files->{$filename}); # drop empty file
     }
-    $self->writeHost( $filename );
-    return 1;
+    return $self->writeHost( $filename );
 }
 
 # internal only!
@@ -759,12 +826,21 @@ sub writeHost {
         }
         $host->{DATA} = \@newData;
     }
-    SCR->Write(".http_server.vhosts.setFile.$filename", $vhost_files->{$filename} );
+    my $ret = SCR->Write(".http_server.vhosts.setFile.$filename", $vhost_files->{$filename} );
+    unless( $ret ) {
+        my %h = %{SCR->Error(".http_server")};
+        return $self->SetError( %h );
+    }
 
     # write default-server.conf always because of Directory Entries
     unless( $filename eq 'default-server.conf' ) {
-        $self->writeHost( 'default-server.conf' );
+        $ret = $self->writeHost( 'default-server.conf' );
+        unless( $ret ) {
+            my %h = %{SCR->Error(".http_server")};
+            return $self->SetError( %h );
+        }
     }
+
     return 1;
 }
 
