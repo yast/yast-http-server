@@ -17,3 +17,4 @@ mkinstalldirs
 stamp-h
 http-server.pot
 autom4te.cache
+Makefile.am.common
