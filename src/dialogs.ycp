@@ -82,20 +82,17 @@
       * @return symbol for wizard sequencer
       */
     global define symbol ModulesDialog () ``{
-	list w = CWM::CreateWidgets (["modules"], HttpServerWidgets::widgets );
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
-	    w[0, "widget"]:`VSpacing (0),
+	    "modules",
 	    `VSpacing (1)
 	), `HSpacing (1));
+
 	// dialog caption
 	string caption = _("Server modules");
-	string help = CWM::MergeHelps (w);
 
-	Wizard::SetContentsButtons (caption, contents, help,
-	    Label::BackButton (), Label::OKButton ());
-
-	return CWM::Run (w, $[`abort: ``( !HttpServer::modified || Popup::ReallyAbort(true) )]);
+	return CWM::ShowAndRun (["modules"], HttpServerWidgets::widgets, contents, caption,
+	  Label::BackButton(), Label::OKButton(), $[`abort: ``( !HttpServer::modified || Popup::ReallyAbort(true) )]);
     }
 
     /**
