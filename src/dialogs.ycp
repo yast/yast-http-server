@@ -91,7 +91,6 @@
 
 	symbol ret = CWM::Run (w, $[`abort : Abort]);
 	if (ret == `back) {
-y2internal("Pressing back button %1", HttpServerWidgets::currenthost);
 	HttpServerWidgets::setHostOptions(nil);
 			}
 	return ret;
@@ -322,7 +321,6 @@ y2internal("Pressing back button %1", HttpServerWidgets::currenthost);
 
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
-y2internal("Product features - %1", ProductFeatures::ui_mode);
 	if (ProductFeatures::ui_mode != "simple")
 	{
 	    UI::ReplaceWidget( `id(`_tp_table_repl),

@@ -55,7 +55,6 @@ boolean CheckCommonServerCertificate () {
 
 global any get_host_value ( string keyword, list< map<string, any> > host, any default )
 {
-//y2internal(" ******** ********** ************** ****************** get_host_value\n%1\n%2\n%3", keyword, host, default);
     any res = default;
     
     foreach( map<string, any> option, host, ``{
@@ -148,7 +147,6 @@ global boolean validate_serverip (any id, any key, map event)
 
 global boolean validate_server (string hostid, list < map<string,any> > server )
 {
-y2internal("validate_server");
     list <string> hosts = YaST::HTTPDData::GetHostsList ();
     
     string servername = (string)get_host_value ( "ServerName", server, nil );
@@ -178,7 +176,7 @@ y2internal("validate_server");
 	{
 	    // error message - the entered server name is already configured 
 	    // in another virtual host
-	    Report::Error (_("The server name entered is already configured."));
+	    Report::Error (_("The server name entered is already configured on another virtual host." ));
 	    res = false;
 	    break;
 	}
@@ -193,7 +191,8 @@ y2internal("validate_server");
 	    {
 		// error message - the entered ip address is already 
 		// configured for another virtual host
-		Report::Error (_("The IP address is already configured."));
+		string error_msg = _("The IP address is already configured on another virtual host (")+ (string) get_host_value ( "ServerName", desc, nil ) + ")";
+		Report::Error (error_msg);
 		res = false;
 		break;
 	    }
@@ -446,7 +445,6 @@ symbol HostsHandle (string table, map event)
 	list< map<string,any> > defhost_options = YaST::HTTPDData::GetHost("default");
 	string servername = (string) get_host_value( "ServerName", defhost_options, "");
 	string ip = (string) get_host_value( "HostIP", defhost_options, "");
-y2internal("servername : %1, ip : %2\n%3", servername, ip, defhost_options);
 	if (ip == "" || servername != "")
 	{
 	    // we must set a new server name and ip for the old default host
@@ -685,7 +683,6 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	]);
 
 define void HostInit (string key) ``{
-y2internal("HostInit key=%1", key);
     TablePopup::TableInit (HttpServerWidgets::hostwidget, key);
 }
 
@@ -1148,7 +1145,6 @@ define string item2listen( string network, string port ) ``{
 
     global void HostStore (string key, map event)
     {
-y2internal("****************** Host Store ****************************************");
 	list< map<string,any> > options = YaST::HTTPDData::GetHost(currenthost);
 	
 	// iterate over all options, if there is the old one, use it
@@ -1810,7 +1806,6 @@ listen cannot be empty.") );
       * @param event map event description
       */
     global define void storeAdaptFirewall (any opt_id, map event) ``{
-y2internal("In firewall map event - %1", event);
 	if( HttpServer::firewall_started || Mode::config ()) {
 	    HttpServer::firewall = (boolean)UI::QueryWidget (`id (opt_id), `Value);
 	    HttpServer::modified = true;
@@ -1826,7 +1821,7 @@ on this machine.");
 // *********************** Wizard Dialog 1 Widgets *****************************************
 
   global define void initOpenPort (string key) ``{
-	y2internal(_("Initializing open port value ..."));
+	y2milestone(_("Initializing open port value ..."));
 	string port=nil;
 
 	foreach(map listens, YaST::HTTPDData::GetCurrentListen(), 
@@ -1835,18 +1830,17 @@ on this machine.");
 
 		} );
  if ( port == nil ) port="80";
- y2internal("Port finally :  %1", port);
+ y2milestone("Port finally :  %1", port);
  UI::ChangeWidget(`id(key), `Value, port);
  }
 
 global symbol handleOpenPort(string key, map event) ``{
- y2internal("Handling open port ...");
  return nil;
 }
 
 global boolean validateOpenPort(string key, map event) ``{
  string value = (string) UI::QueryWidget(`id(key), `Value);
- y2internal("validate open port ... %1", value);
+ y2milestone("validate open port ... %1", value);
  if( ! regexpmatch( value, "^[ \t]*[0-9]+[ \t]*$" ) ) {
 	Popup::Error(_("Invalid port number."));
 	 UI::SetFocus(`id(key));
@@ -1857,7 +1851,7 @@ global boolean validateOpenPort(string key, map event) ``{
 
 global define void initListenInterfaces (string key) ``{
 
- y2internal("Initializing Listen Interfaces ... %1", key);
+ y2milestone("Initializing Listen Interfaces ... %1", key);
  boolean all = false;
  foreach(map listens, YaST::HTTPDData::GetCurrentListen(),
   {
@@ -1874,7 +1868,6 @@ global define void initListenInterfaces (string key) ``{
 	}
 	} ) ;
 
- y2internal("Interfaces : %1", ips);
  UI::ReplaceWidget(`id(mode_replace_point_key), `MultiSelectionBox(`id("multi_sel_box"),_("&Listen on Interfaces"),ips));
 }
 
@@ -1888,20 +1881,17 @@ global boolean validateListenInterfaces(string key, map event) ``{
 
 
 global define void initFwOpen (string key) ``{
- y2internal("initializing firewall open ...");
+ y2milestone("initializing firewall open ...");
        if( SuSEFirewall::IsStarted() ) {
             UI::ChangeWidget (`id (key), `Value, true);
             UI::ChangeWidget (`id (key), `Enabled, true );
-		y2internal("fw enable");
         } else {
             // disable the widget
             UI::ChangeWidget (`id (key), `Enabled, false );
-		y2internal("fw disable");
         }
 }
 
     global define void storeFwOpen (any opt_id, map event) ``{
-y2internal("In firewall map event - %1", event);
         if( HttpServer::firewall_started || Mode::config ()) {
             HttpServer::firewall = (boolean)UI::QueryWidget (`id (opt_id), `Value);
             HttpServer::modified = true;
@@ -1916,47 +1906,48 @@ global define void initScriptModules(string key) ``{
 	boolean enable_python=false;
 	boolean enable_ruby=false;
 list<string> modules = YaST::HTTPDData::GetModuleList();
-y2internal("module list: %1", modules);
 	if (contains(modules, "php4")) enable_php4 = true;
 	if (contains(modules, "perl")) enable_perl = true;
 	if (contains(modules, "python")) enable_python = true;
 	if (contains(modules, "ruby")) enable_ruby = true;
 
-	UI::ReplaceWidget (`id (`scr_mod_replace),`VBox( 
-                      `Left( `CheckBox(`id(`scr_mod_php4),_("Enable PHP4 Scripting"), enable_php4) ),
-                      `Left( `CheckBox(`id(`scr_mod_perl), _("Enable Perl Scripting"), enable_perl) ),
-                      `Left( `CheckBox(`id(`scr_mod_python), _("Enable Python Scripting"), enable_python)),
-                      `Left( `CheckBox(`id(`scr_mod_ruby), _("Enable Ruby Scripting"), enable_ruby) )
-			));
-y2internal("initializing script modules");
+	UI::ReplaceWidget (`id (`scr_mod_replace),
+		    `HBox(`HSpacing(6),
+		     `VBox(
+		     `VSpacing(3),
+                      `Left(`CheckBox(`id(`scr_mod_php4),_("Enable PHP4 Scripting"), enable_php4)),
+			`VSpacing(1),
+                      `Left(`CheckBox(`id(`scr_mod_perl), _("Enable Perl Scripting"), enable_perl)),
+                        `VSpacing(1),
+                      `Left(`CheckBox(`id(`scr_mod_python), _("Enable Python Scripting"), enable_python)),
+                        `VSpacing(1),
+                      `Left(`CheckBox(`id(`scr_mod_ruby), _("Enable Ruby Scripting"), enable_ruby)),
+		     `VSpacing(5) 
+			)));
+	y2milestone("initializing script modules");
 }
 
 // *********************** Wizard Dialog 5 Widgets *****************************************
 global define void initExpertConf (string key) ``{
-y2internal("Initializing expert configuration");
 }
 
 global define symbol handleExpertConf (string key, map event) ``{
-y2internal("Handling expert configuration %1 %2", key, event);
-if (event["ID"]:nil == "expert_conf" )  return (symbol) `expert;
+ if (event["ID"]:nil == "expert_conf" )  return (symbol) `expert;
 	else return (symbol) nil;
  }
 
 boolean getServiceAutoStart() ``{
-y2internal("Getting service auto start status");
-if (YaST::HTTPDData::GetService()!=nil && YaST::HTTPDData::GetService()) return true;
+ if (YaST::HTTPDData::GetService()!=nil && YaST::HTTPDData::GetService()) return true;
 	else return false;
 }
 
 void setServiceAutoStart(boolean status) ``{
-y2internal("Setting service auto start to %1", status);
-YaST::HTTPDData::ModifyService(status);
+ YaST::HTTPDData::ModifyService(status);
 }
 
 
 global define void initSummaryText (string key) ``{
 
-y2internal("Initializing Summary text");
  UI::ReplaceWidget(`id(`summary_text_rp), `RichText( select(HttpServer::Summary(),0, "error")  ));
 }
 

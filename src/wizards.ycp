@@ -204,7 +204,6 @@ boolean HttpServerSequence() {
 
        if ($[] == SCR::Read (.target.stat, Directory::vardir + "/http_server"))
         {
-y2internal("wizard mode");
 	 sequence["read", `next] = "wizard";
         }
 
