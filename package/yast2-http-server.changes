@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Oct 29 14:18:43 CET 2003 - visnov@suse.cz
+
+- fix testsuite
+- adapted for TablePopup
+- 2.9.0 
+
+-------------------------------------------------------------------
 Mon Sep 22 10:24:28 CEST 2003 - visnov@suse.de
 
 - fix #31438 - if user adds its own options to the
