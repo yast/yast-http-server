@@ -1,9 +1,131 @@
+Thu May 20 09:46:18 CEST 2004 - visnov@suse.cz
+
+- validate the modified host before accepting (#40141) 
+- also allow to choose from dynamic IP addresses (#40769)
+- 2.9.26
+
+-------------------------------------------------------------------
+Tue May 18 17:23:31 CEST 2004 - ug@suse.de
+
+- replaced _ by __ in httpdUtils.pm
+
+-------------------------------------------------------------------
+Tue May 18 15:54:41 CEST 2004 - ug@suse.de
+
+- $VERSION and @CAPABILITIES fixed
+
+-------------------------------------------------------------------
+Tue May 18 11:49:16 CEST 2004 - ug@suse.de
+
+- checkHostmap during modification too
+
+-------------------------------------------------------------------
+Tue May 18 10:11:38 CEST 2004 - visnov@suse.cz
+
+- start/stop apache2 server (#40745)
+- 2.9.25 
+
+-------------------------------------------------------------------
+Thu May 13 17:19:30 CEST 2004 - visnov@suse.cz
+
+- 2.9.24 
+
+-------------------------------------------------------------------
+Thu May 13 15:57:23 CEST 2004 - ug@suse.de
+
+- wrong SSLCertKeyFile fixed if admins plays
+  around a lot with certificates and keys
+
+-------------------------------------------------------------------
+Wed May 12 17:35:48 CEST 2004 - visnov@suse.cz
+
+- 2.9.23 
+
+-------------------------------------------------------------------
+Thu May 13 12:12:24 CEST 2004 - ug@suse.de
+
+- certificate stuff cleanup and fix of file
+  permissions
+
+-------------------------------------------------------------------
+Wed May 12 17:16:28 CEST 2004 - ug@suse.de
+
+- certificate stuff cleanup and fix for default server
+
+-------------------------------------------------------------------
+Wed May 12 17:11:30 CEST 2004 - visnov@suse.cz
+
+- implemented import certificate (#40272)
+
+-------------------------------------------------------------------
+Wed May 12 14:51:33 CEST 2004 - ug@suse.de
+
+- certificate stuff in YaPI::HTTPD fixed
+- certificate stuff in YaST::HTTPDData implemented
+
+-------------------------------------------------------------------
+Mon May 10 14:22:22 CEST 2004 - visnov@suse.cz
+
+- require server admin when creating a new host (#40141) 
+- fix syntax for description of LogView (#39376)
+- setup common certificate (#40272)
+- display correct contents after adding user-defined module (#40308)
+- correctly reset configuration in autoyast (#38812)
+
+-------------------------------------------------------------------
+Mon May 10 13:28:09 CEST 2004 - ug@suse.de
+
+- dropped the run-function from YaST/HTTPData.pm
+  It was just for testing the stateful API.
+
+-------------------------------------------------------------------
+Mon May 10 11:50:07 CEST 2004 - ug@suse.de
+
+- using __(...) instead of _(...) now
+
+-------------------------------------------------------------------
+Tue May  5 15:28:55 CEST 2004 - ug@suse.de
+
+- fixed the path for the certificate files
+
+-------------------------------------------------------------------
+Tue May  4 08:41:59 CEST 2004 - visnov@suse.cz
+
+- merged in proofread text 
+
+-------------------------------------------------------------------
+Mon May  3 13:04:55 CEST 2004 - ug@suse.de
+
+- fixed bugs found via testscrips
+  * server flags are not saved
+  * GetModulePackages fixed
+
+-------------------------------------------------------------------
+Thu Apr 29 18:09:24 CEST 2004 - visnov@suse.cz
+
+- server certificate support UI added
+- 2.9.22 
+
+-------------------------------------------------------------------
+Wed Apr 21 10:06:20 CEST 2004 - visnov@suse.cz
+
+- fix type error (#38813)
+- cleanup error message in autoyast on adding Listen
+
+-------------------------------------------------------------------
+Mon Apr 19 18:26:50 CEST 2004 - visnov@suse.cz
+
+- added missing helps (#37334)
+- exporting module list for autoyast fixed (#30689)
+- 2.9.21
+
 -------------------------------------------------------------------
 Fri Apr 16 15:20:00 CEST 2004 - ug@suse.de
 
 . ReloadService implemented
 
 -------------------------------------------------------------------
+>>>>>>> 1.62.4.27
 Mon Apr  5 10:53:55 CEST 2004 - ug@suse.de
 
 - order of mod_ldap and mod_auth_ldap fixed (#31436 again)

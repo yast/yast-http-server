@@ -116,6 +116,5 @@ global define map GetModules() ``{
     return (map)eval(SCR::Read(.target.ycp, Directory::datadir + "/all-apache2-modules.ycp"));
 }
 
-
 /* EOF */
 }

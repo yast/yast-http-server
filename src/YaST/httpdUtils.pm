@@ -17,7 +17,7 @@ sub getFileByHostid {
             return $k if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} eq $hostid );
         }
     }
-    return $self->SetError( summary => _('host not found'),
+    return $self->SetError( summary => __('host not found'),
                             code => 'PARAM_CHECK_FAILED' );
 }
 
@@ -58,7 +58,7 @@ sub checkHostmap {
         next unless( exists($checkMap{$entry->{KEY}}) );
         my $re = $checkMap{$entry->{KEY}};
         if( $entry->{VALUE} !~ /$re/ ) {
-            return $self->SetError( summary => sprintf( _("illegal '%s' parameter"), $entry->{KEY} ), 
+            return $self->SetError( summary => sprintf( __("illegal '%s' parameter"), $entry->{KEY} ), 
                                     code    => "PARAM_CHECK_FAILED" );
         }
         $ssl = $entry->{VALUE} if( $entry->{KEY} eq 'SSL' );
@@ -66,7 +66,7 @@ sub checkHostmap {
         $dr = 1 if(  $entry->{KEY} eq 'DocumentRoot' );
         $sn = 1 if(  $entry->{KEY} eq 'ServerName' );
     }
-    return $self->SetError( summary => _('ssl together with "virtual by name" is not possible'),
+    return $self->SetError( summary => __('ssl together with "virtual by name" is not possible'),
                             code    => 'PARAM_CHECK_FAILED' ) if( $ssl and $nb_vh );
 
     return 1;
@@ -187,4 +187,35 @@ sub ip2device {
     return \%ip2device;
 }
 
+sub ModifyHostKey {
+    my $self = shift;
+    my $host = shift;
+    my $key  = shift;
+    my $val  = shift;
+
+    for( my $i=0; $i < @$host; $i++ ) {
+        if( $host->[$i]->{KEY} eq $key ) {
+            if( not defined $val ) {
+                splice( @$host, $i, 1 );
+            } else {
+                $host->[$i]->{VALUE} = $val;
+            }
+            return 1;
+        }
+    }
+    push( @$host, { KEY => $key, VALUE => $val } ) if( defined $val );
+    return 0;
+}
+
+sub FetchHostKey {
+    my $self = shift;
+    my $host = shift;
+    my $key = shift;
+
+    foreach my $k ( @$host ) {
+        next unless( $k->{KEY} eq $key );
+        return $k->{VALUE};
+    }
+    return undef;
+}
 
