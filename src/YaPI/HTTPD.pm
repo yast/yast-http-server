@@ -462,6 +462,8 @@ sub ModifyHost {
     } else {
         return $self->SetError( summary => 'SCR Agent parsing failed' );
     }
+use Data::Dumper;
+print Data::Dumper->Dump( [ $newData ] );
 
     my $filename = $self->getFileByHostid( $hostid );
     return undef if( not $self->checkHostmap( $newData ) );
@@ -529,61 +531,6 @@ sub ModifyHost {
     return 0; # host not found. Error?
 }
 
-sub delDir {
-    my $self = shift;
-    my $dir = shift;
-    my @newData = ();
-
-    $dir =~ s/\/+/\//g;
-
-    my $filename = $self->getFileByHostid( "default" );
-    foreach my $entry ( @{$vhost_files->{$filename}} ) {
-        foreach my $e ( @{$entry->{DATA}} ) {
-            next if( $e->{KEY} eq '_SECTION' and
-                     $e->{SECTIONNAME} eq 'Directory' and
-                     $e->{SECTIONPARAM} =~ /^"*$dir\/*"*/ );
-            push( @newData, $e );
-        }
-        $entry->{DATA} = \@newData;
-    }
-    return;
-}
-
-sub addDir {
-    my $self = shift;
-    my $dir = shift;
-    $dir =~ s/\/+/\//g;
-#    $self->delDir( $dir ); # avoid double entries
-
-    my $filename = $self->getFileByHostid( "default" );
-    my $dirEntry = {
-        'OVERHEAD'     => "# YaST created entry\n",
-        'SECTIONNAME'  => 'Directory',
-        'SECTIONPARAM' => "\"$dir\"",
-        'KEY'   => '_SECTION',
-        'VALUE' => [
-                    {
-                     'KEY'   => 'Options',
-                     'VALUE' => 'None'
-                    },
-                    {
-                     'KEY'   => 'AllowOverride',
-                     'VALUE' => 'None'
-                    },
-                    {
-                     'KEY'   => 'Order',
-                     'VALUE' => 'allow,deny'
-                    },
-                    {
-                     'KEY'   => 'Allow',
-                     'VALUE' => 'from all'
-                    }
-                  ]
-    };
-    push( @{$vhost_files->{$filename}->[0]->{DATA}}, $dirEntry );
-    return;
-}
-
 =item *
 C<CreateHost($hostid,$hostdata)>
 
@@ -615,7 +562,8 @@ sub CreateHost {
     if( ref($data) ne 'ARRAY' ) {
         return $self->SetError( summary => "data must be an array ref and not ".ref($data) );
     }
-
+use Data::Dumper;
+print Data::Dumper->Dump( [ $data ] );
     my $sslHash = { KEY => 'SSLEngine' , VALUE => 'off' };
     my @tmp = ( $sslHash );
     my $VirtualByName = 0;
