@@ -195,9 +195,9 @@ sub ModifyHost {
             if( $vbn ne $h->{VALUE} ) {
                 $hostid =~ /^([^\/]+)/;
                 my $vhost = $1;
-                if( $h->{VALUE} == 1 ) {
+                if( $h->{VALUE} == 1 and $self->getNVH( $vhost ) == 0 ) {
                     push( @{$hosts{'default'}}, { KEY => 'NameVirtualHost', VALUE => $1 } );
-                } else {
+                } elsif( $h->{VALUE} == 0 and $self->getNVH( $vhost ) == 1 ) {
                     my @newData = ();
                     while( my $e = shift(@{$hosts{'default'}}) ) {
                         if( $e->{KEY} eq 'NameVirtualHost' and
@@ -225,19 +225,36 @@ sub CreateHost {
     my $hostid = shift;
     my $hostdata = shift;
 
-    $hosts{$hostid} = $hostdata;
     foreach my $h ( @$hostdata ) {
         if( $h->{KEY} eq 'DocumentRoot' ) {
             $self->addDir($h->{VALUE});
         } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
             $hostid =~ /^([^\/]+)/;
-            push( @{$hosts{'default'}}, { KEY => 'NameVirtualHost', VALUE => $1 } );
+            my $v = $1;
+            if( $self->getNVH( $v ) == 0 ) {
+                push( @{$hosts{'default'}}, { KEY => 'NameVirtualHost', VALUE => $v } );
+                $dirty{MODIFIED}->{'default'} = 1;
+            }
         }
     }
+    $hosts{$hostid} = $hostdata;
     $dirty{NEW}->{$hostid} = 1;
     delete($dirty{DEL}->{$hostid});
     delete($dirty{MODIFIED}->{$hostid});
     return 1;
+}
+
+sub getNVH {
+    my $self = shift;
+    my $value = shift;
+    my $count = 0;
+
+    foreach my $hostid ( keys(%hosts) ) {
+        $hostid =~ /^([^\/]+)/;
+        next unless( $value eq $1 );
+        $count++;
+    }
+    return $count;
 }
 
 #bool DeleteHost( string hostid );
@@ -252,16 +269,19 @@ sub DeleteHost {
         } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
             $hostid =~ /^([^\/]+)/;
             my $vhost = $1;
-            my @newData = ();
-            while( my $e = shift(@{$hosts{'default'}}) ) {
-                if( $e->{KEY} eq 'NameVirtualHost' and
-                    $e->{VALUE} eq $vhost ) {
-                    push( @newData, @{$hosts{'default'}} );
-                    last;
+            # Am I the last one who uses this NameVirtualHost entry?
+            if( $self->getNVH( $vhost ) == 1 ) {
+                my @newData = ();
+                while( my $e = shift(@{$hosts{'default'}}) ) {
+                    if( $e->{KEY} eq 'NameVirtualHost' and
+                        $e->{VALUE} eq $vhost ) {
+                        push( @newData, @{$hosts{'default'}} );
+                        last;
+                    }
+                    push( @newData, $e );
                 }
-                push( @newData, $e );
+                $hosts{'default'} = \@newData;
             }
-            $hosts{'default'} = \@newData;
         }
     }
     delete( $hosts{$hostid} );
@@ -276,19 +296,17 @@ sub WriteHosts {
     foreach my $hostid( keys( %{$dirty{DEL}} ) ) {
         YaPI::HTTPD->DeleteHost( $hostid );
     }
-    foreach my $hostid( keys( %{$dirty{NEW}} ) ) {
-        YaPI::HTTPD->CreateHost( $hostid, $hosts{$hostid} );
-    }
-
     if( $dirty{MODIFIED}->{'default'} ) {
         YaPI::HTTPD->ModifyHost('default', $hosts{'default'} );
     }
     foreach my $hostid( keys( %{$dirty{MODIFIED}} ) ) {
         next if( $hostid eq 'default' );
         YaPI::HTTPD->ModifyHost( $hostid, $hosts{$hostid} );
-        use Data::Dumper;
-#        print Data::Dumper->Dump( [$hosts{$hostid} ] );
     }
+    foreach my $hostid( keys( %{$dirty{NEW}} ) ) {
+        YaPI::HTTPD->CreateHost( $hostid, $hosts{$hostid} );
+    }
+
     %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
     return 1;
 }
