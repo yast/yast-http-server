@@ -115,7 +115,7 @@ global map moduleslistwidget = $[
 		    `HStretch (),
 		    `PushButton (`id (`add_user),
 		    // translators: add user-defined module button label
-			_("&Add module") )
+			_("&Add Module") )
 		)
 	    ),
 	    "init" : ``(HttpServerWidgets::initModules ()),
@@ -174,7 +174,7 @@ global map widgets = $[
 	    "firewall_adapt" : $[
 		"widget" : `checkbox,
 		// translators: checkbox label
-		"label"	 : _("Adapt &firewall"),
+		"label"	 : _("Adapt &Firewall"),
 		"help"	 : HELPS["firewall_adapt"]:"",
 		"init"	: ``(HttpServerWidgets::initAdaptFirewall() ),
 		"store"	 : ``(HttpServerWidgets::storeAdaptFirewall() ),
@@ -200,7 +200,7 @@ global map widgets = $[
 	    // translators: text entry label
 	    `TextEntry( `id(`port), _("&Port:"), port ),
 	    // translators: combo box label for list of configured IPs
-	    `Left( `ComboBox( `id(`address), _("Network &address:"), ips ) ),
+	    `Left( `ComboBox( `id(`address), _("Network &Address:"), ips ) ),
 	    `VSpacing(),
 	    `HBox( 
 		`PushButton( `id(`ok), Label::OKButton() ),
@@ -373,8 +373,9 @@ global map widgets = $[
 	y2debug( "Validation result: %1", validate );
 	
 	if( !validate ) {
-	    Popup::Error(_("List of the ports where the server should
-listen cannot be empty.") );
+	    Popup::Error(_("The list of the ports to which the server should
+listen cannot be empty.
+") );
 	}
 	
 	return validate;
@@ -462,7 +463,7 @@ listen cannot be empty.") );
 	   UI::OpenDialog(
             `VBox(
 		// translators: text entry label for adding a user-defined module
-                `TextEntry(`id(`mod), _("Enter new module &name:")),
+                `TextEntry(`id(`mod), _("New Module &Name:")),
                 `HBox(
                     `PushButton(`id(`ok), `opt(`default), Label::OKButton() ),
                     `PushButton(`id(`cancel), Label::CancelButton() )
@@ -478,7 +479,7 @@ listen cannot be empty.") );
 		string mod = String::CutBlanks( UI::QueryWidget( `id(`mod), `Value ) );
 		if( mod == "" ) {
 		    // translators: error message
-		    Report::Error( _("You cannot add a module with empty name") );
+		    Report::Error( _("A name for the module to add is required.") );
 		    UI::CloseDialog();
 		} else if( haskey( HttpServer::settings["modules"]:$[], mod )  ) {
 		    // translators: error message

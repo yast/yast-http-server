@@ -54,15 +54,16 @@ choose the appropriate entry of the table and click <b>Toggle Status</b>.</p>
 
 	// apache service enabling help 1/1
 	"server_enable" : _("<p><b><big>HTTP Server and Default Host Settings</big></b><br>
-The HTTP server can be activated by choosing <b>Enabled</b>. To deactive it, choose
+Activate the HTTP server by choosing <b>Enabled</b>. To deactive it, choose
 <b>Disabled</b>.</p>
 ") ,
 
 	// firewall adapting help 1/1
-	"firewall_adapt" : _("<p>By enabling <b>Adapt firewall</b> you instruct
-YaST2 to adapt the firewall according the ports where the Apache2 will listen.
-The interfaces of the firewall will be <b>not</b> added and/or deleted. 
-This option is available only if the firewall is enabled.</p>"),
+	"firewall_adapt" : _("<p>By enabling <b>Adapt Firewall</b>, instruct
+YaST2 to adapt the firewall according the ports where Apache2 listens.
+The interfaces of the firewall are <b>not</b> added or deleted. 
+This option is available only if the firewall is enabled.</p>
+"),
 
 	// default host editing help 1/1
 	"global_table": _("<p>To edit the default host settings, choose the appropriate entry of the table then click <b>Edit</b>.

@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Sep  5 08:53:38 CEST 2003 - visnov@suse.de
+
+- merged in proofread texts
+- 2.8.9
+
+-------------------------------------------------------------------
 Tue Sep  2 15:41:38 CEST 2003 - visnov@suse.de
 
 - show document root from sysconfig or /etc/apache2/default-server.conf (#29674)
