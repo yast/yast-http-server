@@ -177,7 +177,7 @@ sub section2string {
 
     foreach my $k ( @$section ) {
         if( $k->{KEY} eq '_SECTION' ) {
-            $ret .= (" "x$ident).$k->{'OVERHEAD'} if( $k->{'OVERHEAD'} );
+            $ret .= $k->{'OVERHEAD'} if( $k->{'OVERHEAD'} );
             $ret .= (" "x$ident)."<".$k->{SECTIONNAME}." ".$k->{SECTIONPARAM}.">\n";
             $ret .= section2string($k->{VALUE}, $ident+1);
             $ret .= (" "x$ident)."</".$k->{SECTIONNAME}.">\n";
@@ -230,7 +230,7 @@ sub write_vhost_files {
                 # FIXME: subsections in vhosts possible?
                 # subsections in vhosts must be written here via section2string
                 if( $data->{KEY} eq '_SECTION' ) {
-                    print FILE section2string( [ $data ] ); # ??? lost in my own data structures
+                    print FILE section2string( [ $data ], 1 ); # ??? lost in my own data structures
                 } else {
                     print FILE $data->{OVERHEAD} if( $data->{OVERHEAD} );
                     print FILE " ".$data->{KEY}." ".$data->{VALUE}."\n" if( $data->{KEY} );
