@@ -48,7 +48,7 @@ global define symbol HttpServerSequence() ``{
     ];
 
     // translators: initialization dialog caption
-    string caption = _("HTTP server configuration");
+    string caption = _("HTTP Server Configuration");
     // translators: initialization dialog message
     term contents = `Label(_("Initializing ..."));
 
@@ -69,7 +69,7 @@ global define symbol HttpServerSequence() ``{
  */
 global define symbol HttpServerAutoSequence() ``{
     // translators: initialization dialog caption
-    string caption = _("HTTP server configuration");
+    string caption = _("HTTP Server Configuration");
     // translators: initialization dialog message
     term contents = `Label(_("Initializing ..."));
 

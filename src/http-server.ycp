@@ -34,7 +34,7 @@ map cmdline_description = $[
     "actions"           : $[
 	"configure"	: $[
 	    // translators: help text for configure command line action
-	    "help" 	: _("Configure a host settings"),
+	    "help" 	: _("Configure host settings"),
 	    "handler"	: ``(ConfigureHandler())
 	],
 	"modules"	: $[
@@ -44,7 +44,7 @@ map cmdline_description = $[
 	],
 	"listen"	: $[
 	    // translators: help text for listen command line action
-	    "help" 	: _("Setup the ports and network addresses, where should the server listen"),
+	    "help" 	: _("Set up the ports and network addresses where the server should listen."),
 	    "handler"	: ``(ListenHandler())
 	],
     ],
@@ -52,22 +52,22 @@ map cmdline_description = $[
 	"servername"	: $[
 	    "type"	: "hostname",
 	    // translators: help text for servername option (configure command line action)
-	    "help"	: _("Server name, for example www.example.com")
+	    "help"	: _("Server name, for example, www.example.com")
 	],
 	"serveradmin"	: $[
 	    "type"	: "email",
 	    // translators: help text for serveradmin option (configure command line action)
-	    "help"	: _("E-mail address of of the server administrator")
+	    "help"	: _("E-mail address of the server administrator")
 	],
 	"documentroot"	: $[
 	    "type"	: "string",
 	    // translators: help text for documentroot option (configure command line action)
-	    "help"	: _("Directory, where are the documents of the server stored")
+	    "help"	: _("Directory where the documents of the server are stored")
 	],
 	"host"		: $[
 	    "type"	: "string",
 	    // translators: help text for host option (configure command line action)
-	    "help"	: _("Name of the host to be configured. Only \"defaulthost\" is valid at the moment.")
+	    "help"	: _("Name of the host to configure. Only \"defaulthost\" is valid at the moment.")
 	],
 	"add"		: $[
 	    "type"	: "regex",
@@ -79,23 +79,23 @@ map cmdline_description = $[
 	    "type"	: "regex",
 	    "typespec"	: "(\[[0-9a-f:]+\]:[0-9]+)|([0-9]+)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)",
 	    // translators: help text for delete subcommand (listen command line action)
-	    "help"	: _("Delete already existing listen entry ([address:]port)"),
+	    "help"	: _("Delete an existing listen entry ([address:]port)"),
 	],
 	"list"		: $[
 	    // translators: help text for list subcommand (listen command line action)
-	    "help"	: _("List already configured entries"),
+	    "help"	: _("List configured entries"),
 	],
 	"enable"	: $[
 	    "type"	: "regex",
 	    "typespec"	: ".+(,.+)*",
 	    // translators: help text for enable subcommand (modules command line action)
-	    "help"	: _("Comma separated list of modules to be enabled")
+	    "help"	: _("Comma-separated list of modules to enable")
 	],
 	"disable"	: $[
 	    "type"	: "regex",
 	    "typespec"	: ".+(,.+)*",
 	    // translators: help text for disable subcommand (modules command line action)
-	    "help"	: _("Comma separated list of modules to be disabled")
+	    "help"	: _("Comma-separated list of modules to disable")
 	]
     ],
     "mappings"		: $[
@@ -115,7 +115,7 @@ define boolean ConfigureHandler(map options) ``{
 	else 
 	{
 	    // translators: error message in configure command line action
-	    Report::Error( _("Only \"defaulthost\" can be specified as host to be configured") );
+	    Report::Error( _("Only \"defaulthost\" can be specified as the host to configure") );
 	}
 	return false;
     }
@@ -214,8 +214,9 @@ define boolean ListenHandler(map options) ``{
     else if( command == "list" ) {
         // translators: heading for the "listen list" command line action output
 	// please, try to align the texts if possible.
-	CommandLine::Print( _("Listen statements:
-=================="));
+	CommandLine::Print( _("Listen Statements:
+==================
+"));
 	
 	foreach( string listen, HttpServer::settings["defaulthost", "Listen"]:[], ``{
 	    if( issubstring( listen, ":" ) ) {
@@ -224,7 +225,7 @@ define boolean ListenHandler(map options) ``{
 	    else
 	    {
 		// translators: listen statement for all available interfaces
-		CommandLine::Print( sformat( _("All interfaces: %1"), listen ) );
+		CommandLine::Print( sformat( _("All Interfaces: %1"), listen ) );
 	    }
 	});
 

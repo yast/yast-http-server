@@ -60,7 +60,7 @@ global define void ProgressNextStage(string title) ``{
 global define term listen2item( string arg, integer id ) ``{
     integer colon = find( arg, ":" );
 
-    string address = _("All addresses");
+    string address = _("All Addresses");
     string port = arg;
     
     if( colon != -1 ) {
@@ -100,7 +100,7 @@ global define map listen2map( string arg ) ``{
  */
 global define string item2listen( string network, string port ) ``{
 
-    if( network == _("All addresses") ) network = "";
+    if( network == _("All Addresses") ) network = "";
     
     if( size(network) > 0 ) port = network +":"+ port ;
     
