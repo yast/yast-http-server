@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Mar 30 17:16:36 CEST 2004 - visnov@suse.cz
+
+- fixed firewall setting in UI 
+
+-------------------------------------------------------------------
 Tue Mar 30 13:49:48 CEST 2004 - ug@suse.de
 
 - fixed double "NameVirtualHost" entries
