@@ -29,7 +29,6 @@
     import "SuSEFirewall";
     import "CWMServiceStart";
 
-
     include "http-server/helps.ycp";
 
 global string currenthost = "default";
@@ -104,6 +103,7 @@ global boolean validate_servername (any key, any id, map event)
     string value = (string)UI::QueryWidget (`id (id), `Value);
     if (!Hostname::CheckFQ (value))
     {
+	//translators: popup error message when validate servername
 	Popup::Error (_("Invalid server name.") 
 	    + "\n\n" 
 	    + Hostname::ValidFQ ());
@@ -136,6 +136,7 @@ global boolean validate_serverip (any id, any key, map event)
     
     if (!IP::Check (value))
     {
+        //translators: popup error message when validate server ip
 	Popup::Error (_("Invalid IP address."));
 	return false;
     }
@@ -155,6 +156,7 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 
     if ( size ( servername ) == 0 )
     {
+        //translators: popup error message when validate server
 	Report::Error ( _("Server name cannot be empty.") );
 	return false;
     }    
@@ -176,7 +178,7 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	{
 	    // error message - the entered server name is already configured 
 	    // in another virtual host
-	    Report::Error (_("The server name entered is already configured on another virtual host." ));
+	    Report::Error (_("The server name entered is already configured on another virtual host."));
 	    res = false;
 	    break;
 	}
@@ -191,8 +193,7 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	    {
 		// error message - the entered ip address is already 
 		// configured for another virtual host
-		string error_msg = sformat (_("The IP address is already configured on another virtual host (%1)")
-		    , get_host_value ( "ServerName", desc, nil ));
+		string error_msg = _("The IP address is already configured on another virtual host (")+ (string) get_host_value ( "ServerName", desc, nil ) + ")";
 		Report::Error (error_msg);
 		res = false;
 		break;
@@ -204,6 +205,7 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
     string serveradmin = (string)get_host_value ( "ServerAdmin", server, nil );
     if ( ! regexpmatch ( serveradmin, ".+@.+" ))
     {
+        //translators: popup error message when validate ServerAdmin
 	Report::Error (_("Administrator E-Mail is invalid."));
 	res = false;
     }
@@ -436,7 +438,7 @@ symbol HostsHandle (string table, map event)
 	
 	if (host == "default")
 	{
-	    // it is already the default host
+	    // popup - it is already the default host
 	    Popup::Message (_("The host is already default.") );
 	    return nil;
 	}
@@ -489,7 +491,7 @@ list HostsContents (map descr) {
 boolean HostsDelete (any opt_id, string opt_key) {
     if (opt_id == "default")
     {
-	// translators: error message - default host cannot be deleted
+	// translators: popup error message - default host cannot be deleted
 	Popup::Error (_("Cannot delete the default host."));
 	return false;
     }
@@ -577,6 +579,7 @@ global map<string,map> popups = $[
 		    "unique" : true,
 		],
 		"popup" : $[
+		    // table cell description
 		    "label"  : _("Server Name"),
 		    "widget" : `textentry,
 		    "validate_type" : `function,
@@ -812,8 +815,8 @@ global map<string, map <string, any> > widgets = $[
 	    ],
 	    "firewall_adapt" : $[
 		"widget" : `checkbox,
-		"label" : _("Open &Firewall on Selected Ports"),
 		// translators: checkbox label
+		"label" : _("Open &Firewall on Selected Ports"),
 		"help"	 : HELPS["firewall_adapt"]:"",
 		"init"	: HttpServerWidgets::initAdaptFirewall,
 		"store"	 : HttpServerWidgets::storeAdaptFirewall,
@@ -827,6 +830,7 @@ global map<string, map <string, any> > widgets = $[
 		// wizard widgets
 	    "open_port" : $[
 		"widget" : `textentry,
+		// translators: text entry
 		"label"	 : _("&Port:"),
 		"init"	 : HttpServerWidgets::initOpenPort,
 		"validate_type" : `function, 
@@ -835,6 +839,7 @@ global map<string, map <string, any> > widgets = $[
 		],
 	   "listen_interfaces" : $[
 		"widget" : `custom,
+		// translators: multi selection box
 		"custom_widget" : `ReplacePoint( `id(mode_replace_point_key),`MultiSelectionBox( _("&Listen on Interfaces"), [])),
 		"init"	 : HttpServerWidgets::initListenInterfaces,
                 "validate_type" : `function,
@@ -843,6 +848,7 @@ global map<string, map <string, any> > widgets = $[
 		],
 	   "fw_open" : $[
 		"widget" : `checkbox,
+		//translators: checkbox 
 		"label"  : _("Open &Firewall for Selected Ports"),
 		"init"	 : HttpServerWidgets::initFwOpen,
 		"store"	 : HttpServerWidgets::storeFwOpen,
@@ -851,13 +857,16 @@ global map<string, map <string, any> > widgets = $[
 	  "booting" 	 : CWMServiceStart::CreateAutoStartWidget ($[
 		"get_service_auto_start" : HttpServerWidgets::getServiceAutoStart,
 		"set_service_auto_start" : HttpServerWidgets::setServiceAutoStart,
-		"start_auto_button"	 : _("Start Apache2 Server when Booting"),
-		"start_manual_button"	 : _("Start Apache2 Server when Manually")
+		//translators: radiobutton - to start Apache2 service automatically
+		"start_auto_button"	 : _("Start Apache2 Server When Booting"),
+		//translators: radiobutton - to don't start Apache2 service 
+		"start_manual_button"	 : _("Start Apache2 Server Manually")
 
 		]),
 	  "expert_conf"  : $[
 		"widget" : `push_button,
-		"label"  : _("&HTTP Server Expert Configuration ..."),
+		//translators: button to enter expert configuration
+		"label"  : _("&HTTP Server Expert Configuration..."),
 		"init"	 : HttpServerWidgets::initExpertConf,
 		"handle" : HttpServerWidgets::handleExpertConf,
 		"help"	 : HELPS["expert_conf"]:""
@@ -887,7 +896,7 @@ global symbol handleSSLTable( string key, map event )
 {
     if ( event["ID"]:nil == `import_certificate )
     {
-
+				//translators: dialog to set *.pem file with certificate
 	string pem = UI::AskForExistingFile ("/", "*.pem", _("Select Certificate"));
 	if (pem == nil) 
 	{
@@ -921,6 +930,7 @@ global symbol handleSSLTable( string key, map event )
 	string pem = "/etc/ssl/servercerts/servercert.pem";
 	if ( !CheckCommonServerCertificate () )
 	{
+			//translators: dialog to set *.pem file with certificate
 	    pem = UI::AskForExistingFile ("/etc/ssl/servercerts", "*.pem", _("Select Certificate"));
 	    if (pem == nil)
 	    {
@@ -963,7 +973,9 @@ global void SSLInit (string widget)
  */
 global define term listen2item( map<string,any> arg, integer id ) ``{
 
+	//translators: all network addresses Listen type
     string address = arg["ADDRESS"]: _("All Addresses");
+        //translators: all network addresses Listen type
     if (address == "") address = _("All Addresses");
     string port = arg["PORT"]:"80";
     
@@ -979,6 +991,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
  */
 define string item2listen( string network, string port ) ``{
 
+        //translators: all network addresses Listen type
     if( network == _("All Addresses") ) network = "";
     
     if( size(network) > 0 ) port = network +":"+ port ;
@@ -1576,6 +1589,7 @@ define string item2listen( string network, string port ) ``{
        foreach(map<string, any> mapmodules, listmodules, {
         boolean finded=false;
         foreach(map<string, any> mapknownmodules, known, {
+		//translators: list of known and unknown modules
          if ( mapknownmodules["name"]:_("unknown") ==  mapmodules["name"]:_("unknown") ) finded=true;
 
         });
@@ -1822,7 +1836,6 @@ on this machine.");
 // *********************** Wizard Dialog 1 Widgets *****************************************
 
   global define void initOpenPort (string key) ``{
-	y2milestone(_("Initializing open port value ..."));
 	string port=nil;
 
 	foreach(map listens, YaST::HTTPDData::GetCurrentListen(), 
@@ -1843,6 +1856,7 @@ global boolean validateOpenPort(string key, map event) ``{
  string value = (string) UI::QueryWidget(`id(key), `Value);
  y2milestone("validate open port ... %1", value);
  if( ! regexpmatch( value, "^[ \t]*[0-9]+[ \t]*$" ) ) {
+	//translators: popup error
 	Popup::Error(_("Invalid port number."));
 	 UI::SetFocus(`id(key));
 	 return false;
@@ -1868,12 +1882,13 @@ global define void initListenInterfaces (string key) ``{
 	return `item(ip, checked);
 	}
 	} ) ;
-
+//translators: multi selection box
  UI::ReplaceWidget(`id(mode_replace_point_key), `MultiSelectionBox(`id("multi_sel_box"),_("&Listen on Interfaces"),ips));
 }
 
 global boolean validateListenInterfaces(string key, map event) ``{
  if( size((list)UI::QueryWidget( `id("multi_sel_box"), `SelectedItems )) < 1 ) {
+	//translators: popup error - multi selection box with server network adresses
         Popup::Error(_("At least one interface must be selected."));
          UI::SetFocus(`id(key));
          return false;
@@ -1915,14 +1930,14 @@ list<string> modules = YaST::HTTPDData::GetModuleList();
 	UI::ReplaceWidget (`id (`scr_mod_replace),
 		    `HBox(`HSpacing(6),
 		     `VBox(
-		     `VSpacing(3),
-                      `Left(`CheckBox(`id(`scr_mod_php4),_("Enable PHP4 Scripting"), enable_php4)),
-			`VSpacing(1),
-                      `Left(`CheckBox(`id(`scr_mod_perl), _("Enable Perl Scripting"), enable_perl)),
-                        `VSpacing(1),
-                      `Left(`CheckBox(`id(`scr_mod_python), _("Enable Python Scripting"), enable_python)),
-                        `VSpacing(1),
-                      `Left(`CheckBox(`id(`scr_mod_ruby), _("Enable Ruby Scripting"), enable_ruby)),
+		     `VSpacing(3),	//translators: checkbox - support for php script language
+                      `Left(`CheckBox(`id(`scr_mod_php4),_("Enable &PHP4 Scripting"), enable_php4)),
+			`VSpacing(1),   //translators: checkbox - support for perl script language
+                      `Left(`CheckBox(`id(`scr_mod_perl), _("Enable P&erl Scripting"), enable_perl)),
+                        `VSpacing(1),   //translators: checkbox - support for python script language
+                      `Left(`CheckBox(`id(`scr_mod_python), _("Enable P&ython Scripting"), enable_python)),
+                        `VSpacing(1),   //translators: checkbox - support for ruby script language
+                      `Left(`CheckBox(`id(`scr_mod_ruby), _("Enable &Ruby Scripting"), enable_ruby)),
 		     `VSpacing(5) 
 			)));
 	y2milestone("initializing script modules");
