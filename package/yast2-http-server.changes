@@ -1,7 +1,9 @@
 -------------------------------------------------------------------
 Mon Mar 29 14:48:17 CEST 2004 - visnov@suse.cz
 
-- use `Value, not `Enabled in query widget
+- use `Value, not `Enabled in query widget (fix IP-based host validation) 
+- fix CWM errors
+- 2.9.15
 
 -------------------------------------------------------------------
 Mon Mar 29 11:09:03 CEST 2004 - visnov@suse.cz
