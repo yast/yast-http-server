@@ -1205,6 +1205,7 @@ the SSLCertificateKeyFile directive is set too.
 The key can also be set via WriteServerKey.
 Writing the server certificate does not turn on SSL
 automatically.
+On failure, undef is returned.
 
 EXAMPLE
 
@@ -1220,7 +1221,14 @@ sub WriteServerCert {
     my $pemData = shift;
     my $key = ($pemData =~ /PRIVATE KEY/)?(1):(0);
 
+    if( not $pemData or $pemData !~ /BEGIN CERTIFICATE/ ) {
+        return SetError( summary => "corrupt PEM data" );
+    }
+
     my $host = GetHost( $hostid );
+    unless( ref($host) ) {
+        return SetError( summary => "unable to fetch host with id: $hostid" );
+    }
     my $file;
     foreach my $k ( @$host ) {
         next unless( $k->{KEY} eq 'ServerName' );
@@ -1242,7 +1250,7 @@ sub WriteServerCert {
     }
     push( @$host, { KEY => 'SSLCertificateFile', VALUE => $file } ) unless( $found & 1 );
     push( @$host, { KEY => 'SSLCertificateKeyFile', VALUE => $file } ) unless( $key and not($found & 2) );
-    ModifyHost( $hostid, $host );
+    return ModifyHost( $hostid, $host );
 }
 
 =item *
@@ -1256,6 +1264,7 @@ the certificate too. If there is a certificate in the PEM data,
 the SSLCertificateFile directive is set too.
 The certificate can also be set via WriteServerCert.
 Writing the server key does not turn on SSL automatically.
+On failure, undef is returned.
 
 
 EXAMPLE
@@ -1269,9 +1278,15 @@ EXAMPLE
 sub WriteServerKey {
     my $hostid = shift;
     my $pemData = shift;
+    if( not $pemData or $pemData !~ /PRIVATE KEY/ ) {
+        return SetError( summary => "corrupt PEM data" );
+    }
     my $cert = ($pemData =~ /BEGIN CERTIFICATE/)?(1):(0);
 
     my $host = GetHost( $hostid );
+    unless( ref($host) ) {
+        return SetError( summary => "unable to fetch host with id: $hostid" );
+    }
     my $file;
     foreach my $k ( @$host ) {
         next unless( $k->{KEY} eq 'ServerName' );
@@ -1292,7 +1307,7 @@ sub WriteServerKey {
     }
     push( @$host, { KEY => 'SSLCertificateKeyFile', VALUE => $file } ) if( $cert and not($found & 1) );
     push( @$host, { KEY => 'SSLCertificateFile', VALUE => $file } ) unless( $found & 2 );
-    ModifyHost( $hostid, $host );
+    return ModifyHost( $hostid, $host );
 }
 
 =item *
@@ -1303,6 +1318,7 @@ host with $hostID to the right place and sets the
 SSLCACertificateFile directive to the right path.
 The CA must be in PEM format.
 Writing the server CA does not turn on SSL automatically.
+On failure, undef is returned.
 
 EXAMPLE
 
@@ -1314,8 +1330,14 @@ EXAMPLE
 sub WriteServerCA {
     my $hostid = shift;
     my $pemData = shift;
+    if( not $pemData or $pemData !~ /BEGIN CERTIFICATE/ ) {
+        return SetError( summary => "corrupt PEM data" );
+    }
 
     my $host = GetHost( $hostid );
+    unless( ref($host) ) {
+        return SetError( summary => "unable to fetch host with id: $hostid" );
+    }
     my $file;
     foreach my $k ( @$host ) {
         next unless( $k->{KEY} eq 'ServerName' );
@@ -1334,7 +1356,7 @@ sub WriteServerCA {
         last;
     }
     push( @$host, { KEY => 'SSLCACertificateFile', VALUE => $file } ) if( not $found );
-    ModifyHost( $hostid, $host );
+    return ModifyHost( $hostid, $host );
 }
 
 =item *
@@ -1343,14 +1365,16 @@ C<$pemData = ReadServerCert($hostID)>
 this function returns the server certificate PEM
 data. Even if the key is stored in the same file,
 just the certificate part is returned.
+On failure, undef is returned.
 
 EXAMPLE
 
   $pemData = ReadServerCert($hostID);
-  open( CERT, "> /tmp/cert.pem" );
-  print CERT $pemData;
-  close(CERT);
-  $text = `openssl x509 -in /tmp/cert.pem -text -noout`;
+  if( $pemData and open( CERT, "> /tmp/cert.pem" ) ) {
+      print CERT $pemData;
+      close(CERT);
+      $text = `openssl x509 -in /tmp/cert.pem -text -noout`;
+  }
 
 =cut
 
@@ -1358,6 +1382,9 @@ sub ReadServerCert {
     my $hostid = shift;
 
     my $host = GetHost( $hostid );
+    unless( ref($host) ) {
+        return SetError( summary => "unable to fetch host with id: $hostid" );
+    }
     my $file;
     foreach my $k ( @$host ) {
         next unless( $k->{KEY} eq 'SSLCertificateFile' );
@@ -1384,6 +1411,7 @@ C<$pemData = ReadServerKey($hostID)>
 this function returns the server key in PEM
 format. Even if the certificate is stored in the same
 file, just the private key part is returned.
+On failure, undef is returned.
 
 EXAMPLE
 
@@ -1396,6 +1424,9 @@ sub ReadServerKey {
     my $hostid = shift;
 
     my $host = GetHost( $hostid );
+    unless( ref($host) ) {
+        return SetError( summary => "unable to fetch host with id: $hostid" );
+    }
     my $file;
     foreach my $k ( @$host ) {
         next unless( $k->{KEY} eq 'SSLCertificateKeyFile' );
@@ -1429,11 +1460,14 @@ C<$pemData = ReadServerCA($hostID)>
 
 this function returns the server CA in PEM
 format.
+On failure, undef is returned.
 
 EXAMPLE
 
   $CA =  ReadServerCA($hostID);
-  $fingerprint = `echo "$CA"|openssl x509 -fingerprint -noout`;
+  if( $CA ) {
+      $fingerprint = `echo "$CA"|openssl x509 -fingerprint -noout`;
+  }
 
 =cut
 
@@ -1441,6 +1475,9 @@ sub ReadServerCA {
     my $hostid = shift;
 
     my $host = GetHost( $hostid );
+    unless( ref($host) ) {
+        return SetError( summary => "unable to fetch host with id: $hostid" );
+    }
     my $file;
     foreach my $k ( @$host ) {
         next unless( $k->{KEY} eq 'SSLCACertificateFile' );
