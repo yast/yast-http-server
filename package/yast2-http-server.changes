@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Wed Mar 10 17:14:05 CET 2004 - visnov@suse.cz
+
+- do not generate certificate
+- set as default works
+- use server names in dialogs
+- show document root in hosts list
+- various fixes
+
+-------------------------------------------------------------------
 Wed Mar 10 10:55:19 CET 2004 - visnov@suse.cz
 
 - fixed crash (#35520) - ug@suse.de

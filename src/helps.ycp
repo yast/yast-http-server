@@ -86,7 +86,7 @@ default host is displayed.
 	// hosts list help 1/2
 	"hosts" : _("<p><b><big>Configured Hosts</big></b><br>
 This is a list of already configured hosts. One of the hosts is 
-marked as default. A default host is used if no other host
+marked as default (the asterisk next to the server name). A default host is used if no other host
 is matched for an incoming request. To set a host as a default,
 press the <b>Set as Default</b> button.</p>")
 	// hosts list help 2/2
@@ -106,6 +106,26 @@ where the HTTP server should listen for incoming requests.</p>
 	// listen dialog editor help 2/2
 	+ _("<p>Choose an appropriate entry of the table and click <b>Edit</b> to change the entry.
 To add a new entry, click <b>Add</b>. To remove an entry, select it and click <b>Delete</b>.</p>"),
+
+	// ssl options dialog help 1/4
+	"ssl"	: _("<p><b><big>SSL Configuration</big></b><br>
+This is a list of options related to the SSL (Secure Socket Layer) settings
+of the host. SSL allows to securely communicate with the host by 
+encrypting communication.</p>")
+
+	// ssl options dialog help 2/4
+	+ _("<p>General behavior is determined by the <i>SSL</i> option. The host can
+either not support SSL at all (<i>No SSL</i>), allow both non-SSL and SSL access (<i>Allowed</i>)
+or accept only connections encrypted via SSL (<i>Required</i>).
+</p>")
+
+	// ssl options dialog help 3/4
+	+ _("<p>Choose an appropriate option of the table and click <b>Edit</b> to change the option.
+To add a new option, click <b>Add</b>. To remove an option, select it and click <b>Delete</b>.</p>")
+
+	// ssl options dialog help 4/4
+	+ _("<p><b>Note:</b> If you enable usage of SSL for a host, the <i>mod_ssl</i> 
+module should be loaded by the server.</p>"),
     ];
 
 /* EOF */

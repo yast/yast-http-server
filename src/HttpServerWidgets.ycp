@@ -34,7 +34,7 @@ map<string, any> ssl_options = (map<string, any>)SCR::Read (.target.ycp, Directo
 
 string item2listen( string network, string port );
 
-string get_host_value ( string keyword, list< map<string, any> > host, string default )
+global string get_host_value ( string keyword, list< map<string, any> > host, string default )
 {
     string ret = default;
     
@@ -164,22 +164,104 @@ void HostsInit (string widget);
 symbol HostsHandle (string table, map event);
 list HostsContents (map descr);
 boolean HostsDelete (any opt_id, string opt_key);
+global boolean HostIsDefault (any widget, string opt_key);
+global string HostsMapId2Key( map desc, string id );
+global string HostDocumentRootSummary( string key, any id );
 
 map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 	$["add_delete" : true, 
 	      "up_down" : false, 
-	      "unique_keys" : true]
+	      "unique_keys" : true,
+	      "changed_column" : true]
 	, $[
 	    "init" : HttpServerWidgets::HostsInit,
 	    "handle" : HttpServerWidgets::HostsHandle,
 	    "ids" : HttpServerWidgets::HostsContents,
 	    "option_delete" : HttpServerWidgets::HostsDelete,
 	    "help" : HELPS["hosts"]:"",
+	    "id2key" : HttpServerWidgets::HostsMapId2Key,
+	    "fallback": $[
+		"summary" : HttpServerWidgets::HostDocumentRootSummary,
+		"changed" : HttpServerWidgets::HostIsDefault,
+	    ],
 	]);
 
 void HostsInit (string widget)
 {
     TablePopup::TableInit(hosts_widget, widget);
+}
+
+map<string,string> AskNewInfo (string servername, string ip)
+{
+    import "Hostname";
+    import "IP";
+    
+    // TODO: suggest reasonable values for empty ones
+    // TODO: use IP address combo box
+    UI::OpenDialog (
+	`VBox(
+	    `Label( _("The current default host will be replaced by 
+the new host and will become a virtual host.
+
+But, the current default host does not have
+the IP address or the server name specified.
+Therefore, it is not possible to use it as 
+a virtual host. Verify the suggested values below 
+and click OK to continue with the default host
+switch. Otherwise click Cancel not to change
+the default host.")),
+	    `TextEntry (`id (`name), _("Server &Name:"), servername),
+	    `TextEntry (`id (`ip), _("Server &IP address:"), ip),
+	    `VSpacing(0.5),
+	    `HBox( `PushButton (`id(`ok), `opt(`default), Label::ContinueButton ()),
+		`PushButton (`id(`cancel), Label::CancelButton ()) )
+	));
+	
+    UI::SetFocus (`name);
+    
+    symbol ret = nil;
+
+    do
+    {
+	ret = (symbol)UI::UserInput ();
+	if (ret == `cancel)
+	{
+	    break;
+	}
+	
+	// it must be `ok
+	servername = (string)UI::QueryWidget (`name, `Value);
+	if (size(servername) == 0)
+	{
+	    Popup::Error (_("Server name cannot be empty."));
+	    continue;
+	}
+	
+	if (!Hostname::CheckFQ (servername))
+	{
+	    Popup::Error (_("Invalid server name."));
+	    continue;
+	}
+	
+	ip = (string)UI::QueryWidget (`ip, `Value);
+	if (size(ip) == 0)
+	{
+	    Popup::Error (_("Server IP address cannot be empty."));
+	    continue;
+	}
+	
+	if (!IP::Check (ip))
+	{
+	    Popup::Error (_("Invalid IP address."));
+	    continue;
+	}
+	
+	break;
+	
+    } while (ret != nil);
+    
+    UI::CloseDialog ();
+    return ret != `cancel ? $[ "name": servername, "ip" : ip ] : nil;
 }
 
 symbol HostsHandle (string table, map event)
@@ -197,30 +279,84 @@ symbol HostsHandle (string table, map event)
     
     else if (event["ID"]:nil == `set_default)
     {
-	y2milestone ("Changing default host");
+	string host = (string)UI::QueryWidget (`_tp_table, `CurrentItem);
+	
+	if (host == "default")
+	{
+	    // it is already the default host
+	    Popup::Message (_("The host is already default.") );
+	    return nil;
+	}
+
+	y2milestone ("Changing default host to '%1'", host);
+	
+	list< map<string,any> > defhost_options = HTTPDData::GetHost("default");
+	string servername = get_host_value( "ServerName", defhost_options, "");
+	string ip = get_host_value( "HostIP", defhost_options, "");
+	if (ip == "" || servername != "")
+	{
+	    // we must set a new server name and ip for the old default host
+	    map res = AskNewInfo (servername, ip);
+	    if (res == nil)
+	    {
+		// cancel the change
+		return nil;
+	    }
+	    
+	    defhost_options = set_host_value( "HostIP", defhost_options, res["ip"]:ip);
+	    defhost_options = set_host_value( "ServerName", defhost_options, res["name"]:ip);
+	}
+	
+	// move the old default host elsewhere
+	HTTPDData::CreateHost ( ip+"/"+servername, defhost_options );
+	// replace the values of the default host by the new one
+	HTTPDData::ModifyHost ("default", HTTPDData::GetHost(host) );
+	// remove the old non-default host
+	HTTPDData::DeleteHost (host);
+
+	TablePopup::TableInit(hosts_widget, table);
+    }
+    else 
+    {
+	return TablePopup::TableHandle(hosts_widget, table, event);
     }
     
     return nil;
 }
 
 list HostsContents (map descr) {
-    list<string> l = HTTPDData::GetHostsList ();
-    
-    list<string> res = maplist(
-	string host_id,
-	l,
-	``{
-	    return host_id; // FIXME - it should return server name
-	});
-
-    return res;
+    return HTTPDData::GetHostsList ();
 }
 
 boolean HostsDelete (any opt_id, string opt_key) {
+    if (opt_key == "default")
+    {
+	Popup::Error (_("Cannot delete the default host."));
+	return false;
+    }
     // message popup
     if (! Popup::YesNo (_("Delete selected host?")))
 	return false;
     return HTTPDData::DeleteHost (opt_key);
+}
+
+global string HostsMapId2Key (map desc, string id)
+{
+    string res = get_host_value ( "ServerName", HTTPDData::GetHost(id), id );
+    if (id == "default" && res == "default" ) res = _("Default host");
+    return res;
+}
+
+
+global string HostDocumentRootSummary( string key, any id )
+{
+    return get_host_value ("DocumentRoot", HTTPDData::GetHost(key), "");
+}
+
+global boolean HostIsDefault( any widget, string key )
+{
+    y2error( "Testing changed of %1", key );
+    return key == "default";
 }
 
 /******************************************************************************************/
@@ -280,8 +416,15 @@ global map<string,map> popups = $[
 	    "VirtualByName" : $[
 		"table" : $[
 		    // table cell description
-		    "label"  :_("Server Resolution"),
+		    "label"  : _("Server Resolution"),
 		    "optional" : false,
+		],
+	    ],
+	    "HostIP" : $[
+		"table" : $[
+		    // table cell description
+		    "label"  : _("IP Address"),
+		    "optional" : false
 		],
 	    ],
 	    "SSL" : $[
@@ -376,6 +519,25 @@ global map listenwidget = $[
 global symbol handleSSLTable( any key, map event );
 global list<string> SSLTableContents (map descr);
 global void SSLInit (any key);
+global void SSLTypeInit (any widget);
+global void SSLTypeStore (any widget);
+
+map<string, map> edit_ssl = $[
+    "table" : $[
+	"optional" : false,
+    ],
+    "popup" : $[
+	"widget" : `radio_buttons,
+	"items" : [
+    	    [ "0", _("&No SSL") ],
+    	    [ "1", _("SSL &Allowed") ],
+    	    [ "2", _("SSL &Required") ],
+	],
+	"orientation" : `horizontal,
+	"init" : SSLTypeInit,
+	"store" : SSLTypeStore,
+    ]
+];
 
 map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	    $["add_delete" : true, 
@@ -384,7 +546,7 @@ map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	, $[
 	    "init" : HttpServerWidgets::SSLInit,
 	    "handle" : HttpServerWidgets::handleSSLTable,
-	    "options" : ssl_options,
+	    "options" : union( ssl_options, $[ "SSL":edit_ssl ] ),
 	    "ids" : HttpServerWidgets::SSLTableContents,
 	    "fallback" : $[
 		"init" : HttpServerWidgets::DefaultHostPopupInit,
@@ -460,6 +622,18 @@ global void SSLInit (any widget)
     TablePopup::TableInit(sslwidget, widget);
 }
 
+global void SSLTypeInit (any widget)
+{
+    // it is a radio button group
+    UI::ChangeWidget (`id(widget), `CurrentButton, tostring( get_host_value( "SSL", HTTPDData::GetHost(currenthost), "0" ) ) );
+}
+
+
+global void SSLTypeStore (any widget)
+{
+    // it is a radio button group
+    HTTPDData::ModifyHost( currenthost, set_host_value ("SSL", HTTPDData::GetHost(currenthost), UI::QueryWidget( `id(widget), `CurrentButton ) ) );
+}
 
 
 /******************************** Listen popup ****************************/
@@ -512,7 +686,7 @@ define string item2listen( string network, string port ) ``{
 	// translators: Listen type for all addresses;
 	string aa =  _("All Addresses");
 	
-	list ips = []; // FIXME: union( [ aa ], maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) );
+	list ips = union( [ aa ], maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) );
 
 	UI::OpenDialog( `VBox(
 	    // translators: text entry label
@@ -564,27 +738,6 @@ define string item2listen( string network, string port ) ``{
     }	
     
 // *************************************** log popups **************************
-
-/**
- * Generate list of configured log files. First, use sysconfig and then as at lower priority
- * use CustomLog from httpd.conf files.
- *
- * @param access_logs	string containing configured access_log
- * @param custom_logs	list of other configured logs
- * @return list		list of all configured logs ordered by priority
- */
-global define list<string> GetLogs( string access_logs, list<string> custom_logs ) ``{
-
-    // initialize using access_logs
-    list<string> result = maplist( string value, splitstring( access_logs, "," ), ``( String::CutBlanks( value ) ) );
-
-    foreach( string log, custom_logs, ``{
-	string l = String::CutBlanks( log );
-	if( ! contains( result, l ) ) result = add( result, l );
-    });
-    
-    return result;
-}
 
     /**
       * Handle function of the access log button (the first defined access log file)
@@ -654,7 +807,7 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
 	list<string> ret = maplist (map<string, any> option, HTTPDData::GetHost(currenthost), ``(option["KEY"]:_("<unknown>")));
 
 	// filter out unneeded options
-	ret = filter (string key, ret, ``( ! contains( ["_SECTION"], key ) && ! haskey( ssl_options, key ) ) );
+	ret = filter (string key, ret, ``( ! contains( ["_SECTION", currenthost == "default" ? "HostIP" : "" ], key ) && ! haskey( ssl_options, key ) ) );
 	// FIXME: replace VirtualByName
 	// required entries
 	ret = (list<string>)union (["ServerName", "ServerAdmin" ], ret);
@@ -705,7 +858,6 @@ global define list<string> GetLogs( string access_logs, list<string> custom_logs
     global define void DefaultHostPopupInit (any opt_id, string opt_key) ``{
 	UI::ChangeWidget (`id (opt_key), `Value,
 	    get_host_value( opt_key, HTTPDData::GetHost(currenthost), "") );
-	UI::SetFocus (`id (opt_key));
     }
 
     /**
