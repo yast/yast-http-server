@@ -1,0 +1,310 @@
+#!/usr/bin/perl -w
+package ag_http_server;
+use ycp;
+use YaST::SCRAgent;
+our @ISA = ("YaST::SCRAgent");
+
+use strict;
+
+# $vhost_files{$filename} = [ 
+#                            {
+#                              OVERHEAD => '# ...',
+#                              VHOST    => '*',
+#                              HOSTID   => '*:443/myservername.my.dom',
+#                              VirtualByName => 1,
+#                              DATA     => [
+#                                           {
+#                                            OVERHEAD => '...',
+#                                            KEY => 'DocumentRoot',
+#                                            VALUE => '/srv/...'
+#                                           }
+#                                          ]
+#                            }
+#                           ];
+
+my %vhost_files = ();
+# %vhost_by_name is just a uniq array
+my %vhost_by_name = ();
+
+
+# %listen ist just a uniq array
+# $listen{1.2.3.4:80-100} = 1;
+my %listen;
+
+sub parse_vhost_files {
+    my $class = shift;
+
+    # parse all NameVirtualHost entries.
+    if( open( FILE, "< /etc/apache2/listen.conf" ) ) {
+        while( my $line = <FILE> ) {
+            next unless( $line =~ /^NameVirtualHost\s+(.*)/ );
+            my $vhost = $1;
+            chomp($vhost);
+            $vhost_by_name{$vhost} = 1;
+        }
+        close(FILE);
+    }
+
+    for my $file ( </etc/apache2/vhosts.d/*.conf> ) {
+        open( FILE, "< $file" ) or do {
+            y2error("unable to open file $file for reading.$!");
+            return 0;
+        };
+        $file =~ /([^\/]+\.conf)$/;
+        $file = $1;
+        my $fileData = sectionParser();
+        $vhost_files{$file} = [];
+        my $tmpOverhead = "";
+        foreach my $vhost (@$fileData) {
+            # transform none-vhost sections into overhead
+            if( exists($vhost->{'SECTIONNAME'}) and ($vhost->{'SECTIONNAME'} ne 'VirtualHost') ) {
+                $tmpOverhead .= section2string( [$vhost] );
+                next;
+            }
+            my $data = [];
+            my $vhostData = {};
+            $vhostData->{'VHOST'}    = $vhost->{'SECTIONPARAM'};
+            $vhostData->{'HOSTID'}   = $vhost->{'SECTIONPARAM'};
+            $vhostData->{'OVERHEAD'} = $tmpOverhead.$vhost->{'OVERHEAD'};
+            $tmpOverhead = "";
+            if( grep( { $vhost eq $_ } keys(%vhost_by_name) ) ) {
+                $vhostData->{'VirtualByName'} = 1;
+            } else {
+                $vhostData->{'VirtualByName'} = 0;
+            }
+            foreach my $key ( @{$vhost->{'VALUE'}} ) {
+                push( @$data, $key );
+                if( $key->{'KEY'} eq 'ServerName' ) {
+                    $vhostData->{'HOSTID'} .= "/$key->{VALUE}";
+                }
+            }
+            $vhostData->{'DATA'} = $data;
+            push( @{$vhost_files{$file}}, $vhostData );
+        }
+        close( FILE );
+    }
+
+    my $entry = {};
+    open( FILE, "< /etc/apache2/default-server.conf" ) or do {
+        y2error("unable to open file /etc/apache2/default-server.conf for reading.$!");
+        return 0;
+    };
+    $entry->{DATA} = sectionParser();
+    close(FILE);
+    $entry->{HOSTID} = 'default';
+    $entry->{VirtualByName} = 0;
+    $vhost_files{'default-server.conf'} = [ $entry ];
+
+    return 1;
+}
+
+sub parse_listen_conf {
+    my $class = shift;
+
+    # parse all Listen entries.
+    if( open( FILE, "< /etc/apache2/listen.conf" ) ) {
+        while( my $line = <FILE> ) {
+            next unless( $line =~ /^Listen\s+(.*)/ );
+            chomp($line);
+            $listen{$1} = 1;
+        }
+        close(FILE);
+    }
+}
+
+# generic apache2 configfile format parser
+sub sectionParser {
+    my $keys = [];
+    my $key  = {};
+    while( my $line = <FILE> ) {
+        last if( $line =~ /^\s*<\s*\/\w+/ ); # end of section
+        if( $line =~ /^\s*<(\w+)\s*([^\s>]+)\s*>/ ) { # new Subsection?
+           $key->{KEY} = '_SECTION';
+           $key->{SECTIONNAME} = $1;
+           $key->{SECTIONPARAM} = $2;
+           $key->{VALUE} = sectionParser();
+           push( @$keys, $key );
+           $key = {};
+        } elsif( $line =~ /^\s*(\w+)\s+(.*)$/ ) {
+           $key->{KEY} = $1;
+           $key->{VALUE} = $2;
+           push( @$keys, $key );
+           $key = {};
+        } else {
+           $key->{OVERHEAD} .= $line;
+        }
+    }
+    return $keys;
+}
+
+sub section2string {
+    my $section = shift;
+    my $ident = shift || 0;
+    my $ret;
+
+    foreach my $k ( @$section ) {
+        if( $k->{KEY} eq '_SECTION' ) {
+            $ret .= (" "x$ident).$k->{'OVERHEAD'} if( $k->{'OVERHEAD'} );
+            $ret .= (" "x$ident)."<".$k->{SECTIONNAME}." ".$k->{SECTIONPARAM}.">\n";
+            $ret .= section2string($k->{VALUE}, $ident+1);
+            $ret .= (" "x$ident)."</".$k->{SECTIONNAME}.">\n";
+        } else {
+            $ret .= (" "x$ident);
+            $ret .= $k->{'OVERHEAD'} if( $k->{'OVERHEAD'} );
+            $ret .= $k->{'KEY'}." ".$k->{'VALUE'}."\n";
+        }
+    }
+    return $ret;
+}
+
+
+sub write_vhost_files {
+    my $class = shift;
+
+    #
+    # create NameVirtualHost entries in listen.conf
+    #
+    if( open( FILE, "< /etc/apache2/listen.conf" ) ) {
+        my @file = <FILE>;
+        close(FILE);
+
+        # drop all "NameVirtualHost" entries.
+        foreach my $line ( @file ) {
+            next unless( $line =~ /^NameVirtualHost/ );
+            $line = "";
+        }
+
+        # do the new "NameVirtualHost" entries and save file
+        foreach my $entry ( keys(%vhost_by_name) ) {
+            push( @file, "NameVirtualHost $entry\n" );
+        }
+        open( FILE, "> /etc/apache2/listen.conf" ); # FIXME catch ERRORs
+        print FILE @file;
+        close(FILE);
+    }
+
+    foreach my $file ( keys(%vhost_files) ) {
+        next if( $file eq 'default-server.conf' ); # skip the default server here
+        open( FILE, "> /etc/apache2/vhosts.d/$file" ) or do {
+            y2error("open for /etc/apache2/vhosts.d/$file failed with $!");
+            return 0;
+        };
+        foreach my $entry ( @{$vhost_files{$file}} ) {
+            print FILE $entry->{OVERHEAD} if($entry->{OVERHEAD});
+            print FILE "<VirtualHost $entry->{VHOST}>\n" if( $entry->{VHOST} );
+            foreach my $data ( @{$entry->{DATA}} ) {
+                next if( $data->{KEY} eq 'HostIP' ); # just for internal use
+                # FIXME: subsections in vhosts possible?
+                # subsections in vhosts must be written here via section2string
+                if( $data->{KEY} eq '_SECTION' ) {
+                    print FILE section2string( $entry->{DATA} );
+                } else {
+                    print FILE $data->{OVERHEAD} if( $data->{OVERHEAD} );
+                    print FILE " ".$data->{KEY}." ".$data->{VALUE}."\n" if( $data->{KEY} );
+                }
+            }
+            print FILE "</VirtualHost>\n" if( $entry->{VHOST} );
+        }
+        close(FILE);
+    }
+
+    # save the default-server.conf
+    open( FILE, "> /etc/apache2/default-server.conf" ) or do {
+        y2error("open for /etc/apache2/default-server.conf failed with $!");
+        return 0;
+    };
+    foreach my $entry ( @{$vhost_files{'default-server.conf'}} ) {
+        print FILE section2string( $entry->{DATA} );
+    }
+    close(FILE);
+
+    return 1;
+}
+
+sub write_listen_conf {
+    if( open( FILE, "< /etc/apache2/listen.conf" ) ) {
+        my @file = <FILE>;
+        close(FILE);
+
+        # drop all "Listen" entries.
+        foreach my $line ( @file ) {
+            next unless( $line =~ /^Listen/ );
+            $line = "";
+        }
+
+        # do the new "Listen" entries and save file
+        foreach my $entry ( keys(%listen) ) {
+            push( @file, "Listen $entry\n" );
+        }
+        open( FILE, "> /etc/apache2/listen.conf" ); # FIXME catch ERRORs
+        print FILE @file;
+        close(FILE);
+    }
+}
+
+sub Execute {
+    my $class = shift;
+    my ($path, @args) = @_;
+
+    return 1;
+}
+
+
+sub Read {
+    my $class = shift;
+    my ($path, @args) = @_;
+
+    if( $path eq '.vhosts' ) {
+       parse_vhost_files();
+       return \%vhost_files;
+    } elsif( $path eq '.listen' )  {
+       parse_listen_conf();
+       return [ keys(%listen) ];
+    }
+}
+
+sub Write {
+    my $class = shift;
+    my ($path, @args) = @_;
+
+    if( $path eq '.vhosts' ) {
+    } elsif( $path =~ /\.vhosts\.setFile\.(.*)/ ) {
+        # args[0] = array ref (structure explained above)
+        parse_vhost_files();
+        if( $1 ) {
+            my $filename = $1;
+            if( ref($args[0]) eq 'ARRAY' ) {
+                $vhost_files{$filename} = $args[0];
+                write_vhost_files(); # FIXME: write just one file
+            }
+        } else {
+            if( ref($args[0]) eq 'HASH' ) {
+                %vhost_files = %{$args[0]};
+                write_vhost_files();
+            }
+        }
+    } elsif( $path eq '.listen' ) {
+        if( ref($args[0]) eq 'ARRAY' ) {
+            %listen = ();
+            foreach my $entry ( @{$args[0]} ) {
+                my $key = "";
+                if( exists( $entry->{'ADDRESS'} ) ) {
+                    $key = $entry->{'ADDRESS'}.':';
+                }
+                $key .= $entry->{'PORT'};
+                $listen{$key} = 1;
+            }
+            write_listen_conf();
+        }
+    } else {
+        # not implemented
+    }
+}
+
+sub Dir {
+}
+
+package main;
+
+ag_http_server->Run ();
+
