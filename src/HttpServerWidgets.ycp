@@ -83,7 +83,7 @@ void OverviewInit (string widget)
 	[
 	    `item ( `id(`listen), _("Listen on"), listen_summary ),
 	    `item ( `id(`modules), _("Modules"), "" ),
-	    `item ( `id(`default), _("Default host"), default_host ),
+	    `item ( `id(`default), _("Default Host"), default_host ),
 	    `item ( `id(`hosts), _("Hosts"), hosts ),
 	]);
 }
@@ -674,11 +674,11 @@ global define list GetLogs( string access_logs, list custom_logs ) ``{
 	{
 	    if (res == "0")
 	    {
-		res = _("Resolution via HTTP headers");
+		res = _("Resolution via HTTP Headers");
 	    }
 	    else 
 	    {
-		res = _("Resolution via used IP address");
+		res = _("Resolution via IP Address Used");
 	    }
 	}
 	return res;
