@@ -205,13 +205,9 @@ global define boolean Read() ``{
     
     // read hosts
     HTTPDData::ReadHosts();
+    HTTPDData::ReadListen();
+    HTTPDData::ReadModules();
     
-    // now, read Listen statements from listen.conf
-    settings["Listen"] = HTTPDData::GetCurrentListen();
-
-    // read modules from sysconfig
-    settings["modules"] = HTTPDData::GetKnownModules();
-
     // FIXME: special handling of PHP
 //    if( settings["modules", "php4", "status"]:false == true &&
 //	! Require::AreAllPackagesInstalled(["apache2-mod_php4"]) )
