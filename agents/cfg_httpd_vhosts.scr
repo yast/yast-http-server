@@ -1,0 +1,19 @@
+/**
+ * File:
+ *   tty.scr
+ * Summary:
+ *   SCR Agent for reading/writing vhost files for Apache2
+ * Access:
+ *   read/write
+ * Authors:
+ * See:
+ *   anyagent
+ *   libscr
+ * Example:
+
+ * $Id$
+ *
+ */
+.httpd.vhosts
+
+`ag_httpd_vhosts ( `foo  )
