@@ -11,7 +11,7 @@
 {
 
     textdomain "http-server";
-
+    import "ProductFeatures";
     /**
       * All helps are here
       */
@@ -130,13 +130,13 @@ or accept only connections encrypted via SSL (<i>Required</i>).
 	+ _("<p>Choose an appropriate option of the table and click <b>Edit</b> to change the option.
 To add a new option, click <b>Add</b>. To remove an option, select it and click <b>Delete</b>.</p>")
 
-	// ssl options dialog help 3/4
-	+ _("<p>The <b>Certificates</b> menu allows 
+	// ssl options dialog help 3/4 (empty in simple mode)
+	+ ((ProductFeatures::ui_mode != "simple") ? _("<p>The <b>Certificates</b> menu allows 
 importing server certificates. <b>Import Server Certificate</b> 
 allows use of a special purpose certificate. 
 <b>Use Common Certificate</b> configures usage of the
 common certificate issued for this host.</p>
-") 
+") : "" )
 
 	// ssl options dialog help 4/4
 	+ _("<p><b>Note:</b> If you enable use of SSL for a host, the <i>mod_ssl</i> 
