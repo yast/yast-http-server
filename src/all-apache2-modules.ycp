@@ -4,9 +4,12 @@
  * Authors:	Stanislav Visnovsky <visnov@suse.cz>
  * $Id$
  *
-   textdomain "http-server"
  */
 
+{
+    textdomain "http-server";
+    
+    return
 $[
 	"access" : $[
 	    "status": true,
@@ -324,5 +327,9 @@ $[
 	    "description" : _("Provides support for Ruby dynamically generated pages"),
 	    "requires" : [ "apache2-mod_ruby" ]
 	],
-]
+];
+
+// EOF
+}
+
 

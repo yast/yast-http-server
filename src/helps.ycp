@@ -15,7 +15,7 @@
     /**
       * All helps are here
       */
-    global map HELPS = $[
+    map HELPS = $[
 
 	/* Read dialog help 1/2 */
 	"read" : _("<p><b><big>Initializing HTTP Server Configuration</big></b>

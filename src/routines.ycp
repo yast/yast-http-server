@@ -113,7 +113,7 @@ global define string item2listen( string network, string port ) ``{
  * @return map returns value for HttpServer::all_modules
  */
 global define map GetModules() ``{
-    return (map)SCR::Read(.target.ycp, Directory::datadir + "/all-apache2-modules.ycp");
+    return (map)eval(SCR::Read(.target.ycp, Directory::datadir + "/all-apache2-modules.ycp"));
 }
 
 
