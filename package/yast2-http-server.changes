@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Mar 19 10:35:45 CET 2004 - visnov@suse.cz
+
+- allow to edit DocumentRoot
+- limit length of texts in overview
+- more values validation 
+- 2.9.10
+
+-------------------------------------------------------------------
 Wed Mar 17 13:46:51 CET 2004 - visnov@suse.cz
 
 - 2.9.9 
