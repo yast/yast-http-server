@@ -534,6 +534,7 @@ BEGIN { $TYPEINFO{WriteListen} = ["function", "boolean", "boolean" ]; }
 sub WriteListen {
     my $self = shift;
     my $doFirewall = shift;
+    my $ret = 1;
 
     foreach my $toDel ( keys(%delListen) ) {
         my ($ip,$fp,$tp) = split(/:/, $toDel);
@@ -541,11 +542,14 @@ sub WriteListen {
     }
     foreach my $toCreate ( keys(%newListen) ) {
         my ($ip,$fp,$tp) = split(/:/, $toCreate);
-        YaPI::HTTPD->CreateListen( $fp, $tp, $ip, $doFirewall );
+        unless( YaPI::HTTPD->CreateListen( $fp, $tp, $ip, $doFirewall ) ) {
+            $ret = undef;
+        }
     }
     %delListen = ();
     %newListen = ();
     @oldListen = @{YaPI::HTTPD->GetCurrentListen()};
+    return $ret;
 }
 
 #######################################################
