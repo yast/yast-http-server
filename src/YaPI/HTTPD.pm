@@ -312,7 +312,7 @@ BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
     my $self = shift;
     my @ret = ();
-    my @data = SCR->Read('.http_server.vhosts');
+    my @data = $self->readHosts();
 
     if( ref($data[0]) eq 'HASH' ) {
         foreach my $hostList ( values(%{$data[0]}) ) {
@@ -357,7 +357,7 @@ sub GetHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR->Read('.http_server.vhosts');
+    my @data = $self->readHosts();
 
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
@@ -369,6 +369,8 @@ sub GetHost {
     return $self->SetError( summary => 'hostid not found' ) unless( $filename );
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
         if( $hostHash->{HOSTID} eq $hostid ) {
+            use Data::Dumper;
+            print Data::Dumper->Dump( [ $hostHash ] );
             my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
             my $sslHash = { KEY => 'SSL', VALUE => 0 };
             my $overheadHash = { KEY => 'OVERHEAD', VALUE => $hostHash->{'OVERHEAD'} };
@@ -456,7 +458,7 @@ sub ModifyHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR->Read('.http_server.vhosts');
+    my @data = $self->readHosts();
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
@@ -557,8 +559,9 @@ sub addDir {
 
     my $filename = $self->getFileByHostid( "default" );
     my $dirEntry = {
-        'OVERHEAD'    => "# YaST created entry\n",
-        'SECTIONNAME' => 'Directory',
+        'OVERHEAD'     => "# YaST created entry\n",
+        'SECTIONNAME'  => 'Directory',
+        'SECTIONPARAM' => "\"$dir\"",
         'KEY'   => '_SECTION',
         'VALUE' => [
                     {
@@ -577,8 +580,7 @@ sub addDir {
                      'KEY'   => 'Allow',
                      'VALUE' => 'from all'
                     }
-                  ],
-        'SECTIONPARAM' => "\"$dir\""
+                  ]
     };
     push( @{$vhost_files->{$filename}->[0]->{DATA}}, $dirEntry );
     return;
@@ -657,7 +659,7 @@ sub CreateHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR->Read('.http_server.vhosts');
+    my @data = $self->readHosts();
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
@@ -697,7 +699,7 @@ sub DeleteHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = SCR->Read('.http_server.vhosts');
+    my @data = $self->readHosts();
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
@@ -727,16 +729,71 @@ sub DeleteHost {
 }
 
 # internal only!
+sub readHosts {
+    my $self = shift;
+    my @data = SCR->Read('.http_server.vhosts');
+
+    # this is a hack.
+    # yast will put some directives in define sections
+    # automatically and here we remove them
+    if( ref($data[0]) eq 'HASH' ) {
+        foreach my $file ( keys %{$data[0]} ) {
+            foreach my $host ( @{$data[0]->{$file}} ) {
+                foreach my $data ( @{$host->{DATA}} ) {
+                    if( exists($data->{OVERHEAD}) and
+                        $data->{OVERHEAD} =~ /^# YaST auto define section/ ) {
+                        $data = $data->{VALUE}->[0]; # delete the "auto define" section
+                    }
+                }
+            }
+        }
+    }
+    return @data;
+}
+
+# internal only!
 sub writeHost {
     my $self = shift;
     my $filename = shift;
 
+    foreach my $host ( @{$vhost_files->{$filename}} ) {
+        my @newData = ();
+        foreach my $data ( @{$host->{DATA}} ) {
+            my $define = $self->define4keyword( $data->{KEY} );
+            if( $define ) {
+                my %h = %$data;
+                push( @newData, { 'OVERHEAD'     => "# YaST auto define section\n",
+                          'SECTIONNAME'  => 'IfDefine',
+                          'SECTIONPARAM' => $define,
+                          'KEY'          => '_SECTION',
+                          'VALUE'        => [ \%h ]
+                } );
+            } else {
+                push( @newData, $data );
+            }
+        }
+        $host->{DATA} = \@newData;
+    }
     SCR->Write(".http_server.vhosts.setFile.$filename", $vhost_files->{$filename} );
 
     # write default-server.conf always because of Directory Entries
     my $def = $self->getFileByHostid( 'default' );
     SCR->Write(".http_server.vhosts.setFile.$def", $vhost_files->{$def} );
     return 1;
+}
+
+sub define4keyword {
+    my $self = shift;
+    my $keyword = shift;
+    foreach my $mod ( keys( %YaPI::HTTPDModules::modules ) ) {
+        if( exists( $YaPI::HTTPDModules::modules{$mod}->{defines} ) ) {
+            if( exists( $YaPI::HTTPDModules::modules{$mod}->{defines}->{$keyword} ) ) {
+                return $YaPI::HTTPDModules::modules{$mod}->{defines}->{$keyword};
+            } else {
+                return undef;
+            }
+        }
+    }
 }
 
 #######################################################
