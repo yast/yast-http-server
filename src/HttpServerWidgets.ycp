@@ -19,7 +19,7 @@
     import "Report";
     import "String";
     import "LogView";
-    import "CWM";
+    import "TablePopup";
     import "HttpServer";
     
     include "http-server/routines.ycp";
@@ -74,12 +74,12 @@ global map popups = $[
 	];
 
 
-global map defaulthostwidget = CWM::CreateTableDescr (
+global map defaulthostwidget = TablePopup::CreateTableDescr (
 	    $["add_delete" : true, 
 	      "up_down" : false, 
 	      "unique_keys" : true]
 	, $[
-	    "init" : ``(CWM::TableInit (
+	    "init" : ``(TablePopup::TableInit (
 		HttpServerWidgets::widgets["global_table"]:$[])),
 	    "handle" : ``(HttpServerWidgets::handleDefaultHostTable()),
 	    "validate_type" : `function,
@@ -342,7 +342,7 @@ global map widgets = $[
 
     /**
      *  Handler for editing default host. Handles additional buttons, like logs and modules.
-     *  Rest is passed to CWM::TableHandle.
+     *  Rest is passed to TablePopup::TableHandle.
      *
      *  @param key	the key modified
      *  @param event	event description
@@ -362,7 +362,7 @@ global map widgets = $[
 	    return `listen;
 
 	// default handling
-	return CWM::TableHandle( widgets["global_table"]:$[], key, event );
+	return TablePopup::TableHandle( widgets["global_table"]:$[], key, event );
     }
 
     /**
