@@ -303,7 +303,7 @@ sub Read {
         $class->parse_vhost_files();
         return \%vhost_files;
     } elsif( $path eq '.listen' )  {
-        parse_listen_conf();
+        $class->parse_listen_conf();
         return [ keys(%listen) ];
     } elsif( $path eq '.moduleselection' ) {
         return [ $class->parse_module_selection() ];
