@@ -1,3 +1,5 @@
+	//testfile: YaST::HTTPDData.pm
+	//return list of current listens
 {
 	include "testsuite.ycp";
 

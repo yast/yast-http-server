@@ -1,3 +1,5 @@
+	//testedfile: YaST::HTTPDData.pm
+	//return list of maps directory parameters 
 {
 	include "testsuite.ycp";
 

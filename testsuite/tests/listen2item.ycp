@@ -1,3 +1,5 @@
+	//testedfile: routines.ycp
+	//return list [ item, address, port ]
 {
 	include "testsuite.ycp";
 
