@@ -15,6 +15,7 @@
 module "HttpServer";
 textdomain "http-server";
 
+import "YaPI::HTTPD";
 import "YaST::HTTPDData";
 import "NetworkDevices";
 import "Progress";
@@ -153,6 +154,29 @@ global define boolean Read() ``{
     YaST::HTTPDData::ReadModules();
     YaST::HTTPDData::ReadService();
     
+    // check the modules RPMs
+    list<string> modules = YaST::HTTPDData::GetModuleList();
+    y2milestone ("Testing packages for %1", modules);
+
+    foreach (string mod, modules, {
+	list<string> pkgs = YaST::HTTPDData::GetPackagesForModule (mod);
+	if ( size(pkgs) > 0 )
+	{
+	    import "Package";
+	    y2milestone ("Checking packages %1 for module %2", pkgs, mod);
+	    
+	    string res = find (string pkg, pkgs, { 
+		return ! Package::Installed (pkg);
+	    });
+	    
+	    if (res != nil)
+	    {	
+		y2milestone ("Packages not installed (missing %1), setting %2 as disabled", res, mod);
+		YaST::HTTPDData::ModifyModuleList ([mod], false);
+	    }
+	}
+    });
+    
     Progress::NextStage();
 
     // read current settings for firewall and network
@@ -278,7 +302,7 @@ global define boolean Write() ``{
 
     // write Apache2 settings
 
-    list<string> rpms = YaST::HTTPDData::GetModulePackages();
+    list<string> rpms = YaPI::HTTPD::GetModulePackages();
 
     // install required RPMs for modules
     Require::RequireAndConflictTarget( rpms, [], _("The enabled modules require
