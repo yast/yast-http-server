@@ -1069,8 +1069,12 @@ sub CreateListen {
         my $ip2device = $self->ip2device();
         my $if = exists($newEntry{ADDRESS})?$ip2device->{$newEntry{ADDRESS}}:'all';
         SuSEFirewall->Read();
-        SuSEFirewall->AddService( $newEntry{PORT}, "TCP", $if );
-        SuSEFirewall->Write();
+        unless( SuSEFirewall->AddService( $newEntry{PORT}, "TCP", $if ) ) {
+            return $self->SetError( code    => 'SET_FW_FAILED',
+                                    summary => _('writing the firewall rules failed') );
+        } else {
+            SuSEFirewall->Write();
+        }
     }
     return 1;
 }
