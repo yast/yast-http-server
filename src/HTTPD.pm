@@ -3,6 +3,27 @@ package HTTPD;
 use YaST::YCP;
 YaST::YCP::Import ("SCR");
 
+#######################################################
+# temoprary solution start
+#######################################################
+
+my %__error = ();
+
+sub SetError {
+    %__error = @_;
+    @__error{'package','file','line'} = caller();
+    return undef;
+}
+
+sub GetError {
+    return %__error;
+}
+
+#######################################################
+# temoprary solution end
+#######################################################
+
+
 our $VERSION="0.01";
 our %TYPEINFO;
 
@@ -19,7 +40,7 @@ sub getFileByHostid {
             return $k if( $hostHash->{HOSTID} eq $hostid );
         }
     }
-    return undef;
+    return SetError( summary => 'host not found' );
 }
 
 #list<string> GetHostList();
@@ -34,6 +55,8 @@ sub GetHostList {
                 push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
             }
         }
+    } else {
+        return SetError( summary => 'SCR Agent parsing failed' );
     }
     return \@ret;
 }
@@ -51,7 +74,7 @@ sub GetHost {
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return {}; # FIXME error, no vhost files parsed
+        return SetError( summary => 'SCR Agent parsing failed' );
     }
 
     my $filename = getFileByHostid( $hostid );
@@ -65,7 +88,7 @@ sub GetHost {
             return \%ret;
         }
     }
-    return {};
+    return SetError( summary => 'hostid not found' );
 }
 
 #boolean ModifyHost( string hostid, map hostdata );
@@ -81,7 +104,7 @@ sub ModifyHost {
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return 0; # FIXME error, no vhost files parsed
+        return SetError( summary => 'SCR Agent parsing failed' );
     }
 
     my $filename = getFileByHostid( $hostid );
@@ -127,7 +150,7 @@ sub CreateHost {
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return 0; # FIXME error, no vhost files parsed
+        return SetError( summary => 'SCR Agent parsing failed' );
     }
     if( ref($vhost_files->{'yast2_vhosts.conf'}) eq 'ARRAY' ) {
         push( @{$vhost_files->{'yast2_vhosts.conf'}}, $entry );
@@ -150,7 +173,7 @@ sub DeleteHost {
     if( ref($data[0]) eq 'HASH' ) {
         $vhost_files = $data[0];
     } else {
-        return 0; # FIXME error, no vhost files parsed
+        return SetError( summary => 'SCR Agent parsing failed' );
     }
     my $filename = getFileByHostid( $hostid );
     my @newList = ();
@@ -216,6 +239,15 @@ sub run {
     $hostHash = GetHost( $hostid );
     foreach my $k ( keys(%$hostHash) ) {
         print "$k = $hostHash->{$k}\n";
+    }
+
+    print "--------------trigger error\n";
+    $hostid = GetHost( 'will.not.be.found' );
+    unless( $hostid ) {
+        my %error = GetError();
+        while( my ($k,$v) = each(%error) ) {
+            print "ERROR: $k = $v\n";
+        }
     }
     print "\n";
 
