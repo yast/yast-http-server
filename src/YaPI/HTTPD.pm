@@ -348,7 +348,6 @@ sub GetHostsList {
     my $self = shift;
     my @ret = ();
     my @data = $self->readHosts();
-
     if( ref($data[0]) eq 'HASH' ) {
         foreach my $hostList ( values(%{$data[0]}) ) {
             foreach my $hostentryHash ( @$hostList ) {
@@ -524,7 +523,7 @@ sub ModifyHost {
                     next;
                 } elsif( $hostid ne 'default' and $tmp->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
                     # illegal keys in vhost
-                    return $self->SetError( summary => sprintf( __("illegal key in vhost '%s'"),$tmp->{KEY}),
+                    return $self->SetError( summary => sprintf( __("Illegal key in vhost '%s'."),$tmp->{KEY}),
                                             code    => "CHECK_PARAM_FAILED" );
                 } else {
                     push( @tmp, $tmp );
@@ -592,7 +591,7 @@ sub CreateHost {
     my $data = shift;
 
     if( ref($data) ne 'ARRAY' ) {
-        return $self->SetError( summary => sprintf(__("data must be an array ref and not %s"),ref($data)), 
+        return $self->SetError( summary => sprintf(__("Internal Error: Data must be an array ref and not %s."),ref($data)), 
                                 code => "CHECK_PARAM_FAILED" );
     }
     my $sslHash = { KEY => 'SSLEngine' , VALUE => 'off' };
@@ -615,7 +614,7 @@ sub CreateHost {
             push( @tmp, $key );
         } elsif( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
             # illegal keys in vhost
-            return $self->SetError( summary => sprintf(__("illegal key in vhost '%s'"), $key->{KEY}),
+            return $self->SetError( summary => sprintf(__("Illegal key in vhost '%s'."), $key->{KEY}),
                                     code    => "CHECK_PARAM_FAILED" );
         } else {
             push( @tmp, $key );
@@ -626,7 +625,7 @@ sub CreateHost {
 
     $hostid =~ /^([^\/]+)/;
     my $vhost = $1;
-    return $self->SetError( summary => __("illegal hostid"),
+    return $self->SetError( summary => __("Illegal host ID."),
                             code    => "CHECK_PARAM_FAILED" ) unless( $vhost );
     my $entry = {
                  OVERHEAD      => "# YaST generated vhost entry\n",
@@ -1380,7 +1379,7 @@ sub WriteServerCert {
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => __("unable to fetch host with id"),
+        return $self->SetError( summary => __("Unable to fetch a host with the specified ID."),
                                 code    => "PARAM_CHECK_FAILED" );
     }
     my $file = '/etc/apache2/ssl.crt/';
@@ -1391,7 +1390,7 @@ sub WriteServerCert {
         SCR->Execute( '.target.remove', $file );
         $self->ModifyHostKey( $host, 'SSLCertificateFile' );
     } elsif( $pemData !~ /BEGIN CERTIFICATE/ ) {
-        return $self->SetError( summary => __("corrupt PEM data"), code => 'CERT_ERROR' );
+        return $self->SetError( summary => __("Corrupt PEM data."), code => 'CERT_ERROR' );
     } else {
         SCR->Write( '.target.string', $file, $pemData );
         SCR->Execute( '.target.bash', "chmod 0400 $file" );
@@ -1432,7 +1431,7 @@ sub WriteServerKey {
     my $pemData = shift;
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => __("unable to fetch host with id"), code => "PARAM_CHECK_FAILED" );
+        return $self->SetError( summary => __("Unable to fetch a host with the specified ID."), code => "PARAM_CHECK_FAILED" );
     }
     my $file = '/etc/apache2/ssl.key/';
     $file .= $self->FetchHostKey($host,'ServerName') || 'default';
@@ -1442,7 +1441,7 @@ sub WriteServerKey {
         SCR->Execute( '.target.remove', $file );
         $self->ModifyHostKey( $host, 'SSLCertificateKeyFile' );
     } elsif( $pemData !~ /PRIVATE KEY/ ) {
-        return $self->SetError( summary => __("corrupt PEM data"), code => 'CERT_ERROR' );
+        return $self->SetError( summary => __("Corrupt PEM data."), code => 'CERT_ERROR' );
     } else {
         my $cert = ($pemData =~ /BEGIN CERTIFICATE/)?(1):(0);
         SCR->Write( '.target.string', $file, $pemData );
@@ -1481,7 +1480,7 @@ sub WriteServerCA {
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => __("unable to fetch host with id"), code => "PARAM_CHECK_FAILED" );
+        return $self->SetError( summary => __("Unable to fetch a host with the specified ID."), code => "PARAM_CHECK_FAILED" );
     }
     my $file = '/etc/apache2/ssl.crt/';
     $file .= $self->FetchHostKey($host, 'ServerName') || 'default';
@@ -1491,7 +1490,7 @@ sub WriteServerCA {
         SCR->Execute( '.target.remove', $file );
         $self->ModifyHostKey( $host, 'SSLCACertificateFile' );
     } elsif( $pemData !~ /BEGIN CERTIFICATE/ ) {
-        return $self->SetError( summary => __("corrupt PEM data"), code => 'CERT_ERROR' );
+        return $self->SetError( summary => __("Corrupt PEM data."), code => 'CERT_ERROR' );
     } else {
         my $cert = SCR->Write( '.target.string', $file, $pemData );
         SCR->Execute( '.target.bash', "chmod 0400 $file" );
@@ -1526,12 +1525,12 @@ sub ReadServerCert {
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => __("unable to fetch host with id"), code => "PARAM_CHECK_FAILED" );
+        return $self->SetError( summary => __("Unable to fetch a host with the specified ID."), code => "PARAM_CHECK_FAILED" );
     }
     my $file = '';
     $file .= $self->FetchHostKey( $host, 'SSLCertificateFile' ) || '';
     if( $file eq '' ) {
-        return $self->SetError( summary => __("no certificate file configured for this hostid"), code => "CERT_ERROR" );
+        return $self->SetError( summary => __("No certificate file configured for this host ID."), code => "CERT_ERROR" );
     }
     my $cert = SCR->Read( '.target.string', $file );
     unless( $cert ) {
@@ -1539,7 +1538,7 @@ sub ReadServerCert {
     }
     $cert =~ /(-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----)/;
     if( ! $1 ) {
-        return $self->SetError( summary => __("parsing cert file failed"), code => "CERT_ERROR" );
+        return $self->SetError( summary => __("Parsing the certificate file failed."), code => "CERT_ERROR" );
     }
     return $1;
 }
@@ -1565,14 +1564,14 @@ sub ReadServerKey {
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => __("unable to fetch host with id"), code => "PARAM_CHECK_FAILED" );
+        return $self->SetError( summary => __("Unable to fetch a host with the specified ID."), code => "PARAM_CHECK_FAILED" );
     }
     my $file = '';
     $file .= $self->FetchHostKey( $host, 'SSLCertificateKeyFile' ) || '';
     if( $file eq '' ) {
         $file .= $self->FetchHostKey( $host, 'SSLCertificateFile' ) || '';
         if( $file eq '' ) {
-            return $self->SetError( summary => __("no certificate key file configured for this hostid"), code => 'CERT_ERROR' );
+            return $self->SetError( summary => __("No certificate key file configured for this host ID."), code => 'CERT_ERROR' );
         }
     }
     my $cert = SCR->Read( '.target.string', $file );
@@ -1581,7 +1580,7 @@ sub ReadServerKey {
     }
     $cert =~ /(-----BEGIN RSA PRIVATE KEY-----.+)/s;
     if( ! $1 ) {
-        return $self->SetError( summary => __("parsing key file failed"), code => 'CERT_ERROR' );
+        return $self->SetError( summary => __("Parsing the key file failed."), code => 'CERT_ERROR' );
     }
     return $1;
 
@@ -1609,12 +1608,12 @@ sub ReadServerCA {
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => __("unable to fetch host with id"), code => "PARAM_CHECK_FAILED" );
+        return $self->SetError( summary => __("Unable to fetch a host with the specified ID."), code => "PARAM_CHECK_FAILED" );
     }
     my $file = '';
     $file .= $self->FetchHostKey( $host, 'SSLCACertificateFile' ) || '';
     if( $file eq '' ) {
-        return $self->SetError( summary => __("no ca certificate file configured for this hostid"), code => 'CERT_ERROR' );
+        return $self->SetError( summary => __("No CA certificate file configured for this host ID."), code => 'CERT_ERROR' );
     }
     my $cert = SCR->Read( '.target.string', $file );
     unless( $cert ) {

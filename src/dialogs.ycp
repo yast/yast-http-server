@@ -324,9 +324,12 @@
 	if (ProductFeatures::ui_mode != "simple")
 	{
 	    UI::ReplaceWidget( `id(`_tp_table_repl),
+		//translators: pop up menu
 		`MenuButton( _("Certificates"),
 		[
+			//translators: Certificates pop-up menu item
 		    `item (`id( `import_certificate ), _("&Import Server Certificate...") ),
+                       //translators: Certificates pop-up menu item
 		    `item (`id( `common_certificate ), _("&Use Common Server Certificate") ),
 		]));
 	}
