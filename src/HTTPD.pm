@@ -15,7 +15,7 @@ sub SetError {
     return undef;
 }
 
-sub GetError {
+sub Error {
     return %__error;
 }
 
@@ -30,8 +30,13 @@ our %TYPEINFO;
 use strict;
 use Errno qw(ENOENT);
 
+#######################################################
+# default and vhost API start
+#######################################################
+
 my $vhost_files;
 
+# internal only
 sub getFileByHostid {
     my $hostid = shift;
 
@@ -41,6 +46,20 @@ sub getFileByHostid {
         }
     }
     return SetError( summary => 'host not found' );
+}
+
+# internal only
+sub checkHostmap {
+    my $host = shift;
+
+    foreach my $entry ( @$host ) {
+        if( ($entry->{KEY} eq 'ServerAdmin') and 
+            ($entry->{VALUE} !~ /.+\@.+/) ) {
+            return SetError( summary => 'illegal ServerAdmin parameter' );
+        }
+        # more to go
+    }
+    return 1;
 }
 
 #list<string> GetHostList();
@@ -78,24 +97,40 @@ sub GetHost {
     }
 
     my $filename = getFileByHostid( $hostid );
+    return SetError( summary => 'hostid not found' ) unless( $filename );
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
         if( $hostHash->{HOSTID} eq $hostid ) {
-            my %ret;
-            foreach my $key ( @{$hostHash->{'DATA'}} ) {
-                $ret{$key->{KEY}} = $key->{VALUE};
+            use Data::Dumper;
+            my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
+            my $sslHash = { KEY => 'SSL', VALUE => 0 };
+            my $overheadHash = { KEY => 'OVERHEAD', VALUE => $hostHash->{'OVERHEAD'} };
+            my $sslEngine = 'off';
+            my @newHH = ();
+            foreach my $h ( @{$hostHash->{'DATA'}} ) {
+                if( $h->{'KEY'} eq 'SSLEngine' ) {
+                    $sslEngine = $h->{'VALUE'};
+                } else {
+                    push( @newHH, $h );
+                }
             }
-            $ret{'VirtualByName'} = $hostHash->{'VirtualByName'};
-            return \%ret;
+            $hostHash->{'DATA'} = \@newHH;
+            if( $sslEngine eq 'on' and exists($hostHash->{'DATA'}->{'SSLRequireSSL'}) ) {
+                delete($hostHash->{'DATA'}->{'SSLRequireSSL'});
+                $sslHash->{'VALUE'} = 2;
+            } elsif( $sslEngine eq 'on' ) {
+                $sslHash->{'VALUE'} = 1;
+            }
+            return [ @{$hostHash->{'DATA'}}, $sslHash, $vbnHash ];
         }
     }
     return SetError( summary => 'hostid not found' );
 }
 
-#boolean ModifyHost( string hostid, map hostdata );
+#boolean ModifyHost( string hostid, list hostdata );
 BEGIN { $TYPEINFO{ModifyHost} = ["function", "boolean", "string", [ "map", "string", "any" ] ]; }
 sub ModifyHost {
     my $hostid = shift;
-    my $data = shift;
+    my $newData = shift;
 
     # FIXME
     # will read all vhost files, even if the vhost is found
@@ -108,31 +143,41 @@ sub ModifyHost {
     }
 
     my $filename = getFileByHostid( $hostid );
-    foreach ( @{$vhost_files->{$filename}} ) {
-        if( $_->{HOSTID} eq $hostid ) {
-            $_->{'DATA'} = [];
-            while( my ( $k,$v ) = each(%$data) ) {
-                push( @{$_->{'DATA'}}, { OVERHEAD => '', KEY => $k, VALUE => $v } );
-            }
+    return undef if( not checkHostmap( $newData ) );
+    foreach my $entry ( @{$vhost_files->{$filename}} ) {
+        if( $entry->{HOSTID} eq $hostid ) {
+            $entry->{DATA} = $newData;
             writeHost( $filename );
             return 1;
         }
     }
-    return 0;
+    return 0; # host not found. Error?
 }
 
-#bool CreateHost( string hostid, map hostdata );
+#bool CreateHost( string hostid, list hostdata );
 BEGIN { $TYPEINFO{CreateHost} = ["function", "boolean", "string", [ "map", "string", "any" ] ]; }
 sub CreateHost {
     my $hostid = shift;
     my $data = shift;
 
-    my $VirtualByName = delete($data->{VirtualByName}) || 0;
-
-    my @arrData = ();
-    foreach my $k ( keys(%$data) ) {
-        push( @arrData, { OVERHEAD => '', KEY => $k, VALUE => $data->{$k} } );
+    my $sslHash = { KEY => 'SSLEngine' , VALUE => 'off' };
+    my @tmp = ( $sslHash );
+    my $VirtualByName = 0;
+    foreach my $key ( @$data ) {
+        # VirtualByName and SSL get dropped/replaced
+        if( $key->{KEY} eq 'VirtualByName' ) {
+            $VirtualByName = $key->{VALUE};
+        } elsif( $key->{KEY} eq 'SSL' and $key->{VALUE} == 1 ) {
+            $sslHash->{'VALUE'} = 'on';
+        } elsif( $key->{KEY} eq 'SSL' and $key->{VALUE} == 2 ) {
+            $sslHash->{'VALUE'} = 'on';
+            push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
+        } else {
+            push( @tmp, $key );
+        }
     }
+    $data = \@tmp;
+    return undef if( not checkHostmap( $data ) );
 
     $hostid =~ /^([^\/]+)/;
     my $vhost = $1;
@@ -141,7 +186,7 @@ sub CreateHost {
                  VirtualByName => $VirtualByName,
                  HOSTID        => $hostid,
                  VHOST         => $vhost,
-                 DATA          => \@arrData
+                 DATA          => $data
     };
     # FIXME
     # will read all vhost files, even if the vhost is found
@@ -153,8 +198,10 @@ sub CreateHost {
         return SetError( summary => 'SCR Agent parsing failed' );
     }
     if( ref($vhost_files->{'yast2_vhosts.conf'}) eq 'ARRAY' ) {
+        # merge new entry with existing entries in yast2_vhosts.conf
         push( @{$vhost_files->{'yast2_vhosts.conf'}}, $entry );
     } else {
+        # create new yast2_vhosts.conf
         $vhost_files->{'yast2_vhosts.conf'} = [ $entry ];
     }
     writeHost( 'yast2_vhosts.conf' );
@@ -197,54 +244,92 @@ sub writeHost {
     return 1;
 }
 
-sub run {
-    my @data = SCR::Read('.httpd.vhosts');
-    $vhost_files = $data[0];
+#######################################################
+# default and vhost API end
+#######################################################
 
+
+#######################################################
+# apache2 modules API start
+#######################################################
+
+# list<string> GetModuleList()
+sub GetModuleList {
+    my $data = SCR::Read('.sysconfig.apache2.APACHE_MODULES'); # FIXME: Error handling
+    $data =~ s/mod_//g;
+
+    return [ split(/\s+/, $data) ];
+}
+
+# list<map> GetKnownModules()
+sub GetKnownModules {
+
+}
+
+# bool ModifyModuleList( list<string>, bool )
+sub ModifyModuleList {
+    my $list = shift;
+
+    SCR::Write('.sysconfig.apache2.APACHE_MODULES', [ join(' ',@$list) ] ); #FIXME: Error handling
+    return 1;
+}
+
+# map GetKnownModulSelections()
+sub GetKnownModulSelections {
+
+}
+
+# list<string> GetModuleSelectionsList()
+sub GetModuleSelectionsList {
+}
+
+# bool ModifyModuleSelectionList( list<string>, bool )
+sub ModifyModuleSelectionList {
+
+}
+
+#######################################################
+# apache2 modules API end
+#######################################################
+
+sub run {
     print "-------------- GetHostList\n";
     foreach my $h ( @{GetHostList()} ) {
         print "ID: $h\n";
     }
-    print "\n";
-
-    print "-------------- GetHost Number 0\n";
-    my $hostid = GetHostList()->[0];
-    my $hostHash = GetHost( $hostid );
-    foreach my $k ( keys(%$hostHash) ) {
-        print "$k = $hostHash->{$k}\n";
-    }
-    print "\n";
-
-    print "-------------- DeleteHost Number 0\n";
-    DeleteHost( $hostid );
 
     print "-------------- ModifyHost Number 0\n";
-    $hostid = GetHostList()->[0];
-    $hostHash = GetHost( $hostid );
-    $hostHash->{'ErrorLog'} = '/modified/now/error.log';
-    ModifyHost( $hostid, $hostHash );
+    my $hostid = "default";
+    my $hostArr = GetHost( $hostid );
+    ModifyHost( $hostid, $hostArr );
 
     print "-------------- CreateHost\n";
-    my %temp = ( ServerName => 'createTest.suse.de', VirtualByName => 1, ServerAdmin => 'no@one.de' );
-    CreateHost( '192.168.1.1/createTest.suse.de', \%temp );
+    my @temp = (
+                { KEY => "ServerName",    VALUE => 'createTest.suse.de' },
+                { KEY => "VirtualByName", VALUE => 1 },
+                { KEY => "ServerAdmin",   VALUE => 'no@one.de' }
+                );
+    CreateHost( '192.168.1.2/createTest2.suse.de', \@temp );
 
-    print "-------------- GetHostList\n";
-    foreach my $h ( @{GetHostList()} ) {
-        print "ID: $h\n";
-    }
-    print "\n";
+    print "-------------- GetHost created host \n";
+    $hostArr = GetHost( '192.168.1.2/createTest2.suse.de' );
+    use Data::Dumper;
+    print Data::Dumper->Dump( [ $hostArr ] );
 
-    print "-------------- GetHost Number 0\n";
-    $hostid = GetHostList()->[0];
-    $hostHash = GetHost( $hostid );
-    foreach my $k ( keys(%$hostHash) ) {
-        print "$k = $hostHash->{$k}\n";
+    system("cat /etc/apache2/vhosts.d/yast2_vhosts.conf");
+
+    print "-------------- DeleteHost Number 0\n";
+    DeleteHost( '192.168.1.2/createTest2.suse.de' );
+
+    print "-------------- show module list\n";
+    foreach my $mod ( @{GetModuleList()} ) {
+        print "MOD: $mod\n";
     }
 
     print "--------------trigger error\n";
     $hostid = GetHost( 'will.not.be.found' );
     unless( $hostid ) {
-        my %error = GetError();
+        my %error = Error();
         while( my ($k,$v) = each(%error) ) {
             print "ERROR: $k = $v\n";
         }
