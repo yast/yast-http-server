@@ -1,3 +1,8 @@
+	//testfiles: YaST::HTTPDData.pm
+	//return all hosts parameters
+	//return  list of hosts
+	//return parameters of given host
+
 {
 	include "testsuite.ycp";
 

@@ -1,3 +1,6 @@
+	// testedfile: YaST::HTTPDData.pm
+	// return map of ip addresses and ports where apache2 listens
+
 {
 	include "testsuite.ycp";
 

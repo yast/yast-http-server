@@ -1,3 +1,5 @@
+	//testfile: routines.ycp
+	//return list of maps [ address:"address", port:"port" ]
 {
 	include "testsuite.ycp";
 

@@ -1,3 +1,6 @@
+	//testedfiles: YaST::HTTPDData.pm, routines.ycp
+	// return list of all known modules
+	// return list of not deleted modules
 {
 	include "testsuite.ycp";
 
@@ -36,7 +39,7 @@ textdomain "http-server";
 	 ]]
 	];
 
-	TESTSUITE_INIT ([READ, $[], $[]], nil);
+		TESTSUITE_INIT ([READ, $[], $[]], nil);
 
 	include "http-server/routines.ycp";
 	import "YaST::HTTPDData";

@@ -400,6 +400,8 @@ SCR::Write ( .target.string, Directory::vardir + "/http_server", "");
     return true;
 }
 
+
+
 map<string,any> find_known_module (list< map<string,any> > known_modules, string mod)
 {
     map<string,any> res = nil;
@@ -647,4 +649,5 @@ global define map AutoPackages() ``{
 }
 
 /* EOF */
+
 }

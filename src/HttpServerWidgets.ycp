@@ -104,9 +104,7 @@ global boolean validate_servername (any key, any id, map event)
     if (!Hostname::CheckFQ (value))
     {
 	//translators: popup error message when validate servername
-	Popup::Error (_("Invalid server name.") 
-	    + "\n\n" 
-	    + Hostname::ValidFQ ());
+	Popup::Error (_("Invalid server name.") + "\n\n" + Hostname::ValidFQ ());
 	return false;
     }
     else
