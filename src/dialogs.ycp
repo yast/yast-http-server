@@ -22,28 +22,6 @@
     import "Wizard";
 
     /**
-      * Read settings dialog
-      * @return `abort if aborted and `next otherwise
-      */
-    global define symbol ReadDialog() ``{
-	Wizard::RestoreHelp (HELPS["read"]:"");
-	boolean ret = HttpServer::Read();
-	return ret ? `next : `abort;
-    }
-
-    /**
-      * Write settings dialog
-      * @return `abort if aborted and `next otherwise
-      */
-    global define symbol WriteDialog() ``{
-	Wizard::RestoreHelp (HELPS["write"]:"");
-	boolean ret = HttpServer::Write();
-	if (! ret && cfg_restart_wanted)
-	    return `back;
-	return ret ? `next : `abort;
-    }
-
-    /**
       * Run default host dialog
       * @return symbol for wizard sequencer
       */
@@ -54,7 +32,7 @@
 the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
 	}
 	
-	list w = CWM::CreateWidgets (["server_enable", "firewall_adapt", "global_table" ],
+	list<map> w = CWM::CreateWidgets (["server_enable", "firewall_adapt", "global_table" ],
 	    HttpServerWidgets::widgets);
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
@@ -110,7 +88,7 @@ the HTTP server are stored in <i>%1</i>.</p>"), HttpServer::document_root);
       * @return symbol for wizard sequencer
       */
     global define symbol ListenDialog () ``{
-	list w = CWM::CreateWidgets (["listen"],
+	list<map> w = CWM::CreateWidgets (["listen"],
 	    HttpServerWidgets::widgets);
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),

@@ -19,7 +19,6 @@ import "HttpServer";
 import "Label";
 
 include "http-server/helps.ycp";
-include "http-server/routines.ycp";
 
 /**
  * Return a modification status
@@ -35,7 +34,7 @@ global define boolean Modified() ``{
  */
 global define symbol ReadDialog() ``{
     Wizard::RestoreHelp(HELPS["read"]:"");
-    HttpServer::AbortFunction = ``{ return PollAbort();};
+# FIXME:    HttpServer::AbortFunction = HttpServer::PollAbort;
     boolean ret = HttpServer::Read();
     return ret ? `next : `abort;
 }
@@ -46,7 +45,7 @@ global define symbol ReadDialog() ``{
  */
 global define symbol WriteDialog() ``{
     Wizard::RestoreHelp(HELPS["write"]:"");
-    HttpServer::AbortFunction = ``{ return PollAbort();};
+# FIXME:    HttpServer::AbortFunction = HttpServer::PollAbort;
     boolean ret = HttpServer::Write();
     return ret ? `next : `abort;
 }

@@ -20,63 +20,6 @@ include "http-server/complex.ycp";
 include "http-server/dialogs.ycp";
 
 /**
- * Whole configuration of http-server
- * @return sequence result
- */
-global define symbol HttpServerSequence() ``{
-
-    map aliases = $[
-	"read"	: [ ``( ReadDialog() ), true ],
-	"main"	:   ``( MainSequence() ),
-	"write"	: [ ``( WriteDialog() ), true ]
-    ];
-
-    map sequence = $[
-	"ws_start" : "read",
-	"read" : $[
-	    `abort	: `abort,
-	    `next	: "main"
-	],
-	"main" : $[
-	    `abort	: `abort,
-	    `next	: "write"
-	],
-	"write" : $[
-	    `abort	: `abort,
-	    `next	: `next
-	]
-    ];
-
-    Wizard::CreateDialog();
-
-    any ret = WizardSequencer(aliases, sequence);
-
-    UI::CloseDialog();
-    return ret;
-}
-
-/**
- * Whole configuration of http-server but without reading and writing.
- * For use with autoinstallation.
- * @return sequence result
- */
-global define symbol HttpServerAutoSequence() ``{
-    // translators: initialization dialog caption
-    string caption = _("HTTP Server Configuration");
-    // translators: initialization dialog message
-    term contents = `Label(_("Initializing ..."));
-
-    Wizard::CreateDialog();
-    Wizard::SetContentsButtons(caption, contents, "",
-	    Label::BackButton(), Label::NextButton());
-
-    any ret = MainSequence();
-
-    UI::CloseDialog();
-    return ret;
-}
-
-/**
  * Main workflow of the http-server configuration
  * @return sequence result
  */
@@ -108,8 +51,65 @@ global define symbol MainSequence() ``{
 	],
     ];
 
-    any ret = WizardSequencer(aliases, sequence);
+    symbol ret = WizardSequencer(aliases, sequence);
 
+    return ret;
+}
+
+/**
+ * Whole configuration of http-server
+ * @return sequence result
+ */
+global define symbol HttpServerSequence() ``{
+
+    map aliases = $[
+	"read"	: [ ``( ReadDialog() ), true ],
+	"main"	:   ``( MainSequence() ),
+	"write"	: [ ``( WriteDialog() ), true ]
+    ];
+
+    map sequence = $[
+	"ws_start" : "read",
+	"read" : $[
+	    `abort	: `abort,
+	    `next	: "main"
+	],
+	"main" : $[
+	    `abort	: `abort,
+	    `next	: "write"
+	],
+	"write" : $[
+	    `abort	: `abort,
+	    `next	: `next
+	]
+    ];
+
+    Wizard::CreateDialog();
+
+    symbol ret = WizardSequencer(aliases, sequence);
+
+    UI::CloseDialog();
+    return ret;
+}
+
+/**
+ * Whole configuration of http-server but without reading and writing.
+ * For use with autoinstallation.
+ * @return sequence result
+ */
+global define symbol HttpServerAutoSequence() ``{
+    // translators: initialization dialog caption
+    string caption = _("HTTP Server Configuration");
+    // translators: initialization dialog message
+    term contents = `Label(_("Initializing ..."));
+
+    Wizard::CreateDialog();
+    Wizard::SetContentsButtons(caption, contents, "",
+	    Label::BackButton(), Label::NextButton());
+
+    symbol ret = MainSequence();
+
+    UI::CloseDialog();
     return ret;
 }
 

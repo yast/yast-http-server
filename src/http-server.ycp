@@ -23,30 +23,176 @@ import "Popup";
 import "Require";
 import "Report";
 
-include "commandline/commandline.ycp";
+include "http-server/wizards.ycp";
+
+
+/**
+ * Handler for command line action "configure".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
+define boolean ConfigureHandler(map<string, any> options) ``{
+
+    if( options["host"]:nil != "defaulthost" ) {
+	if( ! haskey( options, "host" ) ) {
+	    // translators: error message in configure command line action
+	    Report::Error( _("Configured host not specified") );
+	}
+	else 
+	{
+	    // translators: error message in configure command line action
+	    Report::Error( _("Only \"defaulthost\" can be specified as the host to configure") );
+	}
+	return false;
+    }
+
+    string host = options["host"]:"defaulthost";
+    
+    string value = options["servername"]:"";
+    if( value != "" ) {
+	HttpServer::settings[host, "servername"] = value;
+	HttpServer::modified = true;
+    }
+
+    value = options["serveradmin"]:"";
+    if( value != "" ) {
+	HttpServer::settings[host, "serveradmin"] = value;
+	HttpServer::modified = true;
+    }
+
+    value = options["documentroot"]:"";
+    if( value != "" ) {
+	HttpServer::settings[host, "documentroot"] = value;
+	HttpServer::modified = true;
+    }
+
+    return true;
+}
+
+/**
+ * Handler for command line action "modules".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
+define boolean ModulesHandler(map<string, any> options) ``{
+    // check the command to be present exactly once
+    string command = CommandLine::UniqueOption( options,
+        ["enable", "disable", "list" ] );
+    if( command == nil ) return false;
+
+    if( command == "enable" ) {
+	list mods = splitstring( options["enable"]:"", "," );
+	
+	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = true; });
+	
+	HttpServer::modified = true;
+    }
+    else if( command == "disable" ) {
+	list mods = splitstring( options["disable"]:"", "," );
+	
+	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = false; });
+
+	HttpServer::modified = true;
+    }
+    else if( command == "list" ) {
+        // translators: heading for the "modules list" command line action output
+	// please, try to align the texts if possible.
+	CommandLine::Print( _("Status \tModule
+=================="));
+	
+	foreach( string mod, map status, HttpServer::settings["modules"]:$[], ``{
+	    // translators: status of a module
+	    CommandLine::Print( sformat( "%1\t%2", status["status"]:false ? _("Enabled") : _("Disabled"), mod ) );
+	});
+    }
+
+    return true;
+}
+
+/**
+ * Handler for command line action "listen".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
+define boolean ListenHandler(map<string, any> options) ``{
+
+    // check the command to be present exactly once
+    string command = CommandLine::UniqueOption( options,
+        ["add", "delete", "list" ] );
+    if( command == nil ) return false;
+    
+    if( command == "add" ) {
+	if( contains( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" ) )
+	{
+	    // translators: error message in "listen add" command line action
+	    Report::Error( sformat( _("The listen statement '%1' is already configured.") , options["add"]:"") );
+	    return false;
+	}
+	
+	HttpServer::settings["defaulthost", "Listen"] = 
+	    add( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" );
+	HttpServer::modified = true;
+    }
+    else if( command == "delete" ) {
+	if( !contains( HttpServer::settings["defaulthost", "Listen"]:[], options["delete"]:"" ) )
+	{
+	    // translators: error message in "listen delete" command line action
+	    Report::Error( sformat( _("Cannot delete unconfigured listen statement '%1'") , options["delete"]:"") );
+	    return false;
+	}
+
+	HttpServer::settings["defaulthost", "Listen"] = 
+	    filter( string value, HttpServer::settings["defaulthost", "Listen"]:[], ``( value != options["delete"]:"" ) );
+	HttpServer::modified = true;
+    }
+    else if( command == "list" ) {
+        // translators: heading for the "listen list" command line action output
+	// please, try to align the texts if possible.
+	CommandLine::Print( _("Listen Statements:
+==================
+"));
+	
+	foreach( string listen, HttpServer::settings["defaulthost", "Listen"]:[], ``{
+	    if( issubstring( listen, ":" ) ) {
+		CommandLine::Print( listen );
+	    }
+	    else
+	    {
+		// translators: listen statement for all available interfaces
+		CommandLine::Print( sformat( _("All Interfaces: %1"), listen ) );
+	    }
+	});
+
+    }
+
+    return true;
+}
 
 map cmdline_description = $[
     "id" 	: "http-server",
     // translators: command line help for HTTP server module
     "help"	: _("Configuration of HTTP server (Apache2)"),
-    "guihandler"        : ``(HttpServerSequence()),
-    "initialize"        : ``(HttpServer::Read()),
-    "finish"            : ``(HttpServer::Write()),
+    "guihandler"        : HttpServerSequence,
+    "initialize"        : HttpServer::Read,
+    "finish"            : HttpServer::Write,
     "actions"           : $[
 	"configure"	: $[
 	    // translators: help text for configure command line action
 	    "help" 	: _("Configure host settings"),
-	    "handler"	: ``(ConfigureHandler())
+	    "handler"	: ConfigureHandler
 	],
 	"modules"	: $[
 	    // translators: help text for modules command line action
 	    "help"	: _("Configure the Apache2 server modules"),
-	    "handler"	: ``(ModulesHandler())
+	    "handler"	: ModulesHandler
 	],
 	"listen"	: $[
 	    // translators: help text for listen command line action
 	    "help" 	: _("Set up the ports and network addresses where the server should listen."),
-	    "handler"	: ``(ListenHandler())
+	    "handler"	: ListenHandler
 	],
     ],
     "options"		: $[
@@ -106,156 +252,11 @@ map cmdline_description = $[
     ]
 ];
 
-/**
- * Handler for command line action "configure".
- *
- * @param options    map of the options provided on the command line
- * @return boolean   true on success
- */
-define boolean ConfigureHandler(map options) ``{
-
-    if( options["host"]:nil != "defaulthost" ) {
-	if( ! haskey( options, "host" ) ) {
-	    // translators: error message in configure command line action
-	    Report::Error( _("Configured host not specified") );
-	}
-	else 
-	{
-	    // translators: error message in configure command line action
-	    Report::Error( _("Only \"defaulthost\" can be specified as the host to configure") );
-	}
-	return false;
-    }
-
-    string host = options["host"]:nil;
-    
-    string value = options["servername"]:nil;
-    if( value != nil ) {
-	HttpServer::settings[host, "servername"] = value;
-	HttpServer::modified = true;
-    }
-
-    value = options["serveradmin"]:nil;
-    if( value != nil ) {
-	HttpServer::settings[host, "serveradmin"] = value;
-	HttpServer::modified = true;
-    }
-
-    value = options["documentroot"]:nil;
-    if( value != nil ) {
-	HttpServer::settings[host, "documentroot"] = value;
-	HttpServer::modified = true;
-    }
-
-    return true;
-}
-
-/**
- * Handler for command line action "modules".
- *
- * @param options    map of the options provided on the command line
- * @return boolean   true on success
- */
-define boolean ModulesHandler(map options) ``{
-    // check the command to be present exactly once
-    string command = CommandLine::UniqueOption( options,
-        ["enable", "disable", "list" ] );
-    if( command == nil ) return false;
-
-    if( command == "enable" ) {
-	list mods = splitstring( options["enable"]:"", "," );
-	
-	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = true; });
-	
-	HttpServer::modified = true;
-    }
-    else if( command == "disable" ) {
-	list mods = splitstring( options["disable"]:"", "," );
-	
-	foreach( string mod, mods, ``{ HttpServer::settings["modules",mod, "status"] = false; });
-
-	HttpServer::modified = true;
-    }
-    else if( command == "list" ) {
-        // translators: heading for the "modules list" command line action output
-	// please, try to align the texts if possible.
-	CommandLine::Print( _("Status \tModule
-=================="));
-	
-	foreach( string mod, map status, HttpServer::settings["modules"]:[], ``{
-	    // translators: status of a module
-	    CommandLine::Print( sformat( "%1\t%2", status["status"]:false ? _("Enabled") : _("Disabled"), mod ) );
-	});
-    }
-
-    return true;
-}
-
-/**
- * Handler for command line action "listen".
- *
- * @param options    map of the options provided on the command line
- * @return boolean   true on success
- */
-define boolean ListenHandler(map options) ``{
-
-    // check the command to be present exactly once
-    string command = CommandLine::UniqueOption( options,
-        ["add", "delete", "list" ] );
-    if( command == nil ) return false;
-    
-    if( command == "add" ) {
-	if( contains( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" ) )
-	{
-	    // translators: error message in "listen add" command line action
-	    Report::Error( sformat( _("The listen statement '%1' is already configured.") , options["add"]:"") );
-	    return false;
-	}
-	
-	HttpServer::settings["defaulthost", "Listen"] = 
-	    add( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" );
-	HttpServer::modified = true;
-    }
-    else if( command == "delete" ) {
-	if( !contains( HttpServer::settings["defaulthost", "Listen"]:[], options["delete"]:"" ) )
-	{
-	    // translators: error message in "listen delete" command line action
-	    Report::Error( sformat( _("Cannot delete unconfigured listen statement '%1'") , options["delete"]:"") );
-	    return false;
-	}
-
-	HttpServer::settings["defaulthost", "Listen"] = 
-	    filter( string value, HttpServer::settings["defaulthost", "Listen"]:[], ``( value != options["delete"]:"" ) );
-	HttpServer::modified = true;
-    }
-    else if( command == "list" ) {
-        // translators: heading for the "listen list" command line action output
-	// please, try to align the texts if possible.
-	CommandLine::Print( _("Listen Statements:
-==================
-"));
-	
-	foreach( string listen, HttpServer::settings["defaulthost", "Listen"]:[], ``{
-	    if( issubstring( listen, ":" ) ) {
-		CommandLine::Print( listen );
-	    }
-	    else
-	    {
-		// translators: listen statement for all available interfaces
-		CommandLine::Print( sformat( _("All Interfaces: %1"), listen ) );
-	    }
-	});
-
-    }
-
-    return true;
-}
 
 /* The main () */
 y2milestone ("----------------------------------------");
 y2milestone ("HttpServer module started");
 
-include "http-server/wizards.ycp";
 
 /* is this proposal or not? */
 boolean propose = false;
@@ -268,11 +269,11 @@ if(size(args) > 0) {
 }
 
 // check rpms
-list required = HttpServer::required_packages;
+list<string> required = (list<string>) HttpServer::required_packages;
 
 if( !Require::IsAnyPackageInstalledTarget( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
     // add a default MPM - prefork because of the PHP4 compatibility
-    required = union (required, ["apache2-prefork"] );
+    required = (list<string>) union (required, ["apache2-prefork"] );
 }
 
 if( !Require::RequireAndConflictTarget( required, [],
@@ -292,14 +293,14 @@ without installing the package.</p>"), "apache2" ) );
 without installing the required packages."), "apache2" ) );
     }
     
-    return false;
+    return (any)false;
 }
 
 /* main ui function */
 any ret = nil;
 
 if(propose) ret = HttpServerAutoSequence();
-else ret = CommandLineRun(cmdline_description);
+else ret = CommandLine::Run(cmdline_description);
 y2debug("ret=%1", ret);
 
 /* Finish */

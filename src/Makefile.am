@@ -25,10 +25,9 @@ desktop_DATA =			\
 	http-server.desktop
 
 module_DATA =			\
-	HTTPD.pm
-
-#	HttpServerWidgets.ycp	\
-#	HttpServer.ycp		
+	HTTPD.pm		\
+	HttpServerWidgets.ycp	\
+	HttpServer.ycp		
 
 http-server:
 	ln -sf . http-server

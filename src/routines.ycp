@@ -14,6 +14,7 @@ textdomain "http-server";
 import "Directory";
 import "Progress";
 import "String";
+import "Popup";
 
 /**
  * Abort function
@@ -38,7 +39,7 @@ global define boolean PollAbort() ``{
  * @return true if abort is confirmed
  */
 global define boolean ReallyAbort() ``{
-    return !Modified() || UI::ReallyAbortPopup(true);
+    return !Modified() || Popup::ReallyAbort(true);
 }
 
 /**
@@ -112,29 +113,9 @@ global define string item2listen( string network, string port ) ``{
  * @return map returns value for HttpServer::all_modules
  */
 global define map GetModules() ``{
-    return SCR::Read(.target.ycp, Directory::datadir + "/all-apache2-modules.ycp");
+    return (map)SCR::Read(.target.ycp, Directory::datadir + "/all-apache2-modules.ycp");
 }
 
-/**
- * Generate list of configured log files. First, use sysconfig and then as at lower priority
- * use CustomLog from httpd.conf files.
- *
- * @param access_logs	string containing configured access_log
- * @param custom_logs	list of other configured logs
- * @return list		list of all configured logs ordered by priority
- */
-global define list GetLogs( string access_logs, list custom_logs ) ``{
-
-    // initialize using access_logs
-    list result = maplist( string value, splitstring( access_logs, "," ), ``( String::CutBlanks( value ) ) );
-
-    foreach( string log, custom_logs, ``{
-	string l = String::CutBlanks( log );
-	if( ! contains( result, l ) ) result = add( result, l );
-    });
-    
-    return result;
-}
 
 /* EOF */
 }

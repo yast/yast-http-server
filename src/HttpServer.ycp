@@ -22,21 +22,18 @@ import "Report";
 import "Require";
 import "Summary";
 import "Runlevel";
-
-include "http-server/routines.ycp";
-
-
-
-/**
- * Required packages
- */
-global list required_packages = ["apache2"];
+import "HTTPD";
 
 /**
  * Abort function
  * return boolean return true if abort
  */
-global block AbortFunction = nil;
+global block<boolean> AbortFunction = nil;
+
+/**
+ * Required packages
+ */
+global list required_packages = ["apache2"];
 
 /**
  * Data was modified?
@@ -53,6 +50,7 @@ global boolean proposal_valid = false;
  */
 global boolean write_only = false;
 
+
 /**
  * Data was modified?
  * @return true if modified
@@ -61,6 +59,8 @@ global define boolean Modified() ``{
     y2debug("modified=%1",modified);
     return modified;
 };
+
+include "http-server/routines.ycp";
 
 /**
  * HTTP server settings
@@ -81,6 +81,11 @@ global map settings = $[
 	"firewall_started" : false, // is firewall enabled?
     ]
 ];
+
+global define map Settings ()
+{
+    return settings;
+}
 
 /**
  * List of status of modules modified
@@ -223,7 +228,7 @@ global define boolean Read() ``{
     settings["defaulthost", "Listen"] = SCR::Read( .etc.apachelisten.Listen );
     
     // read modules from sysconfig
-    list modules = splitstring( SCR::Read( .sysconfig.apache2."APACHE_MODULES" ), " " );
+    list modules = splitstring( (string) SCR::Read( .sysconfig.apache2."APACHE_MODULES" ), " " );
     foreach( string mod, modules, ``{
 	if( !haskey( settings["modules"]:$[], mod ) ) {
 	    y2warning("The configuration file appear to load module '%1', but YaST2 does not know the module.", mod );
@@ -244,16 +249,16 @@ global define boolean Read() ``{
     
     // read the rest of the configuration from sysconfig
     settings["apache_access_log"] = SCR::Read( .sysconfig.apache2."APACHE_ACCESS_LOG" );
-    any value = SCR::Read( .sysconfig.apache2."APACHE_SERVERADMIN" );
+    string value = (string) SCR::Read( .sysconfig.apache2."APACHE_SERVERADMIN" );
     if( value != nil ) settings["defaulthost","ServerAdmin"] = value;
-    value = SCR::Read( .sysconfig.apache2."APACHE_SERVERNAME" );
+    value = (string) SCR::Read( .sysconfig.apache2."APACHE_SERVERNAME" );
     if( value != nil ) settings["defaulthost","ServerName"] = value;
-    value = SCR::Read( .sysconfig.apache2."APACHE_DOCUMENT_ROOT" );
+    value = (string) SCR::Read( .sysconfig.apache2."APACHE_DOCUMENT_ROOT" );
     // store document root somewhere else
     if( size(value) > 0 ) document_root = value;
     else {
 	// try defaulthost.conf
-	value = SCR::Read( .etc.apachedefault.DocumentRoot );
+	value = (string) SCR::Read( .etc.apachedefault.DocumentRoot );
 	if( value != nil ) document_root = value;
     }
     
@@ -289,8 +294,8 @@ global define boolean Read() ``{
     listen4firewall = maplist( string listen, settings["defaulthost", "Listen"]:[], ``{
 	map l = listen2map( listen );
 	if( l["address"]: nil != nil ) {
-	    string ni = ip2device["address"]:nil;
-	    if( ni != nil ) {
+	    string ni = ip2device["address"]:"";
+	    if( ni != "" ) {
 		return $[ "port": l["port"]:"80", "interface": ni ];
 	    } else {
 		return $[ "port": l["port"]:"80", "interface": "all" ];
@@ -362,18 +367,18 @@ global define boolean Write() ``{
     // write Apache2 settings
     
     // write sysconfig
-    list modlist = [];
+    list<string> modlist = [];
     foreach( string mod, map status, settings["modules"]:$[], ``{
 	if( status["status"]: false ) {
 	    modlist = add( modlist, mod );
 	}
     });
 
-    list rpms = [];
+    list<string> rpms = [];
     foreach( string mod, map status, settings["modules"]:$[], ``{
 	if( status["status"]: false ) {
 	    y2debug( "Adding to list requires of %1", mod );
-	    rpms = union( rpms, status["requires"]:[] );
+	    rpms = (list<string>)union( rpms, status["requires"]:[] );
 	}
     });
     
@@ -520,15 +525,15 @@ global define boolean Import (map s) ``{
     settings[ "settings" ] = s[ "settings" ]: $[ "enabled" : false ];
     
     settings[ "modules" ] = listmap( map value, s["modules"]:[], 
-	``{ string n = value["name"]:nil;
-	    if( n != nil ) {
-		string old_desc = eval(old_modules[ n, "description" ]:"");
-		return [ n, 
+	``{ string n = value["name"]:"";
+	    if( n != "" ) {
+		string old_desc = (string) eval(old_modules[ n, "description" ]:"");
+		return $[ n :
 		    $[ "status": value["state"]:false,
 		       "description": old_desc
 		    ] 
 		];
-	    } else return nil;
+	    } else return (map)nil;
 	   } );
 	
     settings[ "defaulthost" ] = s[ "defaulthost" ]: $[
