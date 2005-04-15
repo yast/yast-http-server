@@ -421,13 +421,22 @@ sub GetHost {
                 }
             }
             $hostHash->{'DATA'} = \@newHH;
-            if( $sslEngine eq 'on' and grep( { $_->{KEY} eq 'SSLRequireSSL' } @{$hostHash->{'DATA'}} ) ) {
-#		use Data::Dumper; print Dumper($hostHash);
-                $self->ModifyHostKey($hostHash->{'DATA'}, 'SSLRequireSSL');
-                $sslHash->{'VALUE'} = 2;
-            } elsif( $sslEngine eq 'on' ) {
-                $sslHash->{'VALUE'} = 1;
-            }
+	    # set sslHash to 1, if there are SSLRequire option set it to 2 
+            if( $sslEngine eq 'on' ) {
+		foreach my $tmp ( @{$hostHash->{'DATA'}})
+                 {
+		  if (exists($tmp->{SECTIONNAME}) && $tmp->{SECTIONNAME} eq 'Directory')
+                   {  
+		    my $ssl_require=0;
+		    foreach my $newData (@{$tmp->{VALUE}})
+		     {
+		      $ssl_require=1 if (ref($newData->{VALUE}) eq 'ARRAY'&& grep{$_->{KEY} eq 'SSLRequireSSL'}@{$newData->{VALUE}});
+                    }
+			if ($ssl_require) {$sslHash->{'VALUE'} = 2;}
+				else { $sslHash->{'VALUE'} = 1; }
+		   }
+                 }
+            } 
             return [ @{$hostHash->{'DATA'}}, $sslHash, $vbnHash, $ipHash ];
         }
     }
@@ -508,6 +517,7 @@ sub ModifyHost {
     foreach my $entry ( @{$vhost_files->{$filename}} ) {
         if( $entry->{HOSTID} eq $hostid ) {
             my @tmp;
+	    my $ssl_require=0;
             foreach my $tmp ( @$newData ) {
                 if( $tmp->{'KEY'} eq 'VirtualByName' ) {
                     $entry->{VirtualByName} = $tmp->{'VALUE'};
@@ -517,9 +527,11 @@ sub ModifyHost {
                         push( @tmp, { KEY => 'SSLEngine', VALUE => 'off' } );
                     } elsif( $tmp->{'VALUE'} == 1 ) {
                         push( @tmp, { KEY => 'SSLEngine', VALUE => 'on' } );
-                    } elsif( $tmp->{'VALUE'} == 2 ) {
+                    } 
+			elsif( $tmp->{'VALUE'} == 2 ) {
                         push( @tmp, { KEY => 'SSLEngine', VALUE => 'on' } );
-                        push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
+			$ssl_require=1;
+#                        push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
                     }
                     next;
                 } elsif( $hostid ne 'default' and $tmp->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
@@ -530,7 +542,37 @@ sub ModifyHost {
                     push( @tmp, $tmp );
                 }
             }
-            $entry->{DATA} = \@tmp;
+#remove SSLRequireSSL from main configuration, this is HOTFIX for bug #75268
+my @tmp2=();
+foreach my $tmp ( @tmp ) {
+  if (exists($tmp->{SECTIONNAME}) && $tmp->{SECTIONNAME} eq 'Directory') 
+   {
+    my @newData=();
+    foreach my $opts ( @{$tmp->{VALUE}} )
+     {
+	push(@newData, $opts) 
+			if (!($opts->{KEY} eq 'SSLRequireSSL')&&!(ref($opts->{VALUE}) eq 'ARRAY'&& grep{$_->{KEY} eq 'SSLRequireSSL'}@{$opts->{VALUE}}));
+     }
+     @{$tmp->{VALUE}}=@newData;
+    push(( @{$tmp->{VALUE}} ), {
+#			'OVERHEAD' => '# YaST created entry',
+                         'SECTIONNAME' => 'IfDefine',
+                         'KEY' => '_SECTION',
+                         'VALUE' => [
+                                      {
+                                        'KEY' => 'SSLRequireSSL',
+                                        'VALUE' => ''
+                                      }
+                                    ],
+                         'SECTIONPARAM' => 'SSL'
+                       } ) if ($ssl_require);
+   }
+  if (!($tmp->{KEY} eq 'SSLRequireSSL')&&!(ref($tmp->{VALUE}) eq 'ARRAY'&& grep{$_->{KEY} eq 'SSLRequireSSL'}@{$tmp->{VALUE}}))
+   {
+    push(@tmp2,$tmp);
+   }
+  } 
+            $entry->{DATA} = \@tmp2;
             $self->writeHost( $filename, $vhost_files );
 
             # write sysconfig variables for default host
