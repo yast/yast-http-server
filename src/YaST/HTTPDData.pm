@@ -96,9 +96,9 @@ sub addDir {
                     }
                   ]
     };
-    push( @{$hosts{'default'}}, $dirEntry );
-    $dirty{MODIFIED}->{'default'} = 1;
-    return;
+#    push( @{$hosts{'default'}}, $dirEntry );
+#    $dirty{MODIFIED}->{'default'} = 1;
+    return $dirEntry;
 }
 
 
@@ -242,14 +242,14 @@ sub CreateHost {
     my $self = shift;
     my $hostid = shift;
     my $hostdata = shift;
-
+    my $dir = "";
     if( ! $self->checkHostmap( $hostdata ) ) {
         return undef;
     }
 
     foreach my $h ( @$hostdata ) {
         if( $h->{KEY} eq 'DocumentRoot' ) {
-            $self->addDir($h->{VALUE});
+            $dir = $self->addDir($h->{VALUE});
         } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
             $hostid =~ /^([^\/]+)/;
             my $v = $1;
@@ -259,6 +259,8 @@ sub CreateHost {
             }
         }
     }
+push(@$hostdata, $dir) if ($dir);
+use Data::Dumper;print Dumper($hostdata);
     $hosts{$hostid} = $hostdata;
     $dirty{NEW}->{$hostid} = 1;
     delete($dirty{DEL}->{$hostid});
