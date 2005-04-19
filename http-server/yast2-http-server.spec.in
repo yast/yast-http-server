@@ -1,0 +1,33 @@
+@HEADER-COMMENT@
+# neededforbuild yast2-devel-packages yast2-network yast2-country yast2-installation yast2-perl-bindings perl-gettext
+
+@HEADER@
+Requires:	yast2 yast2-network yast2-firewall yast2-perl-bindings
+
+BuildArchitectures:	noarch
+
+Summary:	Configuration of http-server
+
+%description
+-
+
+@PREP@
+
+@BUILD@
+
+@INSTALL@
+
+@CLEAN@
+
+%files
+%defattr(-,root,root)
+%dir @yncludedir@/http-server
+@yncludedir@/http-server/*
+@clientdir@/http-server.ycp
+@clientdir@/http-server_*.ycp
+@moduledir@/*
+@desktopdir@/http-server.desktop
+@ydatadir@/all-*.ycp
+@scrconfdir@/*
+@agentdir@/*
+%doc @docdir@
