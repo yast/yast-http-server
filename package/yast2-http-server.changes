@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Apr 19 16:36:21 CEST 2005 - mzugec@suse.de
+
+- renumbering of tagversion 
+
+-------------------------------------------------------------------
 Fri Apr 15 14:37:51 CEST 2005 - mzugec@suse.de
 
 - fixed #75268 ssl configuration and #77921 virtual hosts 
