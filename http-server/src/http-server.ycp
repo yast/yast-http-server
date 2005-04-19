@@ -1,0 +1,317 @@
+/**
+ * File:	clients/http-server.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Main file
+ * Authors:	Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ *
+ * Main file for http-server configuration. Uses all other files.
+ */
+
+{
+
+/***
+ * <h3>Configuration of the http-server</h3>
+ */
+
+textdomain "http-server";
+
+import "CommandLine";
+import "YaPI::HTTPD";
+import "Popup";
+import "Require";
+import "Report";
+import "Message";
+
+include "http-server/wizards.ycp";
+
+
+/**
+ * Handler for command line action "configure".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
+define boolean ConfigureHandler(map<string, any> options) ``{
+
+    if( options["host"]:nil != "defaulthost" ) {
+	if( ! haskey( options, "host" ) ) {
+	    // translators: error message in configure command line action
+	    Report::Error( _("Configured host not specified") );
+	}
+	else 
+	{
+	    // translators: error message in configure command line action
+	    Report::Error( _("Only \"defaulthost\" can be specified as the host to configure") );
+	}
+	return false;
+    }
+
+    string host = "default";
+
+    list< map<string,any> > hostconfig = YaPI::HTTPD::GetHost (host);
+    
+    string value = options["servername"]:"";
+    if( value != "" ) {
+	hostconfig = HttpServerWidgets::set_host_value ( "ServerName", hostconfig, value );
+    }
+
+    value = options["serveradmin"]:"";
+    if( value != "" ) {
+	hostconfig = HttpServerWidgets::set_host_value ( "ServerAdmin", hostconfig, value );
+    }
+
+    value = options["documentroot"]:"";
+    if( value != "" ) {
+	hostconfig = HttpServerWidgets::set_host_value ( "DocumentRoot", hostconfig, value );
+    }
+    
+    YaPI::HTTPD::ModifyHost (host, hostconfig);
+
+    return true;
+}
+
+/**
+ * Handler for command line action "modules".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
+define boolean ModulesHandler(map<string, string> options) ``{
+    // check the command to be present exactly once
+    string command = CommandLine::UniqueOption( options,
+        ["enable", "disable", "list" ] );
+    if( command == nil ) return false;
+
+    if( command == "enable" ) {
+	list<string> mods = splitstring( options["enable"]:"", "," );
+	YaPI::HTTPD::ModifyModuleList (mods, true);	
+    }
+    else if( command == "disable" ) {
+	list<string> mods = splitstring( options["disable"]:"", "," );
+	YaPI::HTTPD::ModifyModuleList (mods, false);	
+    }
+    else if( command == "list" ) {
+        // translators: heading for the "modules list" command line action output
+	// please, try to align the texts if possible.
+	CommandLine::Print( _("Status \tModule
+=================="));
+
+	list<string> enabled = YaPI::HTTPD::GetModuleList();
+	
+	foreach( map<string,any> mod, YaPI::HTTPD::GetKnownModules(), ``{
+	    // translators: status of a module
+	    CommandLine::Print( sformat( "%1\t%2", 
+		// translators: server module status
+		contains( enabled, mod["name"]:"" ) ? _("Enabled") 
+		    // translators: server module status
+		    : _("Disabled")
+		    // translators: server module status unknown
+		    , mod["name"]:_("unknown") ) );
+	});
+    }
+
+    return true;
+}
+
+/**
+ * Handler for command line action "listen".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
+define boolean ListenHandler(map<string, string> options) ``{
+
+    // check the command to be present exactly once
+    string command = CommandLine::UniqueOption( options,
+        ["add", "delete", "list" ] );
+    if( command == nil ) return false;
+
+/* FIXME:    
+    if( command == "add" ) {
+	if( contains( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" ) )
+	{
+	    // translators: error message in "listen add" command line action
+	    Report::Error( sformat( _("The listen statement '%1' is already configured.") , options["add"]:"") );
+	    return false;
+	}
+	
+	HttpServer::settings["defaulthost", "Listen"] = 
+	    add( HttpServer::settings["defaulthost", "Listen"]:[], options["add"]:"" );
+	HttpServer::modified = true;
+    }
+    else if( command == "delete" ) {
+	if( !contains( HttpServer::settings["defaulthost", "Listen"]:[], options["delete"]:"" ) )
+	{
+	    // translators: error message in "listen delete" command line action
+	    Report::Error( sformat( _("Cannot delete unconfigured listen statement '%1'") , options["delete"]:"") );
+	    return false;
+	}
+
+	HttpServer::settings["defaulthost", "Listen"] = 
+	    filter( string value, HttpServer::settings["defaulthost", "Listen"]:[], ``( value != options["delete"]:"" ) );
+	HttpServer::modified = true;
+    }
+    else if( command == "list" ) {
+        // translators: heading for the "listen list" command line action output
+	// please, try to align the texts if possible.
+	CommandLine::Print( _("Listen Statements:
+==================
+"));
+	
+	foreach( string listen, HttpServer::settings["defaulthost", "Listen"]:[], ``{
+	    if( issubstring( listen, ":" ) ) {
+		CommandLine::Print( listen );
+	    }
+	    else
+	    {
+		// translators: listen statement for all available interfaces
+		CommandLine::Print( sformat( _("All Interfaces: %1"), listen ) );
+	    }
+	});
+
+    }
+*/
+    return true;
+}
+
+map cmdline_description = $[
+    "id" 	: "http-server",
+    // translators: command line help for HTTP server module
+    "help"	: _("Configuration of HTTP server (Apache2)"),
+    "guihandler"        : HttpServerSequence,
+    "initialize"        : HttpServer::Read,
+    "finish"            : HttpServer::Write,
+    "actions"           : $[
+	"configure"	: $[
+	    // translators: help text for configure command line action
+	    "help" 	: _("Configure host settings"),
+	    "handler"	: ConfigureHandler
+	],
+	"modules"	: $[
+	    // translators: help text for modules command line action
+	    "help"	: _("Configure the Apache2 server modules"),
+	    "handler"	: ModulesHandler
+	],
+	"listen"	: $[
+	    // translators: help text for listen command line action
+	    "help" 	: _("Set up the ports and network addresses where the server should listen."),
+	    "handler"	: ListenHandler
+	],
+    ],
+    "options"		: $[
+	"servername"	: $[
+	    "type"	: "fullhostname",
+	    // translators: help text for servername option (configure command line action)
+	    "help"	: _("Server name, for example, www.example.com")
+	],
+	"serveradmin"	: $[
+	    "type"	: "string",
+	    // translators: help text for serveradmin option (configure command line action)
+	    "help"	: _("E-mail address of the server administrator")
+	],
+	"documentroot"	: $[
+	    "type"	: "string",
+	    // translators: help text for documentroot option (configure command line action)
+	    "help"	: _("Directory where the documents of the server are stored")
+	],
+	"host"		: $[
+	    "type"	: "string",
+	    // translators: help text for host option (configure command line action)
+	    "help"	: _("Name of the host to configure. Only \"defaulthost\" is valid at the moment.")
+	],
+	"add"		: $[
+	    "type"	: "regex",
+	    "typespec"	: "(\[[0-9a-f:]+\]:[0-9]+)|([0-9]+)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)",
+	    // translators: help text for add subcommand (listen command line action)
+	    "help"	: _("Add a new listen entry ([address:]port)"),
+	],
+	"delete"	: $[
+	    "type"	: "regex",
+	    "typespec"	: "(\[[0-9a-f:]+\]:[0-9]+)|([0-9]+)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)",
+	    // translators: help text for delete subcommand (listen command line action)
+	    "help"	: _("Delete an existing listen entry ([address:]port)"),
+	],
+	"list"		: $[
+	    // translators: help text for list subcommand (listen command line action)
+	    "help"	: _("List configured entries"),
+	],
+	"enable"	: $[
+	    "type"	: "regex",
+	    "typespec"	: ".+(,.+)*",
+	    // translators: help text for enable subcommand (modules command line action)
+	    "help"	: _("Comma-separated list of modules to enable")
+	],
+	"disable"	: $[
+	    "type"	: "regex",
+	    "typespec"	: ".+(,.+)*",
+	    // translators: help text for disable subcommand (modules command line action)
+	    "help"	: _("Comma-separated list of modules to disable")
+	]
+    ],
+    "mappings"		: $[
+	"configure"	: [ "host", "servername", "serveradmin", "documentroot" ],
+	"modules"	: [ "enable", "disable", "list" ],
+	"listen"	: [ "add", "delete", "list" ]
+    ]
+];
+
+
+/* The main () */
+y2milestone ("----------------------------------------");
+y2milestone ("HttpServer module started");
+
+
+/* is this proposal or not? */
+boolean propose = false;
+list args = WFM::Args();
+if(size(args) > 0) {
+    if(is(WFM::Args(0), path) && WFM::Args(0) == .propose) {
+        y2milestone("Using PROPOSE mode");
+        propose = true;
+    }
+}
+
+// check rpms
+list<string> required = (list<string>) HttpServer::required_packages;
+
+if( !Require::IsAnyPackageInstalledTarget( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
+    // add a default MPM - prefork because of the PHP4 compatibility
+    required = (list<string>) union (required, ["apache2-prefork"] );
+}
+
+if( !Require::RequireAndConflictTarget( required, [],
+    // notification about package needed 1/2
+    _("<p>To configure the HTTP server, the <b>%1</b> packages must be installed.</p>") +
+    // notification about package needed 2/2
+    _("<p>Do you want to install it now?</p>")) )
+{
+    if( !Require::IsPackageAvailable( "apache2" ) ) {
+	// translators: error popup before aborting the module
+	Popup::Error( sformat( _("<p>The package <b>%1</b> is not available.<br>
+YaST2 cannot continue the configuration
+without installing the package.</p>"), "apache2" ) );
+    } else {
+	// translators: error popup before aborting the module
+	Popup::Error( Message::CannotContinueWithoutPackagesInstalled() );
+    }
+    
+    return (any)false;
+}
+
+/* main ui function */
+any ret = nil;
+
+if(propose) ret = HttpServerAutoSequence();
+else ret = CommandLine::Run(cmdline_description);
+y2debug("ret=%1", ret);
+
+/* Finish */
+y2milestone("HttpServer module finished");
+y2milestone("----------------------------------------");
+
+return ret;
+
+/* EOF */
+}
