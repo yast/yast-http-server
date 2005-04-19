@@ -321,7 +321,7 @@
 
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
-	if (ProductFeatures::ui_mode != "simple")
+	if (ProductFeatures::GetFeature ("globals", "ui_mode") != "simple")
 	{
 	    UI::ReplaceWidget( `id(`_tp_table_repl),
 		//translators: pop up menu

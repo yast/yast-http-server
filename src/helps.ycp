@@ -143,7 +143,7 @@ or accept only connections encrypted via SSL (<i>Required</i>).
 To add a new option, click <b>Add</b>. To remove an option, select it and click <b>Delete</b>.</p>")
 
 	// ssl options dialog help 3/4 (empty in simple mode)
-	+ ((ProductFeatures::ui_mode != "simple") ? _("<p>The <b>Certificates</b> menu allows 
+	+ ((ProductFeatures::GetFeature ("globals", "ui_mode") != "simple") ? _("<p>The <b>Certificates</b> menu allows 
 importing server certificates. <b>Import Server Certificate</b> 
 allows use of a special purpose certificate. 
 <b>Use Common Certificate</b> configures usage of the
