@@ -16,7 +16,7 @@ X-SuSE-YaST-Geometry=
 X-SuSE-YaST-SortKey=
 X-SuSE-YaST-AutoInstResource=http-server
 
-Icon=http-server
+Icon=yast-http-server
 Exec=/sbin/yast2 http-server 
 
 Name=HTTP Server
