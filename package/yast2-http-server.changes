@@ -9,6 +9,21 @@ Tue Apr 19 15:45:08 CEST 2005 - mzugec@suse.de
 - compatibility for new ProductFeatures 
 
 -------------------------------------------------------------------
+Fri Apr 15 14:37:51 CEST 2005 - mzugec@suse.de
+
+- fixed #75268 ssl configuration and #77921 virtual hosts
+
+-------------------------------------------------------------------
+Tue Mar 15 12:46:37 CET 2005 - mzugec@suse.cz
+
+- fixed #72327, APACHE_MODULES problem
+
+-------------------------------------------------------------------
+Mon Feb 28 09:31:22 CET 2005 - visnov@suse.cz
+
+- fixed localization problems
+
+-------------------------------------------------------------------
 Mon Feb 21 17:45:54 CET 2005 - mzugec@suse.cz
 
 - wizard dialogs on first run of http-server 

@@ -60,6 +60,7 @@ sub parse_vhost_files {
         $file =~ /([^\/]+\.conf)$/;
         $file = $1;
         my $fileData = sectionParser();
+
         $vhost_files{$file} = [];
         my $tmpOverhead = "";
         foreach my $vhost (@$fileData) {
@@ -177,7 +178,7 @@ sub sectionParser {
             $key->{VALUE} = sectionParser();
             push( @$keys, $key );
             $key = {};
-        } elsif( $line =~ /^\s*<(\w+)\s*([^\s>]*?)\s*>/ ) { # new Subsection?
+        } elsif( $line =~ /^\s*<(\w+)\s*(.*[^\s>]*?)\s*>/ ) { # new Subsection?
            $key->{KEY} = '_SECTION';
            $key->{SECTIONNAME} = $1;
            $key->{SECTIONPARAM} = $2;
@@ -193,7 +194,7 @@ sub sectionParser {
            $key->{OVERHEAD} .= $line;
         }
     }
-    return $keys;
+  return $keys;
 }
 
 sub section2string {

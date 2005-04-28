@@ -555,7 +555,6 @@ foreach my $tmp ( @tmp ) {
      }
      @{$tmp->{VALUE}}=@newData;
     push(( @{$tmp->{VALUE}} ), {
-#			'OVERHEAD' => '# YaST created entry',
                          'SECTIONNAME' => 'IfDefine',
                          'KEY' => '_SECTION',
                          'VALUE' => [
@@ -1568,12 +1567,12 @@ sub ReadServerCert {
 
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
-        return $self->SetError( summary => __("Unable to fetch a host with the specified ID."), code => "PARAM_CHECK_FAILED" );
+        return $self->SetError( summary => ("Unable to fetch a host with the specified ID."), code => "PARAM_CHECK_FAILED" );
     }
     my $file = '';
     $file .= $self->FetchHostKey( $host, 'SSLCertificateFile' ) || '';
     if( $file eq '' ) {
-        return $self->SetError( summary => __("No certificate file configured for this host ID."), code => "CERT_ERROR" );
+        return $self->SetError( summary => ("No certificate file configured for this host ID."), code => "CERT_ERROR" );
     }
     my $cert = SCR->Read( '.target.string', $file );
     unless( $cert ) {
@@ -1581,9 +1580,9 @@ sub ReadServerCert {
     }
     $cert =~ /(-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----)/;
     if( ! $1 ) {
-        return $self->SetError( summary => __("Parsing the certificate file failed."), code => "CERT_ERROR" );
+        return $self->SetError( summary => ("Parsing the certificate file failed."), code => "CERT_ERROR" );
     }
-    return $1;
+   return $1;
 }
 
 =item *

@@ -679,6 +679,7 @@ sub WriteCert {
     my $self = shift;
     my $hostid = shift;
 
+     $self->ReadHosts();
     if( exists($certs{$hostid}) ) {
         if( exists( $certs{$hostid}->{'CERT'} ) ) {
             YaPI::HTTPD->WriteServerCert( $hostid, $certs{$hostid}->{'CERT'} );
