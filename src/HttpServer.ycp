@@ -580,18 +580,19 @@ global define list Summary() ``{
     string nc = Summary::NotConfigured ();
 
     string summary = "";
-
+y2internal("conf-ed %1", configured);
     if( configured ) {
 		// "Listen on " information (interfaces, port)
 	    summary = Summary::AddLine(summary, _("<h3>Listen On</h3>") );
-            string port       = nil;
-            string interfaces = "";
+            string port       = "80";
+            string interfaces = "127.0.0.1";
             foreach(map listens, YaST::HTTPDData::GetCurrentListen(),
                 {
                  port = listens["PORT"]:"80";
                  if (listens["ADDRESS"]:"" == "" ) interfaces = "all";
                         else interfaces = interfaces + listens["ADDRESS"]:"";
                 } );
+y2internal("interfaces - %1\n", interfaces);
 	    summary = Summary::AddLine(summary, interfaces + ", port " + port );
 
 		// "Default host" information 
