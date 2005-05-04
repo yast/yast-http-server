@@ -444,7 +444,7 @@ global define boolean Import (map s) ``{
 	string change_string = desc["change"]:"nochange";
 
 	// get the default
-	string default = (string)desc["default"]:nil;
+	string defaultstatus = (string)desc["default"]:nil;
 	
 	if (change_string != "nochange")
 	{
@@ -461,7 +461,7 @@ global define boolean Import (map s) ``{
 	else
 	{
 	    // check against the current default
-	    if (default != nil && lookup( find_known_module(known_modules, mod), "default", nil) != default)
+	    if (defaultstatus != nil && lookup( find_known_module(known_modules, mod), "default", nil) != defaultstatus)
 	    {
 		// translators: warning in autoyast loading the configuration description.
 		Report::Warning (sformat(_("Default value for module %1 does not match.
