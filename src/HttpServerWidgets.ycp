@@ -52,14 +52,14 @@ boolean CheckCommonServerCertificate () {
     return true;
 }
 
-global any get_host_value ( string keyword, list< map<string, any> > host, any default )
+global any get_host_value ( string keyword, list< map<string, any> > host, any defaultvalue )
 {
-    any res = default;
+    any res = defaultvalue;
     
     foreach( map<string, any> option, host, ``{
 	if (option["KEY"]:nil == keyword)
 	{
-	    res = option["VALUE"]:default;
+	    res = option["VALUE"]:defaultvalue;
 	    break;
 	}
     });
