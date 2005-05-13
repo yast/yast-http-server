@@ -6,7 +6,11 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 10
+                    position  => 10,
+		    directives=> [ { option => "Allow from", "context" => [ "Directory" ] }, 
+				   { option => "Deny from",  "context" => [ "Directory" ] },
+				   { option =>  "Order",     "context" => [ "Directory" ] }
+				 ]
     },
     'actions' => {
                     summary   => 'Executing CGI scripts based on media type or request method',
@@ -14,7 +18,10 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 20
+                    position  => 20,
+		    directives=> [ { option => "Action", "context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "Script", "context" => [ "Directory", "Server", "Virtual" ] }
+				 ]
     },
     'alias' => {
                     summary   => 'Mapping different parts of the host file system in the document tree and for URL redirection',
@@ -22,7 +29,16 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 30
+                    position  => 30,
+                    directives=> [ { option => "Alias", 		"context" => [ "Server", "Virtual" ] },
+				   { option => "AliasMatch", 		"context" => [ "Server", "Virtual" ] },
+				   { option => "Redirect", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "RedirectMatch", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "RedirectPermanent", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "RedirectTemp", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "ScriptAlias", 		"context" => [ "Server", "Virtual" ] },
+				   { option => "ScriptAliasMatch",	"context" => [ "Server", "Virtual" ] }
+				]
     },
     'auth' => {
                     summary   => 'User authentication using text files',
@@ -30,7 +46,11 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 40
+                    position  => 40,
+		    directives=> [ { option => "AuthAuthoritative", "context" => [ "Directory" ] },
+				   { option => "AuthGroupFile",     "context" => [ "Directory" ] },
+				   { option => "AuthUserFile", 	    "context" => [ "Directory" ] }
+				]
     },
     'auth_dbm' => {
                     summary   => 'Provides for user authentication using DBM files',
@@ -44,7 +64,12 @@ package YaPI::HTTPDModules;
                                     AuthDBMGroupFile => 'mod_auth_dbm',
                                     AuthDBMType => 'mod_auth_dbm',
                                     AuthDBMUserFile => 'mod_auth_dbm'
-                    }
+                    },
+                    directives=> [ { option => "AuthDBMAuthoritative", "context" => [ "Directory" ] },
+				   { option => "AuthDBMGroupFile",     "context" => [ "Directory" ] },
+				   { option => "AuthDBMType", 	       "context" => [ "Directory" ] },
+				   { option => "AuthDBMUserFile",      "context" => [ "Directory" ] }
+				]
     },
     'autoindex' => {
                     summary   => 'Generates directory indices, automatically, similar to the Unix ls command',
@@ -52,7 +77,21 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 60
+                    position  => 60,
+                    directives=> [ { option => "AddAlt", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddAltByEncoding", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddAltByType", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddDescription", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddIcon", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddIconByEncoding", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddIconByType", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "DefaultIcon", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "HeaderName", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "IndexIgnore", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "IndexOptions", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "IndexOrderDefault", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "ReadmeName", 		"context" => [ "Directory", "Server", "Virtual" ] }
+				]
     },
     'cgi' => {
                     summary   => 'Execution of CGI scripts',
@@ -60,7 +99,11 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 70
+                    position  => 70,
+                    directives=> [ { option => "ScriptLog", 		"context" => [ "Server", "Virtual" ] },
+				   { option => "ScriptLogBuffer", 	"context" => [ "Server", "Virtual" ] },
+				   { option => "ScriptLogLength", 	"context" => [ "Server", "Virtual" ] }
+				]
     },
     'dir' => {
                     summary   => 'Provides for "trailing slash" redirects and serving directory index files',
@@ -68,7 +111,10 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 80
+                    position  => 80,
+                    directives=> [ { option => "DirectoryIndex", "context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "DirectorySlash", "context" => [ "Directory", "Server", "Virtual" ] }
+				]
     },
     'env' => {
                     summary   => 'Modifies the environment passed to CGI scripts and SSI pages',
@@ -76,7 +122,11 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 90
+                    position  => 90,
+                    directives=> [ { option => "PassEnv",  "context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "SetEnv",   "context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "UnsetEnv", "context" => [ "Directory", "Server", "Virtual" ] } 
+				]
     },
     'expires' => {
                     summary   => 'Generation of Expires HTTP headers according to user-specified criteria',
@@ -89,7 +139,11 @@ package YaPI::HTTPDModules;
                                     ExpiresActive  => 'mod_expires',
                                     ExpiresByType  => 'mod_expires',
                                     ExpiresDefault => 'mod_expires'
-                    }
+                    },
+                    directives=> [ { option => "ExpiresActive",  "context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "ExpiresByType",  "context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "ExpiresDefault", "context" => [ "Directory", "Server", "Virtual" ] } 
+				]
     },
     'include' => {
                     summary   => 'Server-parsed HTML documents (Server Side Includes)',
@@ -97,7 +151,14 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 110
+                    position  => 110,
+                    directives=> [ { option => "SSIEndTag", 		"context" => [ "Server", "Virtual" ] },
+				   { option => "SSIErrorMsg", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "SSIStartTag", 		"context" => [ "Server", "Virtual" ] },
+				   { option => "SSITimeFormat", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "SSIUndefinedEcho", 	"context" => [ "Server", "Virtual" ] },
+				   { option => "XBitHack", 		"context" => [ "Directory", "Server", "Virtual" ] }
+				]
     },
     'log_config' => {
                     summary   => 'Logging of the requests made to the server',
@@ -105,7 +166,13 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 120
+                    position  => 120,
+                    directives=> [ { option => "BufferedLogs",  "context" => [ "Server" ] },
+				   { option => "CookieLog",   	"context" => [ "Server", "Virtual" ] },
+				   { option => "CustomLog",     "context" => [ "Server", "Virtual" ] },
+				   { option => "LogFormat",   	"context" => [ "Server", "Virtual" ] },
+				   { option => "TransferLog", 	"context" => [ "Server", "Virtual" ] } 
+				]
     },
     'mime' => {
                     summary   => 'Associates the requested file name\'s extensions with the file\'s behavior and content',
@@ -113,7 +180,25 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 130
+                    position  => 130,
+                    directives=> [ { option => "AddCharset", 			"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddEncoding", 			"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddHandler", 			"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddInputFilter",		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddLanguage", 			"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddOutputFilter", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddType", "DefaultLanguage", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "ModMimeUsePathInfo",		"context" => [ "Directory" ] },
+				   { option => "MultiviewsMatch", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "RemoveCharset", 		"context" => [ "Directory", "Virtual" ] },
+				   { option => "RemoveEncoding", 		"context" => [ "Directory", "Virtual" ] },
+				   { option => "RemoveHandler", 		"context" => [ "Directory", "Virtual" ] },
+				   { option => "RemoveInputFilter", 		"context" => [ "Directory", "Virtual" ] },
+				   { option => "RemoveLanguage", 		"context" => [ "Directory", "Virtual" ] },
+				   { option => "RemoveOutputFilter", 		"context" => [ "Directory", "Virtual" ] },
+				   { option => "RemoveType", 			"context" => [ "Directory", "Virtual" ] },
+				   { option => "TypesConfig", 			"context" => [ "Server" ] }
+				]
     },
     'negotiation' => {
                     summary   => 'Provides for content negotiation',
@@ -121,7 +206,11 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 140
+                    position  => 140,
+                    directives=> [ { option => "CacheNegotiatedDocs", 	"context" => [ "Server", "Virtual" ] },
+				   { option => "ForceLanguagePriority", "context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "LanguagePriority", 	"context" => [ "Directory", "Server", "Virtual" ] }
+				]
     },
     'setenvif' => {
                     summary   => 'Allows the setting of environment variables based on characteristics of the request',
@@ -129,7 +218,12 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 150
+                    position  => 150,
+                    directives=> [ { option => "BrowserMatch", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "BrowserMatchNoCase", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "SetEnvIf", 		"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "SetEnvIfNoCase", 	"context" => [ "Directory", "Server", "Virtual" ] }
+				]
     },
     'status' => {
                     summary   => 'Provides information about server activity and performance',
@@ -137,7 +231,9 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 160
+                    position  => 160,
+                    directives=> [ { option => "ExtendedStatus", "context" => [ "Server" ] } 
+				]
     },
     'suexec' => {
                     summary   => 'Allows CGI scripts to run as a specified user and group',
@@ -148,7 +244,9 @@ package YaPI::HTTPDModules;
                     position  => 0,
                     module    => {
                                     SuexecUserGroup => 'mod_suexec',
-                    }
+                    },
+                    directives=> [ { option =>"SuexecUserGroup", "context" => [ "Server", "Virtual" ] } 
+				]
     },
     'userdir' => {
                     summary   => 'User-specific directories',
@@ -156,7 +254,9 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 180
+                    position  => 180,
+                    directives=> [ { option =>"UserDir", "context" => [ "Server", "Virtual" ] } 
+				]
     },
     'asis' => {
                     summary   => 'Sends files that contain their own HTTP headers',
@@ -164,7 +264,9 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 190
+                    position  => 190,
+                    directives=> [ { option =>"AddHandler", "context" => [ "Directory", "Server", "Virtual" ] } 
+				]
     },
     'auth_anon' => {
                     summary   => 'Allows "anonymous" user access to authenticated areas',
@@ -180,7 +282,14 @@ package YaPI::HTTPDModules;
                                     Anonymous_MustGiveEmail => 'mod_auth_anon',
                                     Anonymous_NoUserID => 'mod_auth_anon',
                                     Anonymous_VerifyEmail => 'mod_auth_anon'
-                    }
+                    },
+                    directives=> [ { option =>"Anonymous", 			"context" => [ "Directory" ] },
+				   { option =>"Anonymous_Authoritative", 	"context" => [ "Directory" ] },
+				   { option =>"Anonymous_LogEmail", 		"context" => [ "Directory" ] },
+				   { option =>"Anonymous_MustGiveEmail", 	"context" => [ "Directory" ] },
+				   { option =>"Anonymous_NoUserID", 		"context" => [ "Directory" ] },
+				   { option =>"Anonymous_VerifyEmail", 		"context" => [ "Directory" ] }
+				]
     },
     'auth_digest' => {
                     summary   => 'User authentication using MD5 Digest Authentication',
@@ -188,7 +297,17 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 210
+                    position  => 210,
+                    directives=> [ { option =>"AuthDigestAlgorithm", 		"context" => [ "Directory" ] },
+				   { option =>"AuthDigestDomain", 		"context" => [ "Directory" ] },
+				   { option =>"AuthDigestFile", 		"context" => [ "Directory" ] },
+				   { option =>"AuthDigestGroupFile", 		"context" => [ "Directory" ] },
+				   { option =>"AuthDigestNcCheck", 		"context" => [ "Server" ] },
+				   { option =>"AuthDigestNonceFormat", 		"context" => [ "Directory" ] },
+				   { option =>"AuthDigestNonceLifetime", 	"context" => [ "Directory" ] },
+				   { option =>"AuthDigestQop", 			"context" => [ "Directory" ] },
+				   { option =>"AuthDigestShmemSize", 		"context" => [ "Server" ] } 
+				]
     },
     'auth_ldap' => {
                     summary   => 'Allows an LDAP directory to be used to store the database for HTTP Basic authentication',
@@ -196,7 +315,20 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 355
+                    position  => 355,
+                    directives=> [ { option =>"AuthLDAPAuthoritative", 		"context" => [ "Directory" ] },
+				   { option =>"AuthLDAPBindDN", 		"context" => [ "Directory" ] },
+				   { option =>"AuthLDAPBindPassword", 		"context" => [ "Directory" ] },
+				   { option =>"AuthLDAPCharsetConfig", 		"context" => [ "Server" ] },
+				   { option =>"AuthLDAPCompareDNOnServer", 	"context" => [ "Directory" ] },
+ 				   { option =>"AuthLDAPDereferenceAliases", 	"context" => [ "Directory" ] }, 
+				   { option =>"AuthLDAPEnabled", 		"context" => [ "Directory" ] },
+				   { option =>"AuthLDAPFrontPageHack", 		"context" => [ "Directory" ] },
+				   { option =>"AuthLDAPGroupAttribute", 	"context" => [ "Directory" ] },
+				   { option =>"AuthLDAPGroupAttributeIsDN", 	"context" => [ "Directory" ] },
+				   { option =>"AuthLDAPRemoteUserIsDN", 	"context" => [ "Directory" ] },
+				   { option =>"AuthLDAPUrl", 			"context" => [ "Directory" ] }
+				]
     },
     'cache' => {
                     summary   => 'Content cache keyed to URIs',
@@ -204,7 +336,17 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 230
+                    position  => 230,
+                    directives=> [ { option =>"CacheDefaultExpire", 	"context" => [ "Server", "Virtual" ] },
+				   { option =>"CacheDisable", 		"context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheEnable", 		"context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheForceCompletion", 	"context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheIgnoreCacheControl","context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheIgnoreHeaders", 	"context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheIgnoreNoLastMod", 	"context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheLastModifiedFactor","context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheMaxExpire", 	"context" => [ "Server", "Virtual" ] }
+                                ]
     },
     'charset_lite' => {
                     summary   => 'Specify character set translation or recoding',
@@ -212,7 +354,11 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 240
+                    position  => 240,
+                    directives=> [ { option =>"CharsetDefault", 	"context" => [ "Directory", "Server", "Virtual" ] },
+                                   { option =>"CharsetOptions", 	"context" => [ "Directory", "Server", "Virtual" ] },
+                                   { option =>"CharsetSourceEnc", 	"context" => [ "Directory", "Server", "Virtual" ] }
+                                ]
     },
     'dav' => {
                     summary   => 'Distributed Authoring and Versioning (WebDAV) functionality',
@@ -225,7 +371,11 @@ package YaPI::HTTPDModules;
                                   Dav => 'mod_dav',
                                   DavDepthInfinity => 'mod_dav',
                                   DavMinTimeout => 'mod_dav'
-                    }
+                    },
+                    directives=> [ { option =>"Dav", 			"context" => [ "Directory" ] },
+				   { option =>"DavDepthInfinity", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option =>"DavMinTimeout", 		"context" => [ "Directory", "Server", "Virtual" ] }
+                                ]
     },
     'dav_fs' => {
                     summary   => 'File system provider for mod_dav',
@@ -236,7 +386,9 @@ package YaPI::HTTPDModules;
                     position  => 260,
                     module    => {
                                   DavLockDB => 'mod_dav_fs'
-                    }
+                    },
+                    directives=> [ { option =>"DavLockDB", "context" => [ "Server", "Virtual" ] }
+                                ]
     },
     'deflate' => {
                     summary   => 'Compress content before it is delivered to the client',
@@ -517,7 +669,7 @@ package YaPI::HTTPDModules;
                     position  => 490
     },
     'php5' => {
-                    summary   => 'Provides support for PHP4 dynamically generated pages',
+                    summary   => 'Provides support for PHP5 dynamically generated pages',
                     packages  => ["apache2-mod_php5"],
                     default   => 0,
                     required  => 0,
