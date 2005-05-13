@@ -557,8 +557,10 @@ global symbol handleExpertConf (string key, map event);
 global void initScriptModules(string key);
 global void initSummaryText(string key); 
 global symbol handleBooting (string key, map event);
+global map getHostOptions();
 boolean getServiceAutoStart();
 void setServiceAutoStart(boolean enable);
+global void checkLoadedModuleFor(string new);
 
     global void setHostOptions(map < integer, map <string,any> > host_options);
 
@@ -668,7 +670,7 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	    "store" : HttpServerWidgets::HostStore,
 	    "validate_type" : `function,
 	    "validate_function" : validate_server_fnc,
-	    "options" : union( (map)SCR::Read (.target.ycp, Directory::datadir + "/all-host-options.ycp"), popups ),
+	    "options" : union( getHostOptions(), popups ),
 	    "ids" : HttpServerWidgets::HostTableContents,
 	    "id2key" : HttpServerWidgets::HostId2Key,
 	    "fallback" : $[
@@ -678,9 +680,7 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	    ],
 	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
 	    "add_items" : 
-		maplist( string key, any value, (map<string,any>)union( 
-		    (map)SCR::Read (.target.ycp, Directory::datadir + "/all-host-options.ycp"), 
-		    popups ), ``(key) ),
+		maplist( string key, any value, (map<string,any>)union( getHostOptions(), popups ), ``(key) ),
 	    "help" : HELPS["global_table"]:"",
 	]);
 
@@ -688,6 +688,25 @@ define void HostInit (string key) ``{
     TablePopup::TableInit (HttpServerWidgets::hostwidget, key);
 }
 
+global define map getHostOptions()
+{
+ map used = $[];
+           list <string> directives = [];
+	foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
+		foreach(map<string,any> option, mod["directives"]:[], {
+			if (contains(option["context"]:[] ,"Server")) 
+								used[option["option"]:""]=$[];
+//								directives=add(directives, option["option"]:"");
+			});
+//		if (contains(mod["directives","context"]:[] ,"Server")) directives=add(directives, mod["directives"]:[]);
+	});
+//  foreach(list<string> value, directives, {
+//		 foreach(string str, value, {
+//			 used[str]=$[];
+//			});
+//		});
+ return used;
+}
 
 global map moduleslistwidget = $[
 	    "widget" : `custom,
@@ -1154,6 +1173,19 @@ define string item2listen( string network, string port ) ``{
 	return host_options [ (integer)option_id, "KEY" ]: "";
     }
 
+	//find modules of all directives and check if are loaded
+    global void checkLoadedModuleFor(string new)
+    {
+	list<string> loaded = YaST::HTTPDData::GetModuleList();
+      foreach(map<string,any> value, YaST::HTTPDData::GetKnownModules(), {
+	 if (contains(value["directives"]:[], new) && !contains(loaded, value["name"]:"")) 
+	  {
+	   YaST::HTTPDData::ModifyModuleList([value["name"]:""], true);
+	   y2internal("loading module mod_%1 ...", value["name"]:"");
+	  }
+	});
+
+    }
 
     global void HostStore (string key, map event)
     {
@@ -1189,6 +1221,12 @@ define string item2listen( string network, string port ) ``{
 	    options[index] = nil;
 	});
 	options = filter (map <string,any> option, options, ``( option != nil ));
+
+	// for all host options check whether module from directive is loaded
+        foreach (map<string, any> values, options,
+        ``{
+	   HttpServerWidgets::checkLoadedModuleFor(values["KEY"]:"");
+	  });
 	
 	YaST::HTTPDData::ModifyHost (currenthost, options );
 
@@ -1196,9 +1234,9 @@ define string item2listen( string network, string port ) ``{
     }
 
     global void setHostOptions( map < integer, map < string,any > > new_options)
-{
- host_options = new_options;
-}
+     {
+	host_options = new_options;
+     }
     global void DirectoryOptionInit (any option_id, string option_type)
     {
 	if (option_id == nil)
@@ -1594,9 +1632,6 @@ define string item2listen( string network, string port ) ``{
          if (!finded) known=add(known, mapmodules);
        });
 
-
-
-	
 	list<term> items = maplist (map<string,any> mod, known , ``{
 	    index = index + 1;
 	    // translators: server module status unknown
