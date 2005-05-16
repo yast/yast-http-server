@@ -187,7 +187,8 @@ package YaPI::HTTPDModules;
 				   { option => "AddInputFilter",		"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "AddLanguage", 			"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "AddOutputFilter", 		"context" => [ "Directory", "Server", "Virtual" ] },
-				   { option => "AddType", "DefaultLanguage", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "AddType", 			"context" => [ "Directory", "Server", "Virtual" ] },
+                                   { option => "DefaultLanguage",               "context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "ModMimeUsePathInfo",		"context" => [ "Directory" ] },
 				   { option => "MultiviewsMatch", 		"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "RemoveCharset", 		"context" => [ "Directory", "Virtual" ] },
@@ -403,7 +404,14 @@ package YaPI::HTTPDModules;
                                   DeflateFilterNote => 'mod_deflate',
                                   DeflateMemLevel => 'mod_deflate',
                                   DeflateWindowSize => 'mod_deflate'
-                    }
+                    },
+                    directives=> [ { option =>"DeflateBufferSize", 		"context" => [ "Server", "Virtual" ] },
+				   { option =>"DeflateCompressionLevel", 	"context" => [ "Server", "Virtual" ] },
+				   { option =>"DeflateFilterNote", 		"context" => [ "Server", "Virtual" ] },
+				   { option =>"DeflateMemLevel", 		"context" => [ "Server", "Virtual" ] },
+				   { option =>"DeflateWindowSize", 		"context" => [ "Server", "Virtual" ] }
+                                ]
+
     },
     'disk_cache' => {
                     summary   => 'Content cache storage manager keyed to URIs',
@@ -411,7 +419,21 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 280
+                    position  => 280,
+                    directives=> [ { option =>"CacheDirLength",		"context" => [ "Server", "Virtual" ] },
+				   { option =>"CacheDirLevels",         "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheExpiryCheck",       "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheGcClean",           "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheGcDaily",           "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheGcInterval",        "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheGcMemUsage",        "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheGcUnused",          "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheMaxFileSize",       "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheMinFileSize",       "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheRoot",              "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheSize",              "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheTimeMargin",        "context" => [ "Server", "Virtual" ] }
+				]
     },
     'echo' => {
                     summary   => 'A simple echo server to illustrate protocol modules',
@@ -419,7 +441,9 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 290
+                    position  => 290,
+                    directives=> [ { option =>"ProtocolEcho", "context" => [ "Server", "Virtual" ] }
+				]
     },
     'ext_filter' => {
                     summary   => 'Pass the response body through an external program before delivery to the client',
@@ -431,7 +455,11 @@ package YaPI::HTTPDModules;
                     module    => {
                                     ExtFilterDefine  => 'mod_ext_filter',
                                     ExtFilterOptions => 'mod_ext_filter',
-                    }
+                    },
+                    directives=> [ { option =>"ExtFilterDefine", 	"context" => [ "Server" ] },
+				   { option =>"ExtFilterOptions", 	"context" => [ "Directory" ] }
+                                ]
+
     },
     'file_cache' => {
                     summary   => 'Caches a static list of files in memory',
@@ -439,7 +467,11 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 310
+                    position  => 310,
+                    directives=> [ { option =>"CacheFile",      "context" => [ "Server" ] },
+                                   { option =>"MMapFile",	"context" => [ "Server" ] }
+                                ]
+
     },
     'headers' => {
                     summary   => 'Customization of HTTP request and response headers',
@@ -451,7 +483,11 @@ package YaPI::HTTPDModules;
                     module    => {
                                     Header => 'mod_headers',
                                     RequestHeader => 'mod_headers'
-                    }
+                    },
+                    directives=> [ { option =>"Header",      	"context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"RequestHeader",  "context" => [ "Server", "Virtual", "Directory" ] }
+                                ]
+
     },
     'imap' => {
                     summary   => 'Server-side image map processing',
@@ -459,7 +495,12 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 330
+                    position  => 330,
+                    directives=> [ { option =>"ImapBase",       "context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"ImapDefault",  	"context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"ImapMenu",  	"context" => [ "Server", "Virtual", "Directory" ] }
+                                ]
+
     },
     'info' => {
                     summary   => 'Provides a comprehensive overview of the server configuration',
@@ -468,7 +509,9 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 340,
-                    module    => { AddModuleInfo => 'mod_info' }
+                    module    => { AddModuleInfo => 'mod_info' },
+                    directives=> [ { option =>"AddModuleInfo",         "context" => [ "Server", "Virtual" ] },
+				]
     },
     'ldap' => {
                     summary   => 'LDAP connection pooling and result caching services for use by other LDAP modules',
@@ -476,7 +519,17 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 350
+                    position  => 350,
+                    directives=> [ { option =>"LDAPCacheEntries", 	"context" => [ "Server" ] },
+				   { option =>"LDAPCacheTTL", 		"context" => [ "Server" ] },
+                                   { option =>"LDAPConnectionTimeout", 	"context" => [ "Server" ] },
+                                   { option =>"LDAPOpCacheEntries", 	"context" => [ "Server" ] },
+                                   { option =>"LDAPOpCacheTTL", 	"context" => [ "Server" ] },
+                                   { option =>"LDAPSharedCacheFile", 	"context" => [ "Server" ] },
+                                   { option =>"LDAPSharedCacheSize", 	"context" => [ "Server" ] },
+                                   { option =>"LDAPTrustedCA", 		"context" => [ "Server" ] },
+                                   { option =>"LDAPTrustedCAType", 	"context" => [ "Server" ] }	
+                                ]
     },
     'logio' => {
                     summary   => 'Logging of input and output bytes per request',
@@ -492,7 +545,14 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 370
+                    position  => 370,
+                    directives=> [ { option =>"MCacheMaxObjectCount",         "context" => [ "Server" ] },
+				   { option =>"MCacheMaxObjectSize",          "context" => [ "Server" ] },
+                                   { option =>"MCacheMaxStreamingBuffer",     "context" => [ "Server" ] },
+                                   { option =>"MCacheMinObjectSize",          "context" => [ "Server" ] },
+                                   { option =>"MCacheRemovalAlgorithm",       "context" => [ "Server" ] },
+                                   { option =>"MCacheSize",		      "context" => [ "Server" ] },
+				]
     },
     'mime_magic' => {
                     summary   => 'Determines the MIME type of a file by looking at a few bytes of its contents',
@@ -501,7 +561,10 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 380,
-                    module    => { MimeMagicFile => 'mod_mime_magic' }
+                    module    => { MimeMagicFile => 'mod_mime_magic' },
+                    directives=> [ { option =>"MimeMagicFile",         "context" => [ "Server", "Virtual" ] },
+                                ]
+
     },
     'proxy' => {
                     summary   => 'HTTP/1.1 proxy/gateway server',
@@ -527,7 +590,26 @@ package YaPI::HTTPDModules;
                                     ProxyRequests => 'mod_proxy',
                                     ProxyTimeout => 'mod_proxy',
                                     ProxyVia => 'mod_proxy'
-                    }
+                    },
+                    directives=> [ { option =>"AllowCONNECT",         	"context" => [ "Server", "Virtual" ] },
+				   { option =>"NoProxy",         	"context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyBadHeader",         "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyBlock",  	        "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyDomain",	        "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyErrorOverride",     "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyIOBufferSize",      "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyMaxForwards",       "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyPass",	        "context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"ProxyPassReverse",       "context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"ProxyPreserveHost",      "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyReceiveBufferSize", "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyRemote",	        "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyRemoteMatch",       "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyRequests",          "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyTimeout",	        "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyVia",         "context" => [ "Server", "Virtual" ] }
+                                ]
+
     },
     'proxy_connect' => {
                     summary   => 'mod_proxy extension for CONNECT request handling',
@@ -571,7 +653,18 @@ package YaPI::HTTPDModules;
                                     RewriteMap => 'mod_rewrite',
                                     RewriteOptions => 'mod_rewrite',
                                     RewriteRule => 'mod_rewrite'
-                    }
+                    },
+                    directives=> [ { option =>"RewriteBase",         "context" => [ "Directory" ] },
+				   { option =>"RewriteCond",         "context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"RewriteEngine",       "context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"RewriteLock",         "context" => [ "Server" ] },
+                                   { option =>"RewriteLog",          "context" => [ "Server", "Virtual" ] },
+                                   { option =>"RewriteLogLevel",     "context" => [ "Server", "Virtual" ] },
+                                   { option =>"RewriteMap",          "context" => [ "Server", "Virtual" ] },
+                                   { option =>"RewriteOptions",      "context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"RewriteRule",         "context" => [ "Server", "Virtual", "Directory" ] }
+                                ]
+
     },
     'speling' => {
                     summary   => 'Attempts to correct mistaken URLs that users might have entered',
@@ -580,7 +673,10 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 440,
-                    module    => { CheckSpelling => 'mod_speling' }
+                    module    => { CheckSpelling => 'mod_speling' },
+                    directives=> [ { option =>"CheckSpelling",         "context" => [ "Server", "Virtual", "Directory" ] },
+                                ]
+
     },
     'ssl' => {
                     summary   => 'Strong cryptography using the Secure Sockets Layer (SSL) and Transport Layer Security (TLS) protocols',
@@ -621,7 +717,39 @@ package YaPI::HTTPDModules;
                                   SSLSessionCacheTimeout => 'SSL',
                                   SSLVerifyClient => 'SSL',
                                   SSLVerifyDepth => 'SSL'
-                    }
+                    },
+                    directives=> [ { option =>"SSLCACertificateFile", 	"context" => [ "SSL" ] },
+				   { option =>"SSLCACertificatePath", 	"context" => [ "SSL" ] },
+                                   { option =>"SSLCARevocationFile", 	"context" => [ "SSL" ] },
+                                   { option =>"SSLCARevocationPath", 	"context" => [ "SSL" ] }, 
+                                   { option =>"SSLCertificateChainFile", "context" => [ "SSL" ] },
+                                   { option =>"SSLCertificateFile", 	"context" => [ "SSL" ] },
+                                   { option =>"SSLCertificateKeyFile", 	"context" => [ "SSL" ] },
+                                   { option =>"SSLCipherSuite", 	"context" => [ "SSL", "Directory" ] },
+                                   { option =>"SSLEngine", 		"context" => [ "SSL" ] },
+                                   { option =>"SSLMutex", 		"context" => [ "SSL" ] },
+                                   { option =>"SSLOptions", 		"context" => [ "SSL", "Directory" ] },
+                                   { option =>"SSLPassPhraseDialog", 	"context" => [ "SSL" ] },
+                                   { option =>"SSLProtocol", 		"context" => [ "SSL" ] },
+                                   { option =>"SSLProxyCACertificateFile", "context" => [ "SSL" ] },
+                                   { option =>"SSLProxyCACertificatePath", "context" => [ "SSL" ] },
+                                   { option =>"SSLProxyCARevocationFile",  "context" => [ "SSL" ] },
+                                   { option =>"SSLProxyCARevocationPath",  "context" => [ "SSL" ] },
+                                   { option =>"SSLProxyCipherSuite", 	"context" => [ "SSL", "Directory" ] },
+                                   { option =>"SSLProxyEngine", 	"context" => [ "SSL" ] },
+                                   { option =>"SSLProxyMachineCertificateFile", "context" => [ "SSL" ] },
+                                   { option =>"SSLProxyMachineCertificatePath", "context" => [ "SSL" ] },
+                                   { option =>"SSLProxyProtocol", 	"context" => [ "SSL" ] },
+                                   { option =>"SSLProxyVerify", 	"context" => [ "SSL", "Directory" ] },
+                                   { option =>"SSLProxyVerifyDepth", 	"context" => [ "SSL", "Directory" ] },
+                                   { option =>"SSLRandomSeed", 		"context" => [ "SSL" ] },
+                                   { option =>"SSLRequire", 		"context" => [ "Directory" ] },
+                                   { option =>"SSLRequireSSL", 		"context" => [ "Directory" ] },
+                                   { option =>"SSLSessionCache", 	"context" => [ "SSL" ] },
+                                   { option =>"SSLSessionCacheTimeout", "context" => [ "SSL" ] },
+                                   { option =>"SSLVerifyClient", 	"context" => [ "SSL", "Directory" ] },
+                                   { option =>"SSLVerifyDepth", 	"context" => [ "SSL", "Directory" ] }
+                                ]
     },
     'unique_id' => {
                     summary   => 'Provides an environment variable with a unique identifier for each request',
