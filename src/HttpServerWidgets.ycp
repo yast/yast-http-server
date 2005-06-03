@@ -33,10 +33,12 @@
 
 global string currenthost = "default";
 global string directory_param_regexp = "Directory \"?([^\"]+)\"?";
+global string dir_value = "";
+global map getSSLOptions();
 
 boolean update_contents = false;
 
-map<string, any> ssl_options = (map<string, any>)SCR::Read (.target.ycp, Directory::datadir + "/all-ssl-options.ycp");
+map<string, any> ssl_options = (map<string, any>) getSSLOptions();
 
 string item2listen( string network, string port );
 
@@ -280,8 +282,6 @@ symbol OverviewHandle (string table, map event)
     else if( event["ID"]:nil == `show_error_log ) {
 	return showErrorLogPopup( table, event );
     }
-
-    
     return nil;
 }
 
@@ -464,7 +464,6 @@ symbol HostsHandle (string table, map event)
 	
 	// move the old default host elsewhere
 	YaST::HTTPDData::CreateHost ( ip+"/"+servername, defhost_options );
-//      YaST::HTTPDData::CreateHost ( res["ip"]:ip + "/" + res["name"]:ip, defhost_options );
 	// replace the values of the default host by the new one
 	YaST::HTTPDData::ModifyHost ("default", YaST::HTTPDData::GetHost(host) );
 	// remove the old non-default host
@@ -541,8 +540,8 @@ global symbol handleServiceStatus (string key, map event);
 global void storeServiceStatus (string key, map event);
 global void initAdaptFirewall (string key);
 global void storeAdaptFirewall (string opt_id, map event);
-global void DirectoryOptionInit (any key, string id);
-global void DirectoryOptionStore (any key, string id);
+//global void DirectoryOptionInit (any key, string id);
+//global void DirectoryOptionStore (any key, string id);
 
 	// wizard widget functions
 global void initOpenPort (string key);
@@ -642,18 +641,9 @@ global map<string,map> popups = $[
 	    ],
 	    "Directory" : $[
 		"table" : $[
-		    "label" : "Directory",    
-		],
-		"popup" : $[
-		    "widget" : `custom,
-		    "custom_widget"	: 
-		    `VBox(
-			// translators: directory path
-			`TextEntry (`id(`path), _("&Path:")),
-			`MultiLineEdit (`id(`contents),"")
-		    ),
-		    "init" : DirectoryOptionInit,
-		    "store" : DirectoryOptionStore,
+		"handle"   : `dir,
+		"optional" : false,
+		"unique"   : true,
 		],
 	    ],
 	];
@@ -690,23 +680,42 @@ define void HostInit (string key) ``{
 
 global define map getHostOptions()
 {
+//	popups = 	add(popups, "Action"	,$[ "popup"	:	$[ "widget" : `combobox, "items"	: [ [ "text1" ], [ "text2" ] ] ] ]);
+
  map used = $[];
            list <string> directives = [];
 	foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
 		foreach(map<string,any> option, mod["directives"]:[], {
-			if (contains(option["context"]:[] ,"Server")) 
+			
+			if (option["values"]:nil !=nil) {
+			list<list<string> > opt_list = [];
+			foreach(string value, option["values"]:[], {opt_list = add(opt_list, [ value ]);});
+				popups = add(popups, option["option"]:"", 
+					$[ "popup"     :       
+						$[ "widget" : `combobox, 
+							"items"        : opt_list 
+						] ]);
+				}
+			if (contains(option["context"]:[] ,"Server") && !contains(option["context"]:[] ,"SSL")) 
 								used[option["option"]:""]=$[];
-//								directives=add(directives, option["option"]:"");
 			});
-//		if (contains(mod["directives","context"]:[] ,"Server")) directives=add(directives, mod["directives"]:[]);
 	});
-//  foreach(list<string> value, directives, {
-//		 foreach(string str, value, {
-//			 used[str]=$[];
-//			});
-//		});
  return used;
 }
+
+global define map getSSLOptions()
+{
+ map used = $[];
+           list <string> directives = [];
+        foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
+                foreach(map<string,any> option, mod["directives"]:[], {
+                        if (contains(option["context"]:[] ,"SSL"))
+                                                                used[option["option"]:""]=$[];
+                        });
+        });
+ return used;
+}
+
 
 global map moduleslistwidget = $[
 	    "widget" : `custom,
@@ -764,28 +773,17 @@ global map listenwidget = $[
 global symbol handleSSLTable(string key, map event );
 global list SSLTableContents (map descr);
 global void SSLInit (string key);
-global void SSLTypeInit (any option_id, string option_type);
+global void SSLStore(string key, map event);
 global void SSLTypeStore (any option_id, string option_type);
 
-map<string, map> edit_ssl = $[
-    "table" : $[
-	"optional" : false,
-    ],
-    "popup" : $[
-	"widget" : `radio_buttons,
-	"items" : [
-	    // translators: radio button for SSL being disabled
-    	    [ "0", _("&No SSL") ],
-	    // translators: radio button for SSL being allowed
-    	    [ "1", _("SSL &Allowed") ],
-	    // translators: radio button for SSL being required
-    	    [ "2", _("SSL &Required") ],
-	],
-	"orientation" : `horizontal,
-	"init" : SSLTypeInit,
-	"store" : SSLTypeStore,
-    ]
-];
+global void DirInit(string key);
+global symbol handleDirTable(string key, map event );
+global map getDirOptions();
+global list DirTableContents (map descr);
+global void DirStore(string key, map event);
+global void DirPopupInit (any opt_id, string opt_key);
+
+map<integer, map<string, any> > host_options = nil;
 
 map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	    $["add_delete_buttons" : true, 
@@ -794,8 +792,8 @@ map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	, $[
 	    "init" : HttpServerWidgets::SSLInit,
 	    "handle" : HttpServerWidgets::handleSSLTable,
-	    "store" : HttpServerWidgets::HostStore,
-	    "options" : union( ssl_options, $[ "SSL":edit_ssl ] ),
+	    "store" : HttpServerWidgets::SSLStore,
+	    "options" : union( (map<string, any>) getSSLOptions(), popups ),
 	    "ids" : HttpServerWidgets::SSLTableContents,
 	    "id2key" : HttpServerWidgets::HostId2Key,
 	    "fallback" : $[
@@ -804,9 +802,90 @@ map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
 		"summary" : HttpServerWidgets::HostTableEntrySummary,
 	    ],
 	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
-	    "add_items" : maplist( string key, any value, ssl_options, ``(key) ),
+	    "add_items" : maplist( string key, any value, (map<string, any>) union(getSSLOptions(), popups), ``(key) ),
 	    "help" : HELPS["ssl"]:"",
 	]);
+
+
+map<string, any> dirwidget = (map<string, any>)TablePopup::CreateTableDescr (
+	    $["add_delete_buttons" : true, 
+	      "up_down_buttons" : false, 
+	      "unique_keys" : true]
+	, $[
+	    "init" : HttpServerWidgets::DirInit,
+	    "handle" : HttpServerWidgets::handleDirTable,
+	    "store" : HttpServerWidgets::DirStore,
+	    "options" : union( (map<string, any>) getDirOptions(), popups), 
+	    "ids" : HttpServerWidgets::DirTableContents,
+	    "id2key" : HttpServerWidgets::HostId2Key,
+	    "fallback" : $[
+		"init" : HttpServerWidgets::DirPopupInit,
+		"store" : HttpServerWidgets::DefaultHostPopupStore,
+		"summary" : HttpServerWidgets::HostTableEntrySummary,
+	    ],
+	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
+	    "add_items" : 
+		maplist( string key, any value, (map<string,any>)union( getDirOptions(), popups ), ``(key) ),
+	    "help" : HELPS["dir"]:"",
+	]);
+
+
+global void DirInit (string widget)
+{
+   TablePopup::TableInit(dirwidget, widget);
+}
+
+
+global define map getDirOptions()
+{
+ map used = $[];
+           list <string> directives = [];
+	foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
+		foreach(map<string,any> option, mod["directives"]:[], {
+			if (contains(option["context"]:[] ,"Directory") && !contains(option["context"]:[] ,"SSL")) 
+								used[option["option"]:""]=$[];
+			});
+	});
+ return used;
+}
+
+
+global symbol handleDirTable( string key, map event )
+{
+    if (event["ID"]:nil == `back )
+    {
+        host_options = nil;
+    }
+    return TablePopup::TableHandle( dirwidget, key, event );
+}
+
+
+   global define void DirPopupInit (any option_id, string option_type) ``{
+        any value = host_options[(integer)option_id, "VALUE"]:"";
+    }
+
+
+
+global void DirStore (string key, map event)
+ {
+	list< map<string,any> > options = [];
+
+            list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+            foreach (map<string, any> option, host, ``{
+                if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory" 
+								&& option["SECTIONPARAM"]:"unknown" == dir_value)
+                {
+		   list < map<string,any> > newlist = [];
+		  foreach(integer key, map<string,any> value, host_options, {newlist = add(newlist, value);});
+		option["VALUE"] = newlist;
+                }
+		options = add(options, option);
+            });
+	YaST::HTTPDData::ModifyHost (currenthost, options );
+	setHostOptions(nil);
+	HttpServer::modified = true;
+ }
+
 
 
 /**
@@ -844,6 +923,7 @@ global map<string, map <string, any> > widgets = $[
 	    "overview_widget" : overview_widget,
 	    "hosts"	: hosts_widget,
 	    "ssl" : sslwidget,
+	    "dir" : dirwidget,
 		// wizard widgets
 	    "open_port" : $[
 		"widget" : `textentry,
@@ -907,7 +987,6 @@ global map<string, map <string, any> > widgets = $[
 
 /******************************** SSL widget ****************************/
 
-map<integer, map<string, any> > host_options = nil;
 
 global symbol handleSSLTable( string key, map event )
 {
@@ -978,6 +1057,55 @@ global void SSLInit (string widget)
 {
     TablePopup::TableInit(sslwidget, widget);
 }
+
+
+global void SSLStore (string key, map event)
+ {
+ 	boolean found = false;
+        list < map<string,any> > forssl = [];
+        list < map<string,any> > fordir = [];
+
+        foreach(integer key, map<string,any> value, host_options, {
+      foreach(map<string,any> val, YaST::HTTPDData::GetKnownModules(), {
+	   if ( val["name"]:"" == "ssl" ) 
+	    {
+		foreach(map<string, any> pom, val["directives"]:[], {
+			if (pom["option"]:"" == value["KEY"]:"")
+			 {
+				if ( contains(pom["context"]:[], "Directory")) { fordir = add(fordir, value); }
+                                if ( contains(pom["context"]:[], "Server"))    { forssl = add(forssl, value); }
+			 }
+		});
+	    }
+          });
+	});
+
+        list< map<string,any> > options = [];
+            list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+            foreach (map<string, any> option, host, ``{
+                if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONPARAM"]:"unknown" == "SSL")
+                {
+		   found = true;
+                option["VALUE"] = forssl;
+		  if ( forssl != [] ) options = add(options, option);
+                } else if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory")
+		 {
+		  list< map<string, any> > temp_dir = [];
+		  foreach(map<string, any> value, option["VALUE"]:[], {
+y2internal("%1", value);
+			if (!(value["KEY"]:"unknown" == "_SECTION" && value["SECTIONPARAM"]:"unknown" == "SSL")) y2internal("%1", value);
+//temp_dir = add(temp_dir, value);
+			});
+		  option["VALUE"] = add(temp_dir, $["KEY":"_SECTION", "SECTIONNAME":"IfDefine", "SECTIONPARAM":"SSL", "VALUE":fordir]);
+
+		options = add(options, option);
+		 } else options = add(options, option);
+            });
+y2internal("sslStore %1", options);
+        YaST::HTTPDData::ModifyHost (currenthost, options );
+        setHostOptions(nil);
+        HttpServer::modified = true;
+ }
 
 /******************************** Listen popup ****************************/
 
@@ -1189,33 +1317,9 @@ define string item2listen( string network, string port ) ``{
 
     global void HostStore (string key, map event)
     {
+		
 	list< map<string,any> > options = YaST::HTTPDData::GetHost(currenthost);
-	
-	// iterate over all options, if there is the old one, use it
-	// as a base, otherwise 
-	foreach (integer key, map<string,any> values, host_options,
-	``{
-	    map <string,any> new = options[key]: $[];
-	    
-	    if ( values["KEY"]:"" == "Directory" )
-	    {
-		new = $[
-		    "KEY" 	: "_SECTION",
-		    "SECTIONNAME": "Directory",
-		    "SECTIONPARAM": values["VALUE"]:"",
-		    "VALUE" : values["DATA"]: [],
-		    "OVERHEAD" : values["OVERHEAD"]:"",
-		];
-	    }
-	    else
-	    {
-		new["KEY"] = values["KEY"]:"";
-		new["VALUE"] = values["VALUE"]:"";
-		new["OVERHEAD"] = values["OVERHEAD"]:"";
-	    }
-	    
-	    options[key] = new;
-	});
+y2internal("host opt first - %1", options);
 	// now delete the deleted options
 	foreach (integer index, deleted_options, ``{
 	    options[index] = nil;
@@ -1225,9 +1329,9 @@ define string item2listen( string network, string port ) ``{
 	// for all host options check whether module from directive is loaded
         foreach (map<string, any> values, options,
         ``{
-	   HttpServerWidgets::checkLoadedModuleFor(values["KEY"]:"");
+	   checkLoadedModuleFor(values["KEY"]:"");
 	  });
-	
+y2internal("hostStore %1", options);
 	YaST::HTTPDData::ModifyHost (currenthost, options );
 
 	setHostOptions(nil);
@@ -1237,63 +1341,6 @@ define string item2listen( string network, string port ) ``{
      {
 	host_options = new_options;
      }
-    global void DirectoryOptionInit (any option_id, string option_type)
-    {
-	if (option_id == nil)
-	{
-	    // new option
-	    return;
-	}
-	
-	string dirname = host_options[(integer)option_id, "VALUE"]:"";
-
-	// lookup the _SECTION map
-	list< map<string, any> > section = host_options[(integer)option_id, "DATA"]: [];
-	
-	// create a textual representation of the section
-	string text = "";
-	foreach (map<string,any> opt, section, ``{
-	    if (opt["KEY"]:nil != "_SECTION")
-	    {
-		text = text + opt["KEY"]:"" + " " + opt["VALUE"]:"" + "\n";
-	    }
-	    // FIXME: subsections
-	});
-	
-	UI::ChangeWidget( `id(`path), `Value, dirname );
-	UI::ChangeWidget( `id(`contents), `Value, text );
-	UI::SetFocus (`id(`path) );
-    }
-    
-    global void DirectoryOptionStore (any option_id, string option_type)
-    {
-	
-	string dir = (string)UI::QueryWidget (`id(`path), `Value);
-	// ensure \" around dirname
-	dir = regexpsub (dir, "\"?([^\"]+)\"?", "\"\\1\"");
-	
-	string text = (string)UI::QueryWidget (`id(`contents), `Value);
-	
-	if (option_id == nil)
-	{
-	    // a new option
-	    host_options[option_counter] = $[
-		"KEY" : "Directory"
-	    ];
-	    option_id = option_counter;
-	    option_counter = option_counter + 1;
-	}
-
-	map<string,any> new_section = YaST::HTTPDData::ParseDirOption(dir+"\n"+text);
-	y2milestone ("Updated section: %1", new_section );
-	
-	host_options[(integer)option_id, "VALUE"] = dir;
-	host_options[(integer)option_id, "DATA"] = new_section["VALUE"]:[];
-
-	update_contents = true;
-
-	return;
-    }
     
     /**
       * Function for getting contents of the default host table
@@ -1338,14 +1385,22 @@ define string item2listen( string network, string port ) ``{
 		    res = add (res, option_counter);
 		    option_counter = option_counter + 1;
 		}
-		// skip SSL options
-		else if ( key != "SSL" && ssl_options[key]:nil != nil ) 
-		{
+
+		if ( key == "_SECTION" && option["SECTIONPARAM"]:"" == "SSL" )
+			{
+			    host_options[option_counter] = $[
+				"KEY" : "SSL",
+				"VALUE" :  "", 
+				"DATA": option["VALUE"]:[],
+				"OVERHEAD" : option["OVERHEAD"]:""
+		    ];
+		    res = add (res, option_counter);
 		    option_counter = option_counter + 1;
-		    continue;
 		}
+
+
 		// skip SECTIONS
-		else if ( key == "_SECTION" ) 
+		if ( key == "_SECTION" ) 
 		{
 		    option_counter = option_counter + 1;
 		    continue;
@@ -1416,41 +1471,58 @@ define string item2listen( string network, string port ) ``{
       * @return list of items for the table
       */
     global define list SSLTableContents (map descr) ``{
-	if (host_options == nil)
-	{
-	    // fill the data
-	    option_counter = 0;
-	    host_options = $[];
-	    deleted_options = [];
-	    list res = [];
-	    
-	    list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
-	    
-	    foreach (map<string, any> option, host, ``{
-		string key = option["KEY"]: "unknown";
-		
-		// skip non-SSL options
-		if ( key == "SSL" || ssl_options[key]:nil != nil ) 
-		{
-		    host_options[option_counter] = option;
-		    res = add (res, option_counter);
-		    option_counter = option_counter + 1;
-		}
-		else 
-		{
-		    option_counter = option_counter + 1;
-		    continue;
-		}
-	    });
-	    
-	    return res;
-	}
-	else
-	{
-	    // just generate the list of ids
-	    return maplist( integer id, map<string,any> value, host_options,
-		``(id));
-	}
+       if (host_options == nil)
+        {
+            // fill the data
+            option_counter = 0;
+            host_options = $[];
+            deleted_options = [];
+            list res = [];
+
+            list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+            foreach (map<string, any> option, host, ``{
+                string key = option["KEY"]: "unknown";
+                // skip non-SSL options
+                if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONPARAM"]:"unknown" == "SSL")
+                {
+                        foreach(map<string, any> value, option["VALUE"]:[], {
+                        host_options[option_counter] = value;
+                        res = add (res, option_counter);
+                        option_counter = option_counter + 1;
+                        });
+                }
+                else
+                {
+		    if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory")
+		     {
+			foreach(map<string, any> value, option["VALUE"]:[], {
+			  if (value["KEY"]:"unknown" == "_SECTION" && value["SECTIONPARAM"]:"unknown" == "SSL" && value["VALUE"]:[] != [])
+			   {
+				foreach(map<string, any> directive, value["VALUE"]:[],{
+					boolean found=false;
+					foreach(integer key, any val, host_options, {if ( val == directive ) y2internal("%1", val);found=true;});
+					if (found == false)
+					 {
+		                          host_options[option_counter] =  directive;
+			                  res = add (res, option_counter);
+				          option_counter = option_counter + 1;
+					 }
+				});
+			   }
+                        });
+		     }
+                    option_counter = option_counter + 1;
+                    continue;
+                }
+            });
+            return res;
+        }
+        else
+        {
+            // just generate the list of ids
+            return maplist( integer id, map<string,any> value, host_options, ``(id));
+        }
+
     }
     /**
       * Delete function of the global table
@@ -1481,6 +1553,8 @@ define string item2listen( string network, string port ) ``{
      *  @return symbol 	the result of the handling
      */
     global define symbol handleHostTable(string key, map event ) ``{
+	dir_value = host_options[(integer)UI::QueryWidget (`_tp_table, `CurrentItem), "VALUE"]:"";
+
 	// handle menu button entries
 	if( event["ID"]:nil == `show_access_log ) {
 	    return showAccessLogPopup( key, event );
@@ -1545,25 +1619,7 @@ define string item2listen( string network, string port ) ``{
       * @return string table entry summary
       */
     global define string HostTableEntrySummary (any option_id, string option_type) ``{
-	if (option_type == "SSL")
-	{
-	    if (host_options[ (integer)option_id, "VALUE"]:"" == "0") 
-	    {
-		// translators: table entry text for SSL being disabled
-		return _("No SSL");
-	    }
-	    else if (host_options[ (integer)option_id, "VALUE"]:"" == "1")
-	    {
-		// translators: table entry text for SSL being allowed for each request
-		return _("Enabled");
-	    }
-	    else if (host_options[ (integer)option_id, "VALUE"]:"" == "2")
-	    {
-		// translators: table entry text for SSL being required for each request
-		return _("Required");
-	    }
-	}
-	else if (option_type == "VirtualByName")
+	if (option_type == "VirtualByName")
 	{
 	    if (host_options[ (integer)option_id, "VALUE"]:"" == "1")
 	    {
@@ -1587,14 +1643,6 @@ define string item2listen( string network, string port ) ``{
     }
 
 
-    global void SSLTypeInit (any option_id, string option_type)
-    {
-	// it is a radio button group
-	UI::ChangeWidget (`id(option_type), `CurrentButton
-	    , tostring( host_options[(integer)option_id, "VALUE"]:"0" ) );
-    }
-
-
     global void SSLTypeStore (any option_id, string option_type)
     {
 	// it is a radio button group
@@ -1603,6 +1651,47 @@ define string item2listen( string network, string port ) ``{
 	HttpServer::modified = true;
     }
 
+
+    global define list DirTableContents (map descr) ``{
+	if (host_options == nil)
+	{
+	    // fill the data
+	    option_counter = 0;
+	    host_options = $[];
+	    deleted_options = [];
+	    list res = [];
+	    
+	    list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+	    foreach (map<string, any> option, host, ``{
+		string key = option["KEY"]: "unknown";
+		
+		if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory" 
+									&& option["SECTIONPARAM"]:"unknown"==dir_value) 
+		{
+			foreach(map<string, any> value, option["VALUE"]:[], {
+			if (!(value["KEY"]:""=="_SECTION" && value["SECTIONPARAM"]:""=="SSL"))
+			 { 
+			  host_options[option_counter] = value;
+			  res = add (res, option_counter);
+			  option_counter = option_counter + 1;
+			 }
+			});
+		}
+		else 
+		{
+		    option_counter = option_counter + 1;
+		    continue;
+		}
+	    });
+	    return res;
+	}
+	else
+	{
+	    // just generate the list of ids
+	    return maplist( integer id, map<string,any> value, host_options,
+		``(id));
+	}
+    }
 
 // ************************************ modules list ***************************
 

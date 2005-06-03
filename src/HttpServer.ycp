@@ -347,11 +347,9 @@ Install them now?
     });
     SuSEFirewall::Write ();
 
-	Progress::set(true);//    Progress::on ();
+	Progress::set(true);
 
     YaST::HTTPDData::WriteModuleList ();
-
-//    Progress::NextStage();
 
     // in autoyast, quit here
     // Wrong, service still has to be enabled...
@@ -580,7 +578,6 @@ global define list Summary() ``{
     string nc = Summary::NotConfigured ();
 
     string summary = "";
-y2internal("conf-ed %1", configured);
     if( configured ) {
 		// "Listen on " information (interfaces, port)
 	    summary = Summary::AddLine(summary, _("<h3>Listen On</h3>") );
@@ -592,7 +589,6 @@ y2internal("conf-ed %1", configured);
                  if (listens["ADDRESS"]:"" == "" ) interfaces = "all";
                         else interfaces = interfaces + listens["ADDRESS"]:"";
                 } );
-y2internal("interfaces - %1\n", interfaces);
 	    summary = Summary::AddLine(summary, interfaces + ", port " + port );
 
 		// "Default host" information 
