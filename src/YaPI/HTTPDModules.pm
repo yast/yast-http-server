@@ -7,9 +7,9 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 10,
-		    directives=> [ { option => "Allow from", "context" => [ "Directory" ] }, 
-				   { option => "Deny from",  "context" => [ "Directory" ] },
-				   { option =>  "Order",     "context" => [ "Directory" ] }
+		    directives=> [ { option => "Allow", "context" => [ "Directory" ] }, 
+				   { option => "Deny",  "context" => [ "Directory" ] },
+				   { option =>  "Order",     "context" => [ "Directory" ], "values" => [ "Deny,Allow", "Allow,Deny", "Mutual-failure" ] }
 				 ]
     },
     'actions' => {
@@ -47,7 +47,7 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 40,
-		    directives=> [ { option => "AuthAuthoritative", "context" => [ "Directory" ] },
+		    directives=> [ { option => "AuthAuthoritative", "context" => [ "Directory" ] , "values" => [ "On", "Off" ] },
 				   { option => "AuthGroupFile",     "context" => [ "Directory" ] },
 				   { option => "AuthUserFile", 	    "context" => [ "Directory" ] }
 				]
@@ -65,9 +65,10 @@ package YaPI::HTTPDModules;
                                     AuthDBMType => 'mod_auth_dbm',
                                     AuthDBMUserFile => 'mod_auth_dbm'
                     },
-                    directives=> [ { option => "AuthDBMAuthoritative", "context" => [ "Directory" ] },
+                    directives=> [ { option => "AuthDBMAuthoritative", "context" => [ "Directory" ] , "values" => [ "On", "Off" ] },
 				   { option => "AuthDBMGroupFile",     "context" => [ "Directory" ] },
-				   { option => "AuthDBMType", 	       "context" => [ "Directory" ] },
+				   { option => "AuthDBMType", 	       "context" => [ "Directory" ] , 
+										"values" => [ "default", "SDBM", "GDBM", "NDBM", "DB" ] },
 				   { option => "AuthDBMUserFile",      "context" => [ "Directory" ] }
 				]
     },
@@ -113,7 +114,7 @@ package YaPI::HTTPDModules;
                     suggested => 0,
                     position  => 80,
                     directives=> [ { option => "DirectoryIndex", "context" => [ "Directory", "Server", "Virtual" ] },
-				   { option => "DirectorySlash", "context" => [ "Directory", "Server", "Virtual" ] }
+				   { option => "DirectorySlash", "context" => [ "Directory", "Server", "Virtual" ] , "values" => [ "On", "Off" ] }
 				]
     },
     'env' => {
@@ -140,7 +141,7 @@ package YaPI::HTTPDModules;
                                     ExpiresByType  => 'mod_expires',
                                     ExpiresDefault => 'mod_expires'
                     },
-                    directives=> [ { option => "ExpiresActive",  "context" => [ "Directory", "Server", "Virtual" ] },
+                    directives=> [ { option => "ExpiresActive",  "context" => [ "Directory", "Server", "Virtual" ] , "values" => [ "On", "Off" ] },
 				   { option => "ExpiresByType",  "context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "ExpiresDefault", "context" => [ "Directory", "Server", "Virtual" ] } 
 				]
@@ -157,7 +158,8 @@ package YaPI::HTTPDModules;
 				   { option => "SSIStartTag", 		"context" => [ "Server", "Virtual" ] },
 				   { option => "SSITimeFormat", 	"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "SSIUndefinedEcho", 	"context" => [ "Server", "Virtual" ] },
-				   { option => "XBitHack", 		"context" => [ "Directory", "Server", "Virtual" ] }
+				   { option => "XBitHack", 		"context" => [ "Directory", "Server", "Virtual" ], 
+														"values" => [ "On", "Off", "Full" ] }
 				]
     },
     'log_config' => {
@@ -167,7 +169,7 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 120,
-                    directives=> [ { option => "BufferedLogs",  "context" => [ "Server" ] },
+                    directives=> [ { option => "BufferedLogs",  "context" => [ "Server" ] , "values" => [ "On", "Off" ] },
 				   { option => "CookieLog",   	"context" => [ "Server", "Virtual" ] },
 				   { option => "CustomLog",     "context" => [ "Server", "Virtual" ] },
 				   { option => "LogFormat",   	"context" => [ "Server", "Virtual" ] },
@@ -189,7 +191,7 @@ package YaPI::HTTPDModules;
 				   { option => "AddOutputFilter", 		"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "AddType", 			"context" => [ "Directory", "Server", "Virtual" ] },
                                    { option => "DefaultLanguage",               "context" => [ "Directory", "Server", "Virtual" ] },
-				   { option => "ModMimeUsePathInfo",		"context" => [ "Directory" ] },
+				   { option => "ModMimeUsePathInfo",		"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
 				   { option => "MultiviewsMatch", 		"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "RemoveCharset", 		"context" => [ "Directory", "Virtual" ] },
 				   { option => "RemoveEncoding", 		"context" => [ "Directory", "Virtual" ] },
@@ -208,7 +210,7 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 140,
-                    directives=> [ { option => "CacheNegotiatedDocs", 	"context" => [ "Server", "Virtual" ] },
+                    directives=> [ { option => "CacheNegotiatedDocs", 	"context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
 				   { option => "ForceLanguagePriority", "context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "LanguagePriority", 	"context" => [ "Directory", "Server", "Virtual" ] }
 				]
@@ -233,7 +235,7 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 160,
-                    directives=> [ { option => "ExtendedStatus", "context" => [ "Server" ] } 
+                    directives=> [ { option => "ExtendedStatus", "context" => [ "Server" ], "values" => [ "On", "Off" ] } 
 				]
     },
     'suexec' => {
@@ -285,11 +287,11 @@ package YaPI::HTTPDModules;
                                     Anonymous_VerifyEmail => 'mod_auth_anon'
                     },
                     directives=> [ { option =>"Anonymous", 			"context" => [ "Directory" ] },
-				   { option =>"Anonymous_Authoritative", 	"context" => [ "Directory" ] },
-				   { option =>"Anonymous_LogEmail", 		"context" => [ "Directory" ] },
-				   { option =>"Anonymous_MustGiveEmail", 	"context" => [ "Directory" ] },
+				   { option =>"Anonymous_Authoritative", 	"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
+				   { option =>"Anonymous_LogEmail", 		"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
+				   { option =>"Anonymous_MustGiveEmail", 	"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
 				   { option =>"Anonymous_NoUserID", 		"context" => [ "Directory" ] },
-				   { option =>"Anonymous_VerifyEmail", 		"context" => [ "Directory" ] }
+				   { option =>"Anonymous_VerifyEmail", 		"context" => [ "Directory" ], "values" => [ "On", "Off" ] }
 				]
     },
     'auth_digest' => {
@@ -299,11 +301,11 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 210,
-                    directives=> [ { option =>"AuthDigestAlgorithm", 		"context" => [ "Directory" ] },
+                    directives=> [ { option =>"AuthDigestAlgorithm", 		"context" => [ "Directory" ], "values" => [ "MD5", "MD5-sess" ] },
 				   { option =>"AuthDigestDomain", 		"context" => [ "Directory" ] },
 				   { option =>"AuthDigestFile", 		"context" => [ "Directory" ] },
 				   { option =>"AuthDigestGroupFile", 		"context" => [ "Directory" ] },
-				   { option =>"AuthDigestNcCheck", 		"context" => [ "Server" ] },
+				   { option =>"AuthDigestNcCheck", 		"context" => [ "Server" ], "values" => [ "On", "Off" ] },
 				   { option =>"AuthDigestNonceFormat", 		"context" => [ "Directory" ] },
 				   { option =>"AuthDigestNonceLifetime", 	"context" => [ "Directory" ] },
 				   { option =>"AuthDigestQop", 			"context" => [ "Directory" ] },
@@ -317,17 +319,18 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 355,
-                    directives=> [ { option =>"AuthLDAPAuthoritative", 		"context" => [ "Directory" ] },
+                    directives=> [ { option =>"AuthLDAPAuthoritative", 		"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
 				   { option =>"AuthLDAPBindDN", 		"context" => [ "Directory" ] },
 				   { option =>"AuthLDAPBindPassword", 		"context" => [ "Directory" ] },
 				   { option =>"AuthLDAPCharsetConfig", 		"context" => [ "Server" ] },
-				   { option =>"AuthLDAPCompareDNOnServer", 	"context" => [ "Directory" ] },
- 				   { option =>"AuthLDAPDereferenceAliases", 	"context" => [ "Directory" ] }, 
-				   { option =>"AuthLDAPEnabled", 		"context" => [ "Directory" ] },
+				   { option =>"AuthLDAPCompareDNOnServer", 	"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
+ 				   { option =>"AuthLDAPDereferenceAliases", 	"context" => [ "Directory" ], 
+											"values" => [ "Never", "Searching", "Finding", "Always" ] }, 
+				   { option =>"AuthLDAPEnabled", 		"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
 				   { option =>"AuthLDAPFrontPageHack", 		"context" => [ "Directory" ] },
 				   { option =>"AuthLDAPGroupAttribute", 	"context" => [ "Directory" ] },
-				   { option =>"AuthLDAPGroupAttributeIsDN", 	"context" => [ "Directory" ] },
-				   { option =>"AuthLDAPRemoteUserIsDN", 	"context" => [ "Directory" ] },
+				   { option =>"AuthLDAPGroupAttributeIsDN", 	"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
+				   { option =>"AuthLDAPRemoteUserIsDN", 	"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
 				   { option =>"AuthLDAPUrl", 			"context" => [ "Directory" ] }
 				]
     },
@@ -342,9 +345,9 @@ package YaPI::HTTPDModules;
 				   { option =>"CacheDisable", 		"context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheEnable", 		"context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheForceCompletion", 	"context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheIgnoreCacheControl","context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheIgnoreCacheControl","context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
                                    { option =>"CacheIgnoreHeaders", 	"context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheIgnoreNoLastMod", 	"context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheIgnoreNoLastMod", 	"context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
                                    { option =>"CacheLastModifiedFactor","context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheMaxExpire", 	"context" => [ "Server", "Virtual" ] }
                                 ]
@@ -374,7 +377,7 @@ package YaPI::HTTPDModules;
                                   DavMinTimeout => 'mod_dav'
                     },
                     directives=> [ { option =>"Dav", 			"context" => [ "Directory" ] },
-				   { option =>"DavDepthInfinity", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option =>"DavDepthInfinity", 	"context" => [ "Directory", "Server", "Virtual" ], "values" => [ "On", "Off" ] },
 				   { option =>"DavMinTimeout", 		"context" => [ "Directory", "Server", "Virtual" ] }
                                 ]
     },
@@ -422,7 +425,7 @@ package YaPI::HTTPDModules;
                     position  => 280,
                     directives=> [ { option =>"CacheDirLength",		"context" => [ "Server", "Virtual" ] },
 				   { option =>"CacheDirLevels",         "context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheExpiryCheck",       "context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheExpiryCheck",       "context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
                                    { option =>"CacheGcClean",           "context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheGcDaily",           "context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheGcInterval",        "context" => [ "Server", "Virtual" ] },
@@ -442,7 +445,7 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 290,
-                    directives=> [ { option =>"ProtocolEcho", "context" => [ "Server", "Virtual" ] }
+                    directives=> [ { option =>"ProtocolEcho", "context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] }
 				]
     },
     'ext_filter' => {
@@ -498,7 +501,8 @@ package YaPI::HTTPDModules;
                     position  => 330,
                     directives=> [ { option =>"ImapBase",       "context" => [ "Server", "Virtual", "Directory" ] },
                                    { option =>"ImapDefault",  	"context" => [ "Server", "Virtual", "Directory" ] },
-                                   { option =>"ImapMenu",  	"context" => [ "Server", "Virtual", "Directory" ] }
+                                   { option =>"ImapMenu",  	"context" => [ "Server", "Virtual", "Directory" ], 
+									"values" => [ "none", "formatted", "semiformatted", "unformatted" ] }
                                 ]
 
     },
@@ -528,7 +532,8 @@ package YaPI::HTTPDModules;
                                    { option =>"LDAPSharedCacheFile", 	"context" => [ "Server" ] },
                                    { option =>"LDAPSharedCacheSize", 	"context" => [ "Server" ] },
                                    { option =>"LDAPTrustedCA", 		"context" => [ "Server" ] },
-                                   { option =>"LDAPTrustedCAType", 	"context" => [ "Server" ] }	
+                                   { option =>"LDAPTrustedCAType", 	"context" => [ "Server" ], 
+							"values" => [ "DER_FILE", "BASE64_FILE", "CERT7_DB_PATH" ] }	
                                 ]
     },
     'logio' => {
@@ -550,7 +555,7 @@ package YaPI::HTTPDModules;
 				   { option =>"MCacheMaxObjectSize",          "context" => [ "Server" ] },
                                    { option =>"MCacheMaxStreamingBuffer",     "context" => [ "Server" ] },
                                    { option =>"MCacheMinObjectSize",          "context" => [ "Server" ] },
-                                   { option =>"MCacheRemovalAlgorithm",       "context" => [ "Server" ] },
+                                   { option =>"MCacheRemovalAlgorithm",       "context" => [ "Server" ], "values" => [ "LRU", "GDSF" ] },
                                    { option =>"MCacheSize",		      "context" => [ "Server" ] },
 				]
     },
@@ -593,21 +598,23 @@ package YaPI::HTTPDModules;
                     },
                     directives=> [ { option =>"AllowCONNECT",         	"context" => [ "Server", "Virtual" ] },
 				   { option =>"NoProxy",         	"context" => [ "Server", "Virtual" ] },
-                                   { option =>"ProxyBadHeader",         "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyBadHeader",         "context" => [ "Server", "Virtual" ], 
+										"values" => [ "IsError", "Ignore", "StartBody" ] },
                                    { option =>"ProxyBlock",  	        "context" => [ "Server", "Virtual" ] },
                                    { option =>"ProxyDomain",	        "context" => [ "Server", "Virtual" ] },
-                                   { option =>"ProxyErrorOverride",     "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyErrorOverride",     "context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
                                    { option =>"ProxyIOBufferSize",      "context" => [ "Server", "Virtual" ] },
                                    { option =>"ProxyMaxForwards",       "context" => [ "Server", "Virtual" ] },
                                    { option =>"ProxyPass",	        "context" => [ "Server", "Virtual", "Directory" ] },
                                    { option =>"ProxyPassReverse",       "context" => [ "Server", "Virtual", "Directory" ] },
-                                   { option =>"ProxyPreserveHost",      "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyPreserveHost",      "context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
                                    { option =>"ProxyReceiveBufferSize", "context" => [ "Server", "Virtual" ] },
                                    { option =>"ProxyRemote",	        "context" => [ "Server", "Virtual" ] },
                                    { option =>"ProxyRemoteMatch",       "context" => [ "Server", "Virtual" ] },
-                                   { option =>"ProxyRequests",          "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyRequests",          "context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
                                    { option =>"ProxyTimeout",	        "context" => [ "Server", "Virtual" ] },
-                                   { option =>"ProxyVia",         "context" => [ "Server", "Virtual" ] }
+                                   { option =>"ProxyVia",         	"context" => [ "Server", "Virtual" ], 
+												"values" => [ "On", "Off", "Full", "Block" ] }
                                 ]
 
     },
@@ -656,7 +663,7 @@ package YaPI::HTTPDModules;
                     },
                     directives=> [ { option =>"RewriteBase",         "context" => [ "Directory" ] },
 				   { option =>"RewriteCond",         "context" => [ "Server", "Virtual", "Directory" ] },
-                                   { option =>"RewriteEngine",       "context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"RewriteEngine",       "context" => [ "Server", "Virtual", "Directory" ], "values" => [ "On", "Off" ] },
                                    { option =>"RewriteLock",         "context" => [ "Server" ] },
                                    { option =>"RewriteLog",          "context" => [ "Server", "Virtual" ] },
                                    { option =>"RewriteLogLevel",     "context" => [ "Server", "Virtual" ] },
@@ -674,7 +681,7 @@ package YaPI::HTTPDModules;
                     suggested => 0,
                     position  => 440,
                     module    => { CheckSpelling => 'mod_speling' },
-                    directives=> [ { option =>"CheckSpelling",         "context" => [ "Server", "Virtual", "Directory" ] },
+                    directives=> [ { option =>"CheckSpelling",         "context" => [ "Server", "Virtual", "Directory" ], "values" => [ "On", "Off" ] },
                                 ]
 
     },
@@ -685,70 +692,39 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 450,
-                    defines   => {
-                                  SSLEngine => 'SSL',
-                                  SSLCACertificateFile => 'SSL',
-                                  SSLCACertificatePath => 'SSL',
-                                  SSLCARevocationFile => 'SSL',
-                                  SSLCARevocationPath => 'SSL',
-                                  SSLCertificateChainFile => 'SSL',
-                                  SSLCertificateFile => 'SSL',
-                                  SSLCertificateKeyFile => 'SSL',
-                                  SSLCipherSuite => 'SSL',
-                                  SSLMutex => 'SSL',
-                                  SSLOptions => 'SSL',
-                                  SSLPassPhraseDialog => 'SSL',
-                                  SSLProtocol => 'SSL',
-                                  SSLProxyCACertificateFile => 'SSL',
-                                  SSLProxyCACertificatePath => 'SSL',
-                                  SSLProxyCARevocationFile => 'SSL',
-                                  SSLProxyCARevocationPath => 'SSL',
-                                  SSLProxyCipherSuite => 'SSL',
-                                  SSLProxyEngine => 'SSL',
-                                  SSLProxyMachineCertificateFile => 'SSL',
-                                  SSLProxyMachineCertificatePath => 'SSL',
-                                  SSLProxyProtocol => 'SSL',
-                                  SSLProxyVerify => 'SSL',
-                                  SSLProxyVerifyDepth => 'SSL',
-                                  SSLRandomSeed => 'SSL',
-                                  SSLRequire => 'SSL',
-                                  SSLRequireSSL => 'SSL',
-                                  SSLSessionCache => 'SSL',
-                                  SSLSessionCacheTimeout => 'SSL',
-                                  SSLVerifyClient => 'SSL',
-                                  SSLVerifyDepth => 'SSL'
-                    },
-                    directives=> [ { option =>"SSLCACertificateFile", 	"context" => [ "SSL" ] },
-				   { option =>"SSLCACertificatePath", 	"context" => [ "SSL" ] },
-                                   { option =>"SSLCARevocationFile", 	"context" => [ "SSL" ] },
-                                   { option =>"SSLCARevocationPath", 	"context" => [ "SSL" ] }, 
-                                   { option =>"SSLCertificateChainFile", "context" => [ "SSL" ] },
-                                   { option =>"SSLCertificateFile", 	"context" => [ "SSL" ] },
-                                   { option =>"SSLCertificateKeyFile", 	"context" => [ "SSL" ] },
-                                   { option =>"SSLCipherSuite", 	"context" => [ "SSL", "Directory" ] },
-                                   { option =>"SSLEngine", 		"context" => [ "SSL" ] },
-                                   { option =>"SSLMutex", 		"context" => [ "SSL" ] },
-                                   { option =>"SSLOptions", 		"context" => [ "SSL", "Directory" ] },
-                                   { option =>"SSLPassPhraseDialog", 	"context" => [ "SSL" ] },
-                                   { option =>"SSLProtocol", 		"context" => [ "SSL" ] },
-                                   { option =>"SSLProxyCACertificateFile", "context" => [ "SSL" ] },
-                                   { option =>"SSLProxyCACertificatePath", "context" => [ "SSL" ] },
-                                   { option =>"SSLProxyCARevocationFile",  "context" => [ "SSL" ] },
-                                   { option =>"SSLProxyCARevocationPath",  "context" => [ "SSL" ] },
-                                   { option =>"SSLProxyCipherSuite", 	"context" => [ "SSL", "Directory" ] },
-                                   { option =>"SSLProxyEngine", 	"context" => [ "SSL" ] },
-                                   { option =>"SSLProxyMachineCertificateFile", "context" => [ "SSL" ] },
-                                   { option =>"SSLProxyMachineCertificatePath", "context" => [ "SSL" ] },
-                                   { option =>"SSLProxyProtocol", 	"context" => [ "SSL" ] },
-                                   { option =>"SSLProxyVerify", 	"context" => [ "SSL", "Directory" ] },
-                                   { option =>"SSLProxyVerifyDepth", 	"context" => [ "SSL", "Directory" ] },
-                                   { option =>"SSLRandomSeed", 		"context" => [ "SSL" ] },
-                                   { option =>"SSLRequire", 		"context" => [ "Directory" ] },
-                                   { option =>"SSLRequireSSL", 		"context" => [ "Directory" ] },
-                                   { option =>"SSLSessionCache", 	"context" => [ "SSL" ] },
-                                   { option =>"SSLSessionCacheTimeout", "context" => [ "SSL" ] },
-                                   { option =>"SSLVerifyClient", 	"context" => [ "SSL", "Directory" ] },
-                                   { option =>"SSLVerifyDepth", 	"context" => [ "SSL", "Directory" ] }
+                    directives=> [ { option =>"SSLCACertificateFile", 		"context" => [ "SSL", "Server", "Virtual" ] },
+				   { option =>"SSLCACertificatePath", 		"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLCARevocationFile", 		"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLCARevocationPath", 		"context" => [ "SSL", "Server", "Virtual" ] }, 
+                                   { option =>"SSLCertificateChainFile", 	"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLCertificateFile", 		"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLCertificateKeyFile", 		"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLCipherSuite", 		"context" => [ "SSL", "Server", "Virtual", "Directory" ] },
+                                   { option =>"SSLEngine", 			"context" => [ "SSL", "Server", "Virtual" ], "values" => [ "On", "Off" ] },
+                                   { option =>"SSLMutex", 			"context" => [ "SSL", "Server" ] },
+                                   { option =>"SSLOptions", 			"context" => [ "SSL", "Server", "Virtual", "Directory" ] },
+                                   { option =>"SSLPassPhraseDialog", 		"context" => [ "SSL", "Server" ] },
+                                   { option =>"SSLProtocol", 			"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLProxyCACertificateFile", 	"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLProxyCACertificatePath", 	"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLProxyCARevocationFile",  	"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLProxyCARevocationPath",  	"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLProxyCipherSuite", 		"context" => [ "SSL", "Server", "Virtual", "Directory" ] },
+                                   { option =>"SSLProxyEngine", 		"context" => [ "SSL", "Server", "Virtual" ], "values" => [ "On", "Off" ] },
+                                   { option =>"SSLProxyMachineCertificateFile", "context" => [ "SSL", "Server" ] },
+                                   { option =>"SSLProxyMachineCertificatePath", "context" => [ "SSL", "Server" ] },
+                                   { option =>"SSLProxyProtocol", 		"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLProxyVerify", 		"context" => [ "SSL", "Server", "Virtual", "Directory" ], 
+											"values" => [ "none", "optional", "require", "optional_no_ca" ] },
+                                   { option =>"SSLProxyVerifyDepth", 		"context" => [ "SSL", "Server", "Virtual", "Directory" ] },
+                                   { option =>"SSLRandomSeed", 			"context" => [ "SSL", "Server" ] },
+                                   { option =>"SSLRequire", 			"context" => [ "SSL", "Directory" ] },
+                                   { option =>"SSLRequireSSL", 			"context" => [ "SSL", "Directory" ] },
+                                   { option =>"SSLSessionCache", 		"context" => [ "SSL", "Server" ] },
+                                   { option =>"SSLSessionCacheTimeout", 	"context" => [ "SSL", "Server", "Virtual" ] },
+                                   { option =>"SSLVerifyClient", 		"context" => [ "SSL", "Server", "Virtual", "Directory" ],
+											"values" => [ "none", "optional", "require", "optional_no_ca" ] },
+                                   { option =>"SSLVerifyDepth", 		"context" => [ "SSL", "Server", "Virtual", "Directory" ] }
                                 ]
     },
     'unique_id' => {
@@ -772,7 +748,14 @@ package YaPI::HTTPDModules;
                                   CookieName => 'mod_usertrack',
                                   CookieStyle => 'mod_usertrack',
                                   CookieTracking => 'mod_usertrack'
-                    }
+                    },
+                    directives=> [ { option =>"CookieDomain", 	"context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"CookieExpires",  "context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"CookieName",     "context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"CookieStyle",    "context" => [ "Server", "Virtual", "Directory" ], 
+								"values" => [ "Netscape", "Cookie", "Cookie2", "RFC2109", "RFC2965" ] },
+                                   { option =>"CookieTracking", "context" => [ "Server", "Virtual", "Directory" ], , "values" => [ "On", "Off" ] },
+				]
     },
     'vhost_alias' => {
                     summary   => 'Provides support for dynamically configured mass virtual hosting',

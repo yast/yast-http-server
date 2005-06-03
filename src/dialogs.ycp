@@ -337,5 +337,28 @@
 	return CWM::Run (w, $[`abort : Abort]);
     }
 
+    symbol DirDialog () {
+	list< map<string,any> > w = CWM::CreateWidgets (["dir"],
+	    HttpServerWidgets::widgets);
+	term contents = `HBox (`HSpacing (1), `VBox (
+	    `VSpacing (1),
+	    w[0, "widget"]:`VSpacing (0),
+	    `VSpacing (1)
+	), `HSpacing (1));
+
+	// translators: dialog caption, %1 is the host name
+	string caption = sformat( _("Dir Configuration for '%1'"),
+	    // translators: human-readable "default host"
+	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") 
+		: HttpServerWidgets::get_host_value ( "ServerName"
+		, YaST::HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ) );
+
+	string help = CWM::MergeHelps (w);
+
+	Wizard::SetContentsButtons (caption, contents, help,
+	    Label::BackButton (), Label::OKButton ());
+
+	return CWM::Run (w, $[`abort : Abort]);
+    }
 /* EOF */
 }

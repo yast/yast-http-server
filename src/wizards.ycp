@@ -36,6 +36,7 @@ symbol MainSequence() {
 	"modules"	:   ``( ModulesDialog() ),
 	"addhost"	:   ``( AddHost() ),
 	"ssl"		:   ``( SSLDialog () ),
+	"dir"		:   ``( DirDialog () ),
 	"ssl-default"	:   ``( SSLDialog () ),
 #	"module_sel"	:   ``( ModuleSelectionsDialog ()),
     ];
@@ -65,6 +66,7 @@ symbol MainSequence() {
 	    `next	: "overview",
 	    `back	: "overview",
 	    `ssl	: "ssl-default",
+	    `dir	: "dir",
 	],
 	"ssl-default" : $[
 	    `abort	: `abort,
@@ -83,6 +85,7 @@ symbol MainSequence() {
 	    `next	: "hosts",
 	    `back	: "hosts",
 	    `ssl	: "ssl",
+	    `dir	: "dir"
 	],
 	"addhost": $[
 	    `abort	: `abort,
@@ -94,6 +97,11 @@ symbol MainSequence() {
 	    `next	: "host",
 	    `back	: "host"
 	],
+	"dir": $[
+	    `abort	: `abort,
+	    `next	: "host",
+	    `back	: "host"
+	]
     ];
 
     symbol ret = Sequencer::Run(aliases, sequence);
@@ -113,9 +121,10 @@ symbol WizardSequence() {
                 "defhost"       :``(WizardSequence3()),
                 "hosts"	        :``(WizardSequence4()),
                 "summary"       :``(WizardSequence5()),
-		"addhost"		: ``(AddHost()),
+		"addhost"	: ``(AddHost()),
 	        "ssl"           :   ``( SSLDialog () ),
-	        "main"  :   ``( MainSequence() ),
+		"dir"           :   ``( DirDialog () ),
+	        "main"  	:   ``( MainSequence() ),
 	        "host"          :   ``( HostDialog() )
 	];
 
@@ -132,12 +141,17 @@ symbol WizardSequence() {
                "defhost"  : $[
                 `abort     : `abort,
                 `next      : "hosts",
-		`ssl	   : "ssl"
+		`ssl	   : "ssl",
+		`dir	   : "dir"
                 ],
 	       "ssl"	  : $[
 		`abort	  : `abort,
 		`next	  : "defhost"
 		],
+               "dir"      : $[
+                `abort    : `abort,
+                `next     : "defhost"
+                ],
                "hosts"  : $[
                 `abort     : `abort,
                 `next      : "summary",
@@ -156,8 +170,8 @@ symbol WizardSequence() {
 	       "host"	  : $[
 		`abort	  : `abort,
 		`ssl	  : "ssl",
-		`next	  : "hosts"
-		
+		`next	  : "hosts",
+		`dir	  : "dir"
 		],
 	       "main"	  : $[
 		`abort	  : `abort, 

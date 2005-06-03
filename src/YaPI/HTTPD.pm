@@ -408,7 +408,7 @@ sub GetHost {
     foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
         if( $hostHash->{HOSTID} eq $hostid ) {
             my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
-            my $sslHash = { KEY => 'SSL', VALUE => 0 };
+#            my $sslHash = { KEY => 'SSL', VALUE => 0 };
             my $overheadHash = { KEY => 'OVERHEAD', VALUE => $hostHash->{'OVERHEAD'} };
             my $ipHash = { KEY => 'HostIP', VALUE => $hostHash->{HostIP} };
             my $sslEngine = 'off';
@@ -422,22 +422,22 @@ sub GetHost {
             }
             $hostHash->{'DATA'} = \@newHH;
 	    # set sslHash to 1, if there are SSLRequire option set it to 2 
-            if( $sslEngine eq 'on' ) {
-		foreach my $tmp ( @{$hostHash->{'DATA'}})
-                 {
-		  if (exists($tmp->{SECTIONNAME}) && $tmp->{SECTIONNAME} eq 'Directory')
-                   {  
-		    my $ssl_require=0;
-		    foreach my $newData (@{$tmp->{VALUE}})
-		     {
-		      $ssl_require=1 if (ref($newData->{VALUE}) eq 'ARRAY'&& grep{$_->{KEY} eq 'SSLRequireSSL'}@{$newData->{VALUE}});
-                    }
-			if ($ssl_require) {$sslHash->{'VALUE'} = 2;}
-				else { $sslHash->{'VALUE'} = 1; }
-		   }
-                 }
-            } 
-            return [ @{$hostHash->{'DATA'}}, $sslHash, $vbnHash, $ipHash ];
+#            if( $sslEngine eq 'on' ) {
+#		foreach my $tmp ( @{$hostHash->{'DATA'}})
+#                 {
+#		  if (exists($tmp->{SECTIONNAME}) && $tmp->{SECTIONNAME} eq 'Directory')
+#                   {  
+#		    my $ssl_require=0;
+#		    foreach my $newData (@{$tmp->{VALUE}})
+#		     {
+#		      $ssl_require=1 if (ref($newData->{VALUE}) eq 'ARRAY'&& grep{$_->{KEY} eq 'SSLRequireSSL'}@{$newData->{VALUE}});
+#                    }
+#			if ($ssl_require) {$sslHash->{'VALUE'} = 2;}
+#				else { $sslHash->{'VALUE'} = 1; }
+#		   }
+#                 }
+#            } 
+            return [ @{$hostHash->{'DATA'}}, $vbnHash, $ipHash ];
         }
     }
     return $self->SetError( summary => __('hostid not found'),code => 'HOSTID_NOT_FOUND' );
@@ -522,19 +522,8 @@ sub ModifyHost {
                 if( $tmp->{'KEY'} eq 'VirtualByName' ) {
                     $entry->{VirtualByName} = $tmp->{'VALUE'};
                     next;
-                } elsif( $tmp->{'KEY'} eq 'SSL' ) {
-                    if( $tmp->{'VALUE'} == 0 ) {
-                        push( @tmp, { KEY => 'SSLEngine', VALUE => 'off' } );
-                    } elsif( $tmp->{'VALUE'} == 1 ) {
-                        push( @tmp, { KEY => 'SSLEngine', VALUE => 'on' } );
-                    } 
-			elsif( $tmp->{'VALUE'} == 2 ) {
-                        push( @tmp, { KEY => 'SSLEngine', VALUE => 'on' } );
-			$ssl_require=1;
-#                        push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
-                    }
-                    next;
-                } elsif( $hostid ne 'default' and $tmp->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
+                } 
+		elsif( $hostid ne 'default' and $tmp->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
                     # illegal keys in vhost
                     return $self->SetError( summary => sprintf( __("Illegal key in vhost '%s'."),$tmp->{KEY}),
                                             code    => "CHECK_PARAM_FAILED" );
@@ -542,36 +531,8 @@ sub ModifyHost {
                     push( @tmp, $tmp );
                 }
             }
-#remove SSLRequireSSL from main configuration, this is HOTFIX for bug #75268
-my @tmp2=();
-foreach my $tmp ( @tmp ) {
-  if (exists($tmp->{SECTIONNAME}) && $tmp->{SECTIONNAME} eq 'Directory') 
-   {
-    my @newData=();
-    foreach my $opts ( @{$tmp->{VALUE}} )
-     {
-	push(@newData, $opts) 
-			if (!($opts->{KEY} eq 'SSLRequireSSL')&&!(ref($opts->{VALUE}) eq 'ARRAY'&& grep{$_->{KEY} eq 'SSLRequireSSL'}@{$opts->{VALUE}}));
-     }
-     @{$tmp->{VALUE}}=@newData;
-    push(( @{$tmp->{VALUE}} ), {
-                         'SECTIONNAME' => 'IfDefine',
-                         'KEY' => '_SECTION',
-                         'VALUE' => [
-                                      {
-                                        'KEY' => 'SSLRequireSSL',
-                                        'VALUE' => ''
-                                      }
-                                    ],
-                         'SECTIONPARAM' => 'SSL'
-                       } ) if ($ssl_require);
-   }
-  if (!($tmp->{KEY} eq 'SSLRequireSSL')&&!(ref($tmp->{VALUE}) eq 'ARRAY'&& grep{$_->{KEY} eq 'SSLRequireSSL'}@{$tmp->{VALUE}}))
-   {
-    push(@tmp2,$tmp);
-   }
-  } 
-            $entry->{DATA} = \@tmp2;
+
+            $entry->{DATA} = \@tmp;
             $self->writeHost( $filename, $vhost_files );
 
             # write sysconfig variables for default host
@@ -644,17 +605,19 @@ sub CreateHost {
         # VirtualByName and SSL get dropped/replaced
         if( $key->{KEY} eq 'VirtualByName' ) {
             $VirtualByName = $key->{VALUE};
-        } elsif( $key->{KEY} eq 'SSL' and $key->{VALUE} == 1 ) {
-            $sslHash->{'VALUE'} = 'on';
-        } elsif( $key->{KEY} eq 'SSL' and $key->{VALUE} == 2 ) {
-            $sslHash->{'VALUE'} = 'on';
-            push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
-        } elsif( $key->{KEY} eq 'SSL' ) {
-            # already set to "off" above. So ignore.
-        } elsif( $key->{KEY} eq 'DocumentRoot' ) {
-            $docRoot = $key->{VALUE};
-            push( @tmp, $key );
-        } elsif( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
+        } 
+#elsif( $key->{KEY} eq 'SSL' and $key->{VALUE} == 1 ) {
+#            $sslHash->{'VALUE'} = 'on';
+#        } elsif( $key->{KEY} eq 'SSL' and $key->{VALUE} == 2 ) {
+#            $sslHash->{'VALUE'} = 'on';
+#            push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
+#        } elsif( $key->{KEY} eq 'SSL' ) {
+#            # already set to "off" above. So ignore.
+#        } elsif( $key->{KEY} eq 'DocumentRoot' ) {
+#            $docRoot = $key->{VALUE};
+#            push( @tmp, $key );
+#        } els
+if( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
             # illegal keys in vhost
             return $self->SetError( summary => sprintf(__("Illegal key in vhost '%s'."), $key->{KEY}),
                                     code    => "CHECK_PARAM_FAILED" );

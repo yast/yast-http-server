@@ -46,7 +46,7 @@ sub checkHostmap {
     my %checkMap = (
         ServerAdmin  => qr/^[^@]+@[^@]+$/,
         ServerName   => qr/^[a-zA-Z\d.-]+$/,
-        SSL          => qr/^[012]$/,
+#        SSL          => qr/^[012]$/,
         # more to go
     );
 
@@ -61,7 +61,7 @@ sub checkHostmap {
             return $self->SetError( summary => sprintf( __("illegal '%s' parameter"), $entry->{KEY} ), 
                                     code    => "PARAM_CHECK_FAILED" );
         }
-        $ssl = $entry->{VALUE} if( $entry->{KEY} eq 'SSL' );
+#        $ssl = $entry->{VALUE} if( $entry->{KEY} eq 'SSL' );
         $nb_vh = $entry->{VALUE} if( $entry->{KEY} eq 'VirtualByName' );
         $dr = 1 if(  $entry->{KEY} eq 'DocumentRoot' );
         $sn = 1 if(  $entry->{KEY} eq 'ServerName' );
