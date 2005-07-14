@@ -213,6 +213,11 @@ sub FetchHostKey {
     my $key = shift;
 
     foreach my $k ( @$host ) {
+	if ( ref($k->{VALUE}) eq "ARRAY" && $k->{SECTIONPARAM} eq "SSL" ) { 
+		foreach my $line (@{$k->{VALUE}}) {
+		return $line->{VALUE} if ($line->{KEY} eq $key); 
+		}
+	}
         next unless( $k->{KEY} eq $key );
         return $k->{VALUE};
     }

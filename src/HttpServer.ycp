@@ -196,8 +196,7 @@ global define boolean Read() ``{
     devs = NetworkDevices::Locate("BOOTPROTO", "dhcp");
     foreach(string dev, devs, {
 	// first, convert to the current name
-	map output = (map)SCR::Execute (.target.bash_output,
-    	"/sbin/getcfg-interface " + dev);
+	map output = (map)SCR::Execute (.target.bash_output, "/sbin/getcfg-interface " + dev);
 
         if (output["exit"]:-1 != 0 || output["stdout"]:"" == "0" )
 	{

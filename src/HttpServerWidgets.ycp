@@ -38,8 +38,6 @@ global map getSSLOptions();
 
 boolean update_contents = false;
 
-map<string, any> ssl_options = (map<string, any>) getSSLOptions();
-
 string item2listen( string network, string port );
 
 boolean CheckCommonServerCertificate () {
@@ -680,8 +678,6 @@ define void HostInit (string key) ``{
 
 global define map getHostOptions()
 {
-//	popups = 	add(popups, "Action"	,$[ "popup"	:	$[ "widget" : `combobox, "items"	: [ [ "text1" ], [ "text2" ] ] ] ]);
-
  map used = $[];
            list <string> directives = [];
 	foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
@@ -709,8 +705,7 @@ global define map getSSLOptions()
            list <string> directives = [];
         foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
                 foreach(map<string,any> option, mod["directives"]:[], {
-                        if (contains(option["context"]:[] ,"SSL"))
-                                                                used[option["option"]:""]=$[];
+                        if (contains(option["context"]:[] ,"SSL")) used[option["option"]:""]=$[];
                         });
         });
  return used;
@@ -1061,9 +1056,10 @@ global void SSLInit (string widget)
 
 global void SSLStore (string key, map event)
  {
- 	boolean found = false;
+ 	boolean found = false ;
         list < map<string,any> > forssl = [];
         list < map<string,any> > fordir = [];
+
 
         foreach(integer key, map<string,any> value, host_options, {
       foreach(map<string,any> val, YaST::HTTPDData::GetKnownModules(), {
@@ -1081,8 +1077,7 @@ global void SSLStore (string key, map event)
 	});
 
         list< map<string,any> > options = [];
-            list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
-            foreach (map<string, any> option, host, ``{
+            foreach (map<string, any> option, YaST::HTTPDData::GetHost(currenthost), ``{
                 if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONPARAM"]:"unknown" == "SSL")
                 {
 		   found = true;
@@ -1092,16 +1087,26 @@ global void SSLStore (string key, map event)
 		 {
 		  list< map<string, any> > temp_dir = [];
 		  foreach(map<string, any> value, option["VALUE"]:[], {
-y2internal("%1", value);
-			if (!(value["KEY"]:"unknown" == "_SECTION" && value["SECTIONPARAM"]:"unknown" == "SSL")) y2internal("%1", value);
-//temp_dir = add(temp_dir, value);
+			if (!(value["KEY"]:"unknown" == "_SECTION" && value["SECTIONPARAM"]:"unknown" == "SSL")) temp_dir = add(temp_dir, value);
 			});
-		  option["VALUE"] = add(temp_dir, $["KEY":"_SECTION", "SECTIONNAME":"IfDefine", "SECTIONPARAM":"SSL", "VALUE":fordir]);
+		  if (fordir != []) option["VALUE"] = add(temp_dir, $["KEY":"_SECTION", "SECTIONNAME":"IfDefine", "SECTIONPARAM":"SSL", "VALUE":fordir]);
+			else 
+			 {
+			  list< map<string, any> > dir_newlist = [];
+			  foreach(map< string, any > dir_item, 
+					option["VALUE"]:[], 
+					{
+					if (!(dir_item["KEY"]:"" == "_SECTION" && dir_item["SECTIONPARAM"]:"" == "SSL")) 
+						dir_newlist = add(dir_newlist, dir_item);
+					});
+				option["VALUE"] = dir_newlist;
+			 }
 
 		options = add(options, option);
 		 } else options = add(options, option);
             });
-y2internal("sslStore %1", options);
+	if (found == false) { options = add(options, $["KEY":"_SECTION", "SECTIONNAME":"IfDefine", "SECTIONPARAM":"SSL", "VALUE":forssl]); }
+//y2internal("options %1", options);
         YaST::HTTPDData::ModifyHost (currenthost, options );
         setHostOptions(nil);
         HttpServer::modified = true;
@@ -1317,13 +1322,40 @@ define string item2listen( string network, string port ) ``{
 
     global void HostStore (string key, map event)
     {
-		
-	list< map<string,any> > options = YaST::HTTPDData::GetHost(currenthost);
-y2internal("host opt first - %1", options);
-	// now delete the deleted options
-	foreach (integer index, deleted_options, ``{
-	    options[index] = nil;
-	});
+
+	list< map<string,any> > options = []; 
+       foreach (integer key, map<string,any> values, host_options,
+        ``{
+	   if (haskey(values, "DATA"))
+	    {
+	     if (values["KEY"]:"" == "SSL") 
+		{
+		 options = add(options, $[
+                   "KEY"       : "_SECTION",
+                    "SECTIONNAME": "IfDefine",
+                    "SECTIONPARAM": "SSL",
+                    "VALUE" : values["DATA"]: [],
+                    "OVERHEAD" : values["OVERHEAD"]:""]);
+		 y2milestone("SSL section - %1", options);
+		}
+
+             if (values["KEY"]:"" == "Directory") 
+		{
+                options = add(options, $[
+                   "KEY"       : "_SECTION",
+                    "SECTIONNAME": "Directory",
+                    "SECTIONPARAM": values["VALUE"]:"",
+                    "VALUE" : values["DATA"]: [],
+                    "OVERHEAD" : values["OVERHEAD"]:""]);
+		 y2milestone("Directory section - %1", values);
+		}
+	    } else 
+		{
+		 options = add(options, values);
+		 y2milestone("Global section - %1", values);
+		}
+	  });
+
 	options = filter (map <string,any> option, options, ``( option != nil ));
 
 	// for all host options check whether module from directive is loaded
@@ -1331,7 +1363,6 @@ y2internal("host opt first - %1", options);
         ``{
 	   checkLoadedModuleFor(values["KEY"]:"");
 	  });
-y2internal("hostStore %1", options);
 	YaST::HTTPDData::ModifyHost (currenthost, options );
 
 	setHostOptions(nil);
@@ -1363,16 +1394,13 @@ y2internal("hostStore %1", options);
 	    boolean documentroot = false;
     
 	    list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
-	    
+	   
 	    foreach (map<string, any> option, host, ``{
 		string key = option["KEY"]: "unknown";
 		
-		if (key == "ServerName")
-		    servername = true;
-		if (key == "ServerAdmin")
-		    serveradmin = true;
-		if (key == "DocumentRoot")
-		    documentroot = true;
+		if (key == "ServerName") servername = true;
+		if (key == "ServerAdmin") serveradmin = true;
+		if (key == "DocumentRoot") documentroot = true;
 	    
 		if ( key == "_SECTION" && option["SECTIONNAME"]:"" == "Directory" )
 		{
@@ -1500,7 +1528,7 @@ y2internal("hostStore %1", options);
 			   {
 				foreach(map<string, any> directive, value["VALUE"]:[],{
 					boolean found=false;
-					foreach(integer key, any val, host_options, {if ( val == directive ) y2internal("%1", val);found=true;});
+					foreach(integer key, any val, host_options, {if ( val == directive ) found=true;});
 					if (found == false)
 					 {
 		                          host_options[option_counter] =  directive;
