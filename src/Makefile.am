@@ -16,11 +16,6 @@ ynclude_DATA =			\
 	complex.ycp		\
 	routines.ycp
 
-ydata_DATA =                     \
-        all-apache2-modules.ycp	 \
-	all-ssl-options.ycp	 \
-	all-host-options.ycp
-
 desktop_DATA =			\
 	http-server.desktop
 
