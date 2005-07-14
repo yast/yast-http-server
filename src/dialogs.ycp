@@ -269,8 +269,8 @@
 			$[ "KEY": "ServerName", "VALUE" : servername ],
 			$[ "KEY": "ServerAdmin", "VALUE" : admin ],
 			$[ "KEY": "VirtualByName", "VALUE" : virtualbyname ? "1" : "0" ],
-			$[ "KEY": "HostIP", "VALUE" : ip ],
-			$[ "KEY": "SSL", "VALUE" : 0 ],	// No SSL
+			$[ "KEY": "HostIP", "VALUE" : ip ]
+//			$[ "KEY": "SSL", "VALUE" : 0 ],	// No SSL
 		    ];
 		    
 		if ( !HttpServerWidgets::validate_server (nil, descr) )

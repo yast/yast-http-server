@@ -1392,15 +1392,15 @@ sub WriteServerCert {
     $file .= '-cert.pem';
 
     if( not $pemData ) {
-        SCR->Execute( '.target.remove', $file );
-        $self->ModifyHostKey( $host, 'SSLCertificateFile' );
+#        SCR->Execute( '.target.remove', $file );
+#        $self->ModifyHostKey( $host, 'SSLCertificateFile' );
     } elsif( $pemData !~ /BEGIN CERTIFICATE/ ) {
         return $self->SetError( summary => __("Corrupt PEM data."), code => 'CERT_ERROR' );
     } else {
         SCR->Write( '.target.string', $file, $pemData );
         SCR->Execute( '.target.bash', "chmod 0400 $file" );
-        $self->ModifyHostKey( $host, 'SSLCertificateFile', $file );
-        $self->ModifyHostKey( $host, 'SSLCertificateKeyFile', $file ) if( $key );
+#        $self->ModifyHostKey( $host, 'SSLCertificateFile', $file );
+#        $self->ModifyHostKey( $host, 'SSLCertificateKeyFile', $file ) if( $key );
     }
     return $self->ModifyHost( $hostid, $host );
 }
@@ -1443,16 +1443,16 @@ sub WriteServerKey {
     $file .= '-key.pem';
 
     if( not $pemData ) {
-        SCR->Execute( '.target.remove', $file );
-        $self->ModifyHostKey( $host, 'SSLCertificateKeyFile' );
+#        SCR->Execute( '.target.remove', $file );
+#        $self->ModifyHostKey( $host, 'SSLCertificateKeyFile' );
     } elsif( $pemData !~ /PRIVATE KEY/ ) {
         return $self->SetError( summary => __("Corrupt PEM data."), code => 'CERT_ERROR' );
     } else {
         my $cert = ($pemData =~ /BEGIN CERTIFICATE/)?(1):(0);
         SCR->Write( '.target.string', $file, $pemData );
         SCR->Execute( '.target.bash', "chmod 0400 $file" );
-        $self->ModifyHostKey( $host, 'SSLCertificateKeyFile', $file );
-        $self->ModifyHostKey( $host, 'SSLCertificateFile', $file ) if( $cert );
+#        $self->ModifyHostKey( $host, 'SSLCertificateKeyFile', $file );
+#        $self->ModifyHostKey( $host, 'SSLCertificateFile', $file ) if( $cert );
     }
     return $self->ModifyHost( $hostid, $host );
 }
@@ -1527,7 +1527,6 @@ EXAMPLE
 sub ReadServerCert {
     my $self = shift;
     my $hostid = shift;
-
     my $host = $self->GetHost( $hostid );
     unless( ref($host) ) {
         return $self->SetError( summary => ("Unable to fetch a host with the specified ID."), code => "PARAM_CHECK_FAILED" );

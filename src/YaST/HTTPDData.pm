@@ -316,6 +316,7 @@ sub DeleteHost {
 
 sub WriteHosts {
     my $self = shift;
+print "$self\n";
     foreach my $hostid( keys( %{$dirty{DEL}} ) ) {
         delete($certs{$hostid});
         YaPI::HTTPD->DeleteHost( $hostid );
@@ -352,7 +353,7 @@ BEGIN { $TYPEINFO{GetModuleList} = ["function", [ "list", "string" ] ]; }
 sub GetModuleList {
     my $self = shift;
     my @ret;
-    foreach my $mod ( sort( @oldModules, keys(%newModules) ) ) {
+    foreach my $mod ( @oldModules, keys(%newModules) ) {
         push( @ret, $mod ) unless( exists( $delModules{$mod} ) );
     }
     return \@ret;
