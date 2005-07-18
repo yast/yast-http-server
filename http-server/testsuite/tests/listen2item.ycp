@@ -1,0 +1,18 @@
+	//testedfile: routines.ycp
+	//return list [ item, address, port ]
+{
+	include "testsuite.ycp";
+
+	boolean Modified() ``{
+    		return true;
+	};
+
+	boolean AbortFunction() ``{
+		return true;
+	}
+
+
+	include "http-server/routines.ycp";
+
+	TEST( ``{ return listen2item( "192.168.1.2:80" , 0); }, [ $[], $[], $[] ], nil );
+}
