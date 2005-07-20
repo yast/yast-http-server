@@ -146,6 +146,19 @@ global boolean validate_serverip (any id, any key, map event)
 
 global boolean validate_server (string hostid, list < map<string,any> > server )
 {
+	//default server can't use SSL
+	if ( hostid == "default" )
+	 {
+	  foreach(map<string,any> value, server, {
+	   if (value["KEY"]:"" == "SSL")
+	    {
+	     //translators: popup error message when validate server
+	     Report::Error ( _("Default host can't be configured with SSL support.") );
+             return false;
+	    }
+	  });
+	 }
+
     list <string> hosts = YaST::HTTPDData::GetHostsList ();
     
     string servername = (string)get_host_value ( "ServerName", server, nil );
