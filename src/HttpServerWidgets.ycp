@@ -1798,13 +1798,21 @@ define string item2listen( string network, string port ) ``{
         }
 	else if (event["ID"]:nil == `add_user)
         {
+	// list of all installed modules
+	    list <string> modules_dir = splitstring(((map<string, any>) SCR::Execute(.target.bash_output, 
+									"ls /usr/lib/apache2/|grep so|cut -d. -f1|cut -d_ -f2-"))["stdout"]:"", "\n");
 	    list<string> existing = maplist (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), ``(
 		mod["name"]:_("unknown")));
-
+	// extract unknown modules from all installed
+	    list<string> unknown_modules = [];
+	    foreach(string single_module, modules_dir, {
+		if ((!contains(existing, single_module))&&(single_module != "")) unknown_modules=add(unknown_modules, single_module);
+	    });
+	y2milestone("List of new modules %1", unknown_modules);
 	   UI::OpenDialog(
             `VBox(
-		// translators: text entry label for adding a user-defined module
-                `TextEntry(`id(`mod), _("New Module &Name:")),
+		// translators: combo box for selsect module from installed unknown modules
+		`ComboBox(`id(`mod), _("New Module &Name:"),  unknown_modules ),
                 `HBox(
                     `PushButton(`id(`ok), `opt(`default), Label::OKButton() ),
                     `PushButton(`id(`cancel), Label::CancelButton() )
