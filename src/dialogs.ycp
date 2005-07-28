@@ -197,8 +197,25 @@
 			// translators: radio button for IP-based virtual hosts
 			`Left(`RadioButton ( `id ( `ip_based ), _("Determine Request Server by Server IP &Address") ) )
 		    )
-		)))), `HSpacing (0.5)
+		))),
+		`VSpacing (1),
+		`Frame(
+		_("SSL support"),
+		 `VBox(
+		  `Left(	
+		   `CheckBox(`id(`ssl_support), _("Enable SSL Support For This Virtual Host"))),
+                    `HBox(
+                        // translators: textentry, certificate file path
+                        `TextEntry( `id( `certfile ), _("Certificate File Path:") ),
+                        `VBox(
+                            `Label(""),
+                            `PushButton(`id(`browse_cert ), Label::BrowseButton () )
+                        ))
+
+		))
+		), `HSpacing (0.5)
 	);
+
 	// translators: dialog caption
 	string caption = _("New Host Information");
 
@@ -207,25 +224,39 @@
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 	    
+	UI::ChangeWidget(`id(`certfile), `Enabled, false);
 	UI::SetFocus (`id("servername"));
 
 	symbol ret = nil;
 
 	do {
-	    ret = (symbol)UI::UserInput ();
+	    ret = nil;//(symbol)UI::UserInput ();
 
+y2internal("%1", UI::WaitForEvent ());
 	    if (ret == `browse)
 	    {
 		// Allow to choose a directory
 		string dir = UI::AskForExistingDirectory ("/srv", _("Choose Document Root") );
-		if (dir != nil)
-		{
-		    UI::ChangeWidget (`documentroot, `Value, dir );
-		}
+		if (dir != nil) UI::ChangeWidget (`documentroot, `Value, dir );
 
 		ret = nil;
 	    }
-	    
+	// SSL
+	    if (ret == `browse_cert)
+	    {
+		string ssl_dir = UI::AskForExistingFile("/etc/apache2/ssl.crt", "*.crt *.pem", _("Choose Certificate File") );
+                if (ssl_dir != nil)
+                {
+                    UI::ChangeWidget (`browse_cert, `Value, ssl_dir );
+//		    UI::ChangeWidget(`id(`ssl_support), `Enabled, true);
+                }
+
+		ret=nil;
+	    }
+	    if (UI::QueryWidget(`id(`ssl_support), `Value) == true) UI::ChangeWidget(`id(`certfile), `Enabled, true);
+		else UI::ChangeWidget(`id(`certfile), `Enabled, false);
+y2internal("SSL support %1", UI::QueryWidget(`id(`ssl_support), `Value));
+	// /SSL
 	    if (ret == `abort || ret == `cancel)
 	    {
 		if (ReallyAbort ()) break;

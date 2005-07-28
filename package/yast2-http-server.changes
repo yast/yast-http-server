@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Jul 28 17:49:09 CEST 2005 - mzugec@suse.cz
+
+- changed  wizard for virtual hosts
+
+-------------------------------------------------------------------
 Mon Jul 18 10:33:28 CEST 2005 - mzugec@suse.cz
 
 - rewrited aviable options from modules map 
