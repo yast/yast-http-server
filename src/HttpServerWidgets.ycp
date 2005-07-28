@@ -153,7 +153,7 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	   if (value["KEY"]:"" == "SSL")
 	    {
 	     //translators: popup error message when validate server
-	     Report::Error ( _("Default host can't be configured with SSL support.") );
+	     Report::Error ( _("The default host cannot be configured with SSL support.") );
              return false;
 	    }
 	  });
