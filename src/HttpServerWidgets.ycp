@@ -692,21 +692,14 @@ define void HostInit (string key) ``{
 global define map getHostOptions()
 {
  map used = $[];
-           list <string> directives = [];
+ list <string> directives = [];
 	foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
 		foreach(map<string,any> option, mod["directives"]:[], {
-			
-			if (option["values"]:nil !=nil) {
 			list<list<string> > opt_list = [];
 			foreach(string value, option["values"]:[], {opt_list = add(opt_list, [ value ]);});
-				popups = add(popups, option["option"]:"", 
-					$[ "popup"     :       
-						$[ "widget" : `combobox, 
-							"items"        : opt_list 
-						] ]);
-				}
 			if (contains(option["context"]:[] ,"Server") && !contains(option["context"]:[] ,"SSL")) 
-								used[option["option"]:""]=$[];
+				if (opt_list != []) used[option["option"]:""]= $["popup":$[ "widget" : `combobox, "items":opt_list ] ];
+					else used[option["option"]:""]=$[];
 			});
 	});
  return used;
@@ -715,10 +708,14 @@ global define map getHostOptions()
 global define map getSSLOptions()
 {
  map used = $[];
-           list <string> directives = [];
+ list <string> directives = [];
         foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
                 foreach(map<string,any> option, mod["directives"]:[], {
-                        if (contains(option["context"]:[] ,"SSL")) used[option["option"]:""]=$[];
+                        list<list<string> > opt_list = [];
+                        foreach(string value, option["values"]:[], {opt_list = add(opt_list, [ value ]);});
+                        if (contains(option["context"]:[] ,"SSL")) 
+				if (opt_list != []) used[option["option"]:""]= $["popup":$[ "widget" : `combobox, "items":opt_list ] ];
+                        		else used[option["option"]:""]=$[];
                         });
         });
  return used;
@@ -801,7 +798,7 @@ map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	    "init" : HttpServerWidgets::SSLInit,
 	    "handle" : HttpServerWidgets::handleSSLTable,
 	    "store" : HttpServerWidgets::SSLStore,
-	    "options" : union( (map<string, any>) getSSLOptions(), popups ),
+	    "options" : (map<string, any>) getSSLOptions(),
 	    "ids" : HttpServerWidgets::SSLTableContents,
 	    "id2key" : HttpServerWidgets::HostId2Key,
 	    "fallback" : $[
@@ -810,7 +807,7 @@ map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
 		"summary" : HttpServerWidgets::HostTableEntrySummary,
 	    ],
 	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
-	    "add_items" : maplist( string key, any value, (map<string, any>) union(getSSLOptions(), popups), ``(key) ),
+	    "add_items" : maplist( string key, any value, (map<string, any>) getSSLOptions(), ``(key) ),
 	    "help" : HELPS["ssl"]:"",
 	]);
 
@@ -823,7 +820,7 @@ map<string, any> dirwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	    "init" : HttpServerWidgets::DirInit,
 	    "handle" : HttpServerWidgets::handleDirTable,
 	    "store" : HttpServerWidgets::DirStore,
-	    "options" : union( (map<string, any>) getDirOptions(), popups), 
+	    "options" : (map<string, any>) getDirOptions(), 
 	    "ids" : HttpServerWidgets::DirTableContents,
 	    "id2key" : HttpServerWidgets::HostId2Key,
 	    "fallback" : $[
@@ -833,7 +830,7 @@ map<string, any> dirwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	    ],
 	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
 	    "add_items" : 
-		maplist( string key, any value, (map<string,any>)union( getDirOptions(), popups ), ``(key) ),
+		maplist( string key, any value, (map<string,any>) getDirOptions(), ``(key) ),
 	    "help" : HELPS["dir"]:"",
 	]);
 
@@ -847,23 +844,24 @@ global void DirInit (string widget)
 global define map getDirOptions()
 {
  map used = $[];
-           list <string> directives = [];
-	foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
-		foreach(map<string,any> option, mod["directives"]:[], {
-			if (contains(option["context"]:[] ,"Directory") && !contains(option["context"]:[] ,"SSL")) 
-								used[option["option"]:""]=$[];
-			});
-	});
+ list <string> directives = [];
+        foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
+                foreach(map<string,any> option, mod["directives"]:[], {
+                        list<list<string> > opt_list = [];
+                        foreach(string value, option["values"]:[], {opt_list = add(opt_list, [ value ]);});
+                        if (contains(option["context"]:[] ,"Directory") && !contains(option["context"]:[] ,"SSL"))
+                                if (opt_list != []) used[option["option"]:""]= $["popup":$[ "widget" : `combobox, "items":opt_list ] ];
+                                        else used[option["option"]:""]=$[];
+                        });
+        });
  return used;
 }
 
 
 global symbol handleDirTable( string key, map event )
 {
-    if (event["ID"]:nil == `back )
-    {
-        host_options = nil;
-    }
+    if (event["ID"]:nil == `back ) host_options = nil;
+
     return TablePopup::TableHandle( dirwidget, key, event );
 }
 
@@ -1119,7 +1117,6 @@ global void SSLStore (string key, map event)
 		 } else options = add(options, option);
             });
 	if (found == false) { options = add(options, $["KEY":"_SECTION", "SECTIONNAME":"IfDefine", "SECTIONPARAM":"SSL", "VALUE":forssl]); }
-//y2internal("options %1", options);
         YaST::HTTPDData::ModifyHost (currenthost, options );
         setHostOptions(nil);
         HttpServer::modified = true;
@@ -1327,7 +1324,7 @@ define string item2listen( string network, string port ) ``{
 	 if (contains(value["directives"]:[], new) && !contains(loaded, value["name"]:"")) 
 	  {
 	   YaST::HTTPDData::ModifyModuleList([value["name"]:""], true);
-	   y2internal("loading module mod_%1 ...", value["name"]:"");
+	   y2milestone("loading module mod_%1 ...", value["name"]:"");
 	  }
 	});
 
