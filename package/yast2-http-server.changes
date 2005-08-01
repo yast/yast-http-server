@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Aug  1 13:47:03 CEST 2005 - mzugec@suse.cz
+
+- wizard for virtual hosts with cgi 
+
+-------------------------------------------------------------------
 Fri Jul 29 10:49:45 CEST 2005 - mzugec@suse.cz
 
 - wizard for virtual hosts with ssl 

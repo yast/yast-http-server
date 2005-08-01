@@ -163,6 +163,11 @@
 	return CWM::Run (w, $[`abort : Abort]);
     }
 
+	/**
+	  * Return wizard for adding new virtual host	
+	  *
+	  */
+global list< map<string,any> > descr = [];
     symbol AddHost () {
 	term contents = `HBox( `HSpacing(0.5), `VBox (
 	    `Frame(
@@ -198,23 +203,8 @@
 			`Left(`RadioButton ( `id ( `ip_based ), _("Determine Request Server by Server IP &Address") ) )
 		    )
 		))),
-		`VSpacing (1),
-		`Frame(
-		_("SSL Support"),
-		 `VBox(
-		  `Left(	
-		   `CheckBox(`id(`ssl_support), _("Enable SSL Support For This Virtual Host"))),
-                    `HBox(
-                        // translators: textentry, certificate file path
-                        `TextEntry( `id( `certfile ), _("Certificate File Path:") ),
-                        `VBox(
-                            `Label(""),
-                            `PushButton(`id(`browse_cert ), Label::BrowseButton () )
-                        ))
-
-		))
-		), `HSpacing (0.5)
-	);
+		`HSpacing (0.5)
+	));
 
 	// translators: dialog caption
 	string caption = _("New Host Information");
@@ -222,9 +212,8 @@
 	string help = HELPS ["add_host_general"]:"";
 
 	Wizard::SetContentsButtons (caption, contents, help,
-	    Label::BackButton (), Label::OKButton ());
+	    Label::BackButton (), Label::NextButton ());
 	    
-//	UI::ChangeWidget(`id(`certfile), `Enabled, false);
 	UI::SetFocus (`id("servername"));
 
 	symbol ret = nil;
@@ -240,15 +229,6 @@
 
 		ret = nil;
 	    }
-	// SSL
-	    if (ret == `browse_cert)
-	    {
-		string ssl_dir = UI::AskForExistingFile("/etc/apache2/ssl.crt", "*.crt *.pem", _("Choose Certificate File") );
-                if (ssl_dir != nil) UI::ChangeWidget (`certfile, `Value, ssl_dir );
-
-		ret=nil;
-	    }
-	// /SSL
 	    if (ret == `abort || ret == `cancel)
 	    {
 		if (ReallyAbort ()) break;
@@ -262,7 +242,6 @@
 		string documentroot = (string) UI::QueryWidget( `documentroot, `Value );
 		string admin = (string) UI::QueryWidget( `admin, `Value );
 		boolean virtualbyname = (boolean) UI::QueryWidget( `name_based, `Value );
-		map <string, any> ssl_values = $[];
 
     		if (! HttpServerWidgets::validate_servername(nil, "servername",nil))
     		{
@@ -287,6 +266,120 @@
 		    ret = nil;
         	    continue;
 		}
+
+		descr = [
+			$[ "KEY": "DocumentRoot", "VALUE" : documentroot ],
+			$[ "KEY": "ServerName", "VALUE" : servername ],
+			$[ "KEY": "ServerAdmin", "VALUE" : admin ],
+			$[ "KEY": "VirtualByName", "VALUE" : virtualbyname ? "1" : "0" ],
+			$[ "KEY": "HostIP", "VALUE" : ip ]
+		    ];
+		    
+		if ( !HttpServerWidgets::validate_server (nil, descr) )
+		{
+		    ret = nil;
+		    continue;
+		}
+		
+	    }
+	} while (ret == nil);
+
+	return ret;
+    };
+
+
+symbol  SetVHostOptions() {
+        term contents = `HBox( `HSpacing(0.5), `VBox (
+            `Frame(
+                // translators: frame title for virtual host identification details
+                _("CGI Options"),
+                `VBox(
+                 `Left(
+                   `CheckBox(`id(`cgi_support), _("Enable CGI For This Virtual Host"))),
+                   `HBox(
+                        // translators: textentry, certificate file path
+                        `TextEntry( `id( `cgi_dir ), _("CGI - Directory Path:") ),
+                        `VBox(
+                            `Label(""),
+                            `PushButton(`id(`browse_cgi_dir ), Label::BrowseButton () )
+                        ))
+
+                )),
+		`VSpacing (1),
+               `Frame(
+                _("SSL Support"),
+                 `VBox(
+                  `Left(
+                   `CheckBox(`id(`ssl_support), _("Enable SSL Support For This Virtual Host"))),
+                    `HBox(
+                        // translators: textentry, certificate file path
+                        `TextEntry( `id( `certfile ), _("Certificate File Path:") ),
+                        `VBox(
+                            `Label(""),
+                            `PushButton(`id(`browse_cert ), Label::BrowseButton () )
+                        ))
+
+                ))
+	
+
+		)
+        );
+
+        string caption = _("Virtual Host Details");
+
+        string help = HELPS ["add_host_general"]:"";
+
+        Wizard::SetContentsButtons (caption, contents, help,
+            Label::BackButton (), Label::OKButton ());
+
+
+map <string, any> ssl_values = $[];
+   symbol ret = nil;
+   do{
+	ret = (symbol)UI::UserInput (); 
+
+        if (ret == `browse_cgi_dir)
+         {
+          string cgi_dir = UI::AskForExistingDirectory("/srv/www/cgi-bin", _("Choose CGI Directory") );
+          if (cgi_dir != nil) UI::ChangeWidget (`cgi_dir, `Value, cgi_dir );
+
+          ret=nil;
+         }
+
+
+	    if (ret == `browse_cert)
+	    {
+		string ssl_dir = UI::AskForExistingFile("/etc/apache2/ssl.crt", "*.crt *.pem", _("Choose Certificate File") );
+                if (ssl_dir != nil) UI::ChangeWidget (`certfile, `Value, ssl_dir );
+
+		ret=nil;
+	    }
+
+
+	if (ret == `next)
+	 {
+//		string ip = foreach(map<string,any> row, descr, { if (row["KEY"]:"" == "HostIP") return row["VALUE"]:"";});
+		map <string, any> ip = find(map<string,any> row, descr,``(row["KEY"]:"" == "HostIP"));
+		map <string, any> servername = find(map<string,any> row, descr,``(row["KEY"]:"" == "ServerName"));
+
+		if (UI::QueryWidget(`cgi_support, `Value) == true) 
+		 {
+		  string alias = "/cgi-bin/ " + (string) UI::QueryWidget(`cgi_dir, `Value);
+		  descr = add(descr, $["KEY":"ScriptAlias", "VALUE":alias]);
+		  descr = add(descr,  $[
+                   "KEY"       : "_SECTION",
+                    "SECTIONNAME": "Directory",
+                    "SECTIONPARAM": UI::QueryWidget(`cgi_dir, `Value),
+                    "VALUE" : [ 
+				$["KEY":"AllowOverride", "VALUE":"None"], 
+				$["KEY":"Options", "VALUE":"+ExecCGI -Includes"],
+				$["KEY":"Order", "VALUE":"allow,deny"],
+				$["KEY":"Allow", "VALUE":"from all"]
+			      ],
+                    "OVERHEAD" : ""]);
+		y2milestone("CGI support for virtual host added");
+		 }
+
 		if (UI::QueryWidget(`ssl_support, `Value) == true)
 		{
 		 //TODO - validate certificate
@@ -306,22 +399,10 @@
 					];
 		}
 
-		list< map<string,any> > descr = [
-			$[ "KEY": "DocumentRoot", "VALUE" : documentroot ],
-			$[ "KEY": "ServerName", "VALUE" : servername ],
-			$[ "KEY": "ServerAdmin", "VALUE" : admin ],
-			$[ "KEY": "VirtualByName", "VALUE" : virtualbyname ? "1" : "0" ],
-			$[ "KEY": "HostIP", "VALUE" : ip ]
-		    ];
 		if (size(ssl_values)>0) descr = add(descr, ssl_values);
-		    
-		if ( !HttpServerWidgets::validate_server (nil, descr) )
-		{
-		    ret = nil;
-		    continue;
-		}
-		
-		any result = YaST::HTTPDData::CreateHost ( ip+"/"+servername, descr );
+
+
+		any result = YaST::HTTPDData::CreateHost ( ip["VALUE"]:""+"/"+servername["VALUE"]:"", descr );
 
 		y2milestone ("%1", result);
 		if ( result == nil)
@@ -333,11 +414,13 @@
 		}
 		    
 		HttpServer::modified = true;
-	    }
-	} while (ret == nil);
+	}
 
-	return ret;
-    }
+
+
+     }while(ret == nil);
+   return ret;
+  }
 
     /**
       * Run host SSL dialog

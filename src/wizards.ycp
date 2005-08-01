@@ -35,6 +35,7 @@ symbol MainSequence() {
 	"listen"	:   ``( ListenDialog() ),
 	"modules"	:   ``( ModulesDialog() ),
 	"addhost"	:   ``( AddHost() ),
+	"setvhost"	:   ``( SetVHostOptions() ),
 	"ssl"		:   ``( SSLDialog () ),
 	"dir"		:   ``( DirDialog () ),
 	"ssl-default"	:   ``( SSLDialog () ),
@@ -89,8 +90,13 @@ symbol MainSequence() {
 	],
 	"addhost": $[
 	    `abort	: `abort,
-	    `next	: "hosts",
+	    `next	: "setvhost",
 	    `back	: "hosts",
+	],
+	"setvhost": $[
+	    `abort	: `abort,
+	    `next	: "hosts",
+	    `back	: "addhost"
 	],
 	"ssl": $[
 	    `abort	: `abort,
