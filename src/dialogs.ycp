@@ -319,7 +319,14 @@ symbol  SetVHostOptions() {
                             `PushButton(`id(`browse_cert ), Label::BrowseButton () )
                         ))
 
-                ))
+                )),
+		`VSpacing (1),
+		`Frame(
+		 _("Directory Options"),
+		 `Left(
+		       `TextEntry( `id( `dir_index ), _("Directory Index:") )
+                      )
+		)
 	
 
 		)
@@ -333,7 +340,7 @@ symbol  SetVHostOptions() {
             Label::BackButton (), Label::OKButton ());
 
 
-map <string, any> ssl_values = $[];
+   map <string, any> ssl_values = $[];
    symbol ret = nil;
    do{
 	ret = (symbol)UI::UserInput (); 
@@ -358,9 +365,9 @@ map <string, any> ssl_values = $[];
 
 	if (ret == `next)
 	 {
-//		string ip = foreach(map<string,any> row, descr, { if (row["KEY"]:"" == "HostIP") return row["VALUE"]:"";});
 		map <string, any> ip = find(map<string,any> row, descr,``(row["KEY"]:"" == "HostIP"));
 		map <string, any> servername = find(map<string,any> row, descr,``(row["KEY"]:"" == "ServerName"));
+		map <string, any> documentroot = find(map<string,any> row, descr,``(row["KEY"]:"" == "DocumentRoot"));
 
 		if (UI::QueryWidget(`cgi_support, `Value) == true) 
 		 {
@@ -412,6 +419,19 @@ map <string, any> ssl_values = $[];
 		    ret = nil;
 		    continue;
 		}
+		descr = YaST::HTTPDData::GetHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"");
+		string directory_index=(string)UI::QueryWidget(`dir_index, `Value);
+		if (size(directory_index)>0){
+		  list< map<string, any> > tmp_descr = [];
+		 foreach(map<string, any>value, descr, {
+			if (value["KEY"]:"" == "_SECTION" && value["SECTIONNAME"]:"" == "Directory" && (find(value["SECTIONPARAM"]:"", documentroot["VALUE"]:""))>0) 
+					value["VALUE"]=add(value["VALUE"]:[], $["KEY":"DirectoryIndex", "VALUE":directory_index]);
+			tmp_descr  = add(tmp_descr, value);
+			});
+//			y2internal("%1", tmp_descr);
+			YaST::HTTPDData::ModifyHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"", tmp_descr);
+		}
+
 		    
 		HttpServer::modified = true;
 	}

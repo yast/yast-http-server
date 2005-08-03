@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Aug  3 17:29:48 CEST 2005 - mzugec@suse.cz
+
+- wizard for virtual hosts with DirectoryIndex
+
+-------------------------------------------------------------------
 Mon Aug  1 13:47:03 CEST 2005 - mzugec@suse.cz
 
 - wizard for virtual hosts with cgi 
