@@ -325,8 +325,14 @@ symbol  SetVHostOptions() {
 		 _("Directory Options"),
 		 `Left(
 		       `TextEntry( `id( `dir_index ), _("Directory Index:") )
-                      )
-		)
+                      )),
+               `VSpacing (1),
+                `Frame(
+                 _("Public HTML"),
+                 `Left(
+                       `CheckBox( `id( `pub_html ), _("Enable Public HTML") )
+                      ))
+
 	
 
 		)
@@ -421,14 +427,21 @@ symbol  SetVHostOptions() {
 		}
 		descr = YaST::HTTPDData::GetHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"");
 		string directory_index=(string)UI::QueryWidget(`dir_index, `Value);
-		if (size(directory_index)>0){
+
+		if (size(directory_index)>0 || (boolean)UI::QueryWidget(`pub_html, `Value)){
 		  list< map<string, any> > tmp_descr = [];
 		 foreach(map<string, any>value, descr, {
-			if (value["KEY"]:"" == "_SECTION" && value["SECTIONNAME"]:"" == "Directory" && (find(value["SECTIONPARAM"]:"", documentroot["VALUE"]:""))>0) 
-					value["VALUE"]=add(value["VALUE"]:[], $["KEY":"DirectoryIndex", "VALUE":directory_index]);
+			if (value["KEY"]:"" == "_SECTION" && 
+				value["SECTIONNAME"]:"" == "Directory" && 
+				(find(value["SECTIONPARAM"]:"", documentroot["VALUE"]:""))>0) 
+				 {
+				  if (size(directory_index)>0)	
+						value["VALUE"]=add(value["VALUE"]:[], $["KEY":"DirectoryIndex", "VALUE":directory_index]);
+				  if (UI::QueryWidget(`pub_html, `Value)==true)	
+						value["VALUE"]=add(value["VALUE"]:[], $["KEY":"UserDir", "VALUE":"public_html"]);
+				 }
 			tmp_descr  = add(tmp_descr, value);
 			});
-//			y2internal("%1", tmp_descr);
 			YaST::HTTPDData::ModifyHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"", tmp_descr);
 		}
 
