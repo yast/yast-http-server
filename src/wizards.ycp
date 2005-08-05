@@ -128,6 +128,7 @@ symbol WizardSequence() {
                 "hosts"	        :``(WizardSequence4()),
                 "summary"       :``(WizardSequence5()),
 		"addhost"	: ``(AddHost()),
+	        "setvhost"      :   ``( SetVHostOptions() ),
 	        "ssl"           :   ``( SSLDialog () ),
 		"dir"           :   ``( DirDialog () ),
 	        "main"  	:   ``( MainSequence() ),
@@ -166,8 +167,14 @@ symbol WizardSequence() {
                 ],
 		"addhost"  : $[
 		`abort	   : `abort,
-		`next	   : "hosts"
-		],
+		`next	   : "setvhost",
+		`back	   : "hosts"
+		], 
+	        "setvhost": $[
+	            `abort      : `abort,
+	            `next       : "hosts",
+	            `back       : "addhost"
+	        ],
                "summary"  : $[
                 `abort     : `abort,
 		`next	  : `next,
