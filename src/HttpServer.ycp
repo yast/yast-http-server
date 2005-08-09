@@ -108,7 +108,36 @@ global define boolean Read() ``{
 
     // check the environment
     if(Abort()) return false;
+// check rpms
+list<string> required = (list<string>) HttpServer::required_packages;
+if( !Require::IsAnyPackageInstalledTarget( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
+    // add a default MPM - prefork because of the PHP4 compatibility
+    required = (list<string>) union (required, ["apache2-prefork"] );
+}
+
+if( !Require::RequireAndConflictTarget( required, [],
+    // notification about package needed 1/2
+    _("<p>To configure the HTTP server, the <b>%1</b> packages must be installed.</p>") +
+    // notification about package needed 2/2
+    _("<p>Do you want to install it now?</p>")) )
+{
+    if( !Require::IsPackageAvailable( "apache2" ) ) {
+        // translators: error popup before aborting the module
+        Popup::Error( sformat( _("<p>The package <b>%1</b> is not available.<br>
+YaST2 cannot continue the configuration
+without installing the package.</p>"), "apache2" ) );
+    } else {
+        // translators: error popup before aborting the module
+        Popup::Error( Message::CannotContinueWithoutPackagesInstalled() );
+    }
+
+    return false;
+}
+
+
+
     Progress::NextStep();
+
 
     // check httpd.conf
     if( SCR::Read( .target.lstat, "/etc/apache2/httpd.conf" ) == $[] ) {
@@ -632,6 +661,7 @@ else {
  * @return map of packages to be installed and to be removed
  */
 global define map AutoPackages() ``{
+y2internal("Check required packages");
        if( !Require::IsAnyPackageInstalledTarget( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
            // add a default MPM - prefork because of the PHP4 compatibility
         required_packages = (list<string>)union (required_packages, ["apache2-prefork"] );

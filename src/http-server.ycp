@@ -414,38 +414,11 @@ if(size(args) > 0) {
     }
 }
 
-// check rpms
-list<string> required = (list<string>) HttpServer::required_packages;
-
-if( !Require::IsAnyPackageInstalledTarget( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
-    // add a default MPM - prefork because of the PHP4 compatibility
-    required = (list<string>) union (required, ["apache2-prefork"] );
-}
-
-if( !Require::RequireAndConflictTarget( required, [],
-    // notification about package needed 1/2
-    _("<p>To configure the HTTP server, the <b>%1</b> packages must be installed.</p>") +
-    // notification about package needed 2/2
-    _("<p>Do you want to install it now?</p>")) )
-{
-    if( !Require::IsPackageAvailable( "apache2" ) ) {
-	// translators: error popup before aborting the module
-	Popup::Error( sformat( _("<p>The package <b>%1</b> is not available.<br>
-YaST2 cannot continue the configuration
-without installing the package.</p>"), "apache2" ) );
-    } else {
-	// translators: error popup before aborting the module
-	Popup::Error( Message::CannotContinueWithoutPackagesInstalled() );
-    }
-    
-    return (any)false;
-}
-
 /* main ui function */
 any ret = nil;
 
 if(propose) ret = HttpServerAutoSequence();
-else ret = CommandLine::Run(cmdline_description);
+	else ret = CommandLine::Run(cmdline_description);
 y2debug("ret=%1", ret);
 
 /* Finish */
