@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Aug  9 14:07:27 CEST 2005 - mzugec@suse.cz
+
+- fixed (#102561) missing help
+
+-------------------------------------------------------------------
 Fri Aug  5 11:51:21 CEST 2005 - mzugec@suse.cz
 
 - wizard for virtual hosts with public_html 

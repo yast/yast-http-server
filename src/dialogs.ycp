@@ -340,7 +340,7 @@ symbol  SetVHostOptions() {
 
         string caption = _("Virtual Host Details");
 
-        string help = HELPS ["add_host_general"]:"";
+        string help = HELPS ["set_vhost"]:"";
 
         Wizard::SetContentsButtons (caption, contents, help,
             Label::BackButton (), Label::OKButton ());
