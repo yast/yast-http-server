@@ -211,9 +211,27 @@ global list< map<string,any> > descr = [];
 
 	string help = HELPS ["add_host_general"]:"";
 
+
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::NextButton ());
 	    
+	if (descr!=[]){
+                string ip = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "HostIP") ip = row["VALUE"]:"";});
+                string servername = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "ServerName") servername = row["VALUE"]:"";});
+                string documentroot = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "DocumentRoot") documentroot = row["VALUE"]:"";});
+                string admin = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "ServerAdmin") admin = row["VALUE"]:"";});
+		boolean namebased = false;
+		foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "VirtualByName" && row["VALUE"]:"" == "1") namebased=true;});
+		if (size(servername)>0) UI::ChangeWidget(`id("servername"), `Value, servername);
+		if (size(documentroot)>0) UI::ChangeWidget(`documentroot, `Value, documentroot);
+		if (size(admin)>0) UI::ChangeWidget(`admin, `Value, admin);
+		if (size(ip)>0) UI::ChangeWidget(`id( "ipaddress" ), `Value, ip);
+		if (namebased) UI::ChangeWidget(`resolution, `CurrentButton, `name_based);
+			else UI::ChangeWidget(`resolution, `CurrentButton, `ip_based);
+
+		 y2internal("%1", servername);
+	}
+
 	UI::SetFocus (`id("servername"));
 
 	symbol ret = nil;
@@ -266,7 +284,10 @@ global list< map<string,any> > descr = [];
 		    ret = nil;
         	    continue;
 		}
-
+	if (virtualbyname ){
+		if(Popup::AnyQuestion(Label::WarningMsg(), _("Do You Want To Resolve Hostname For This Virtual Host?"), "Yes", "No", `focus_no )) 
+				y2internal("Resolving ...");
+	}
 		descr = [
 			$[ "KEY": "DocumentRoot", "VALUE" : documentroot ],
 			$[ "KEY": "ServerName", "VALUE" : servername ],
@@ -290,6 +311,14 @@ global list< map<string,any> > descr = [];
 
 symbol  SetVHostOptions() {
         term contents = `HBox( `HSpacing(0.5), `VBox (
+//	   `ReplacePoint(`id(`replace),
+//	    `Frame(
+//		_("Name For Virtual Server"),
+//		 `Left(
+//			`TextEntry( `id( `hostname ), _("Name For Virtual Server:") )
+//			)
+//		)),
+//		`VSpacing(1), 
             `Frame(
                 // translators: frame title for virtual host identification details
                 _("CGI Options"),
@@ -332,9 +361,6 @@ symbol  SetVHostOptions() {
                  `Left(
                        `CheckBox( `id( `pub_html ), _("Enable Public HTML") )
                       ))
-
-	
-
 		)
         );
 
@@ -348,6 +374,9 @@ symbol  SetVHostOptions() {
 
    map <string, any> ssl_values = $[];
    symbol ret = nil;
+//   boolean namebased = false;
+//   foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "VirtualByName" && row["VALUE"]:"" == "1") namebased=true;});
+//   	if (namebased==false) UI::ReplaceWidget(`id(`replace), `VSpacing(1));
    do{
 	ret = (symbol)UI::UserInput (); 
 
