@@ -177,15 +177,19 @@ from the incoming request, the server looks up the host name specified by
 the HTTP request headers. The other possibility is to determine the virtual host
 by the <i>IP address</i> used by the client when connecting to the server.
 Consult the Apache 2 manual for further details.</p>\n"),
-	// advanced new host 
+	// advanced new host dialog 1/5
 	"set_vhost"	: _("<p><b><big>Details For New Host</big></b><br>
 This dialog allows you to specify additional information about a new virtual host.</p>")
+	// advanced new host dialog 2/5
 	+_("<p><b>CGI Options</b>
 enables to run cgi scripts in specified path using alias /cgi-bin/</p>")
+	// advanced new host dialog 3/5
 	+_("<p><b>SSL Support</b>
 to use this wirtual host by https select path to certificate file</p>")
+	// advanced new host dialog 4/5
 	+_("<p><b>Directory Options</b>
 allows administrator to specify order of files to look for when the client requests a directory</p>")
+	// advanced new host dialog 5/5
 	+_("<p><b>Public HTML</b>
 enables to access .public_html directories of all users</p>")
 
