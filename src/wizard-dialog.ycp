@@ -1,3 +1,11 @@
+/**
+ * File:        include/http-server/wizard-dialog.ycp
+ * Package:     Configuration of http-server
+ * Summary:     Dialogs for wizard
+ * Authors:     Michal Zugec <mzugec@suse.cz>
+ *
+ * $Id:$
+ */
 {
 
 textdomain "http-server";

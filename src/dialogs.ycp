@@ -22,6 +22,9 @@
     import "Label";
     import "CWM";
     import "Wizard";
+    import "DnsServerAPI";
+    import "DnsServer";
+    import "Service";
 
 
 
@@ -215,6 +218,7 @@ global list< map<string,any> > descr = [];
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::NextButton ());
 	    
+		// remember values
 	if (descr!=[]){
                 string ip = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "HostIP") ip = row["VALUE"]:"";});
                 string servername = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "ServerName") servername = row["VALUE"]:"";});
@@ -228,8 +232,6 @@ global list< map<string,any> > descr = [];
 		if (size(ip)>0) UI::ChangeWidget(`id( "ipaddress" ), `Value, ip);
 		if (namebased) UI::ChangeWidget(`resolution, `CurrentButton, `name_based);
 			else UI::ChangeWidget(`resolution, `CurrentButton, `ip_based);
-
-		 y2internal("%1", servername);
 	}
 
 	UI::SetFocus (`id("servername"));
@@ -284,10 +286,7 @@ global list< map<string,any> > descr = [];
 		    ret = nil;
         	    continue;
 		}
-	if (virtualbyname ){
-		if(Popup::AnyQuestion(Label::WarningMsg(), _("Do You Want To Resolve Hostname For This Virtual Host?"), "Yes", "No", `focus_no )) 
-				y2internal("Resolving ...");
-	}
+
 		descr = [
 			$[ "KEY": "DocumentRoot", "VALUE" : documentroot ],
 			$[ "KEY": "ServerName", "VALUE" : servername ],
@@ -311,23 +310,18 @@ global list< map<string,any> > descr = [];
 
 symbol  SetVHostOptions() {
         term contents = `HBox( `HSpacing(0.5), `VBox (
-//	   `ReplacePoint(`id(`replace),
-//	    `Frame(
-//		_("Name For Virtual Server"),
-//		 `Left(
-//			`TextEntry( `id( `hostname ), _("Name For Virtual Server:") )
-//			)
-//		)),
-//		`VSpacing(1), 
+	   `ReplacePoint(`id(`replace), `Empty()
+		),
+		`VSpacing(1), 
             `Frame(
                 // translators: frame title for virtual host identification details
                 _("CGI Options"),
                 `VBox(
                  `Left(
-                   `CheckBox(`id(`cgi_support), _("Enable CGI For This Virtual Host"))),
+                   `CheckBox(`id(`cgi_support), _("Enable &CGI For This Virtual Host"))),
                    `HBox(
                         // translators: textentry, certificate file path
-                        `TextEntry( `id( `cgi_dir ), _("CGI - Directory Path:") ),
+                        `TextEntry( `id( `cgi_dir ), _("CGI - &Directory Path:") ),
                         `VBox(
                             `Label(""),
                             `PushButton(`id(`browse_cgi_dir ), Label::BrowseButton () )
@@ -339,10 +333,10 @@ symbol  SetVHostOptions() {
                 _("SSL Support"),
                  `VBox(
                   `Left(
-                   `CheckBox(`id(`ssl_support), _("Enable SSL Support For This Virtual Host"))),
+                   `CheckBox(`id(`ssl_support), _("Enable &SSL Support For This Virtual Host"))),
                     `HBox(
                         // translators: textentry, certificate file path
-                        `TextEntry( `id( `certfile ), _("Certificate File Path:") ),
+                        `TextEntry( `id( `certfile ), _("&Certificate File Path:") ),
                         `VBox(
                             `Label(""),
                             `PushButton(`id(`browse_cert ), Label::BrowseButton () )
@@ -353,13 +347,13 @@ symbol  SetVHostOptions() {
 		`Frame(
 		 _("Directory Options"),
 		 `Left(
-		       `TextEntry( `id( `dir_index ), _("Directory Index:") )
+		       `TextEntry( `id( `dir_index ), _("&Directory Index:") )
                       )),
                `VSpacing (1),
                 `Frame(
                  _("Public HTML"),
                  `Left(
-                       `CheckBox( `id( `pub_html ), _("Enable Public HTML") )
+                       `CheckBox( `id( `pub_html ), _("Enable &Public HTML") )
                       ))
 		)
         );
@@ -372,13 +366,92 @@ symbol  SetVHostOptions() {
             Label::BackButton (), Label::OKButton ());
 
 
-   map <string, any> ssl_values = $[];
+map <string, any> documentroot = find(map<string,any> row, descr,``(row["KEY"]:"" == "DocumentRoot"));
+map <string, any> ip = find(map<string,any> row, descr,``(row["KEY"]:"" == "HostIP"));
+map <string, any> servername = find(map<string,any> row, descr,``(row["KEY"]:"" == "ServerName"));
+string zone="";
+
+// --- D N S ---
+
+	 if ( Service::Status("named") == 0 ){
+		foreach(string key, map<string, any> value, (map<string, map<string, any> >) DnsServerAPI::GetZones(), {
+		 if ( (value["type"]:"" == "master") 
+			&& (regexpmatch(servername["VALUE"]:"", "\\."+key+"$" ))
+				&& (size(key)>size(zone)) ) zone=key;
+			   y2milestone("Master zone %1", key);
+		});
+		if (size(zone)>0)
+		 {
+		  y2milestone("Matching zone %1", zone);
+		boolean exists=false;
+		foreach(map<string, any> records, DnsServerAPI::GetZoneRRs(zone), {
+		 y2internal("%1", records["key"]:"");
+		 if (records["key"]:"" == servername["VALUE"]:"" || records["key"]:"" == servername["VALUE"]:""+".") exists=true;
+		});
+		if (exists == true) 
+			{
+			 y2milestone("Record %1 already exists in zone %2", servername["VALUE"]:"", zone);
+			} else {
+                   UI::ReplaceWidget(`replace, `Frame(_("DNS Settings"),
+                                              `Left(
+                                                `HBox(
+                                                 `Label(servername["VALUE"]:""),
+                                                 `PushButton(`id(`dns_add_rec), _("Add this record to zone"))
+                                                    ))));
+
+				}
+
+		 } else {
+		   list <string> opts = splitstring(servername["VALUE"]:"", ".");
+			                       opts[0] = nil;
+                        list <string> newList=[];
+                        foreach(string it, opts, {
+                         if (it !=nil){
+                        list <string> tmpList=[];
+                          foreach(string itzone, newList, {
+                           tmpList = add(tmpList, itzone+"."+it);
+                           });
+                           newList=tmpList;
+                          newList = add(newList, it);
+                        }
+                        });
+
+		   if (size(opts)>0)
+	                   UI::ReplaceWidget(`replace, `Frame(_("DNS Settings"),
+                                              `Left(
+                                                `HBox(
+                                                 `Label(servername["VALUE"]:""),
+						 `ComboBox(`id(`new_zone), "Select name for zone", newList),
+                                                 `PushButton(`id(`dns_create_zone), _("Create new zone"))
+                                                    ))));
+
+			}
+	 } else y2milestone(_("There is no DNS server running on this machine."));
+
+// --- D N S ---
+
    symbol ret = nil;
-//   boolean namebased = false;
-//   foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "VirtualByName" && row["VALUE"]:"" == "1") namebased=true;});
-//   	if (namebased==false) UI::ReplaceWidget(`id(`replace), `VSpacing(1));
    do{
 	ret = (symbol)UI::UserInput (); 
+
+	if (ret == `dns_add_rec)
+	 {
+	  y2internal("Add record %1 to zone %2", servername["VALUE"]:"", zone);
+	  UI::ChangeWidget(`dns_add_rec, `Enabled, false);
+	  DnsServerAPI::AddZoneRR(zone, "A", servername["VALUE"]:""+".", ip["VALUE"]:"");
+	  ret = nil;
+	 }
+
+	if (ret == `dns_create_zone)
+	 {
+	  y2internal("Create new zone ... %1", UI::QueryWidget(`new_zone, `Value));
+	  UI::ChangeWidget(`dns_create_zone, `Enabled, false);
+	  UI::ChangeWidget(`new_zone, `Enabled, false);
+	   zone = (string)UI::QueryWidget(`new_zone, `Value);
+	  DnsServerAPI::AddZone(zone, "master", $[]);
+          DnsServerAPI::AddZoneRR(zone, "A", servername["VALUE"]:""+".", ip["VALUE"]:"");
+	  ret = nil;
+	 }
 
         if (ret == `browse_cgi_dir)
          {
@@ -400,9 +473,6 @@ symbol  SetVHostOptions() {
 
 	if (ret == `next)
 	 {
-		map <string, any> ip = find(map<string,any> row, descr,``(row["KEY"]:"" == "HostIP"));
-		map <string, any> servername = find(map<string,any> row, descr,``(row["KEY"]:"" == "ServerName"));
-		map <string, any> documentroot = find(map<string,any> row, descr,``(row["KEY"]:"" == "DocumentRoot"));
 
 		if (UI::QueryWidget(`cgi_support, `Value) == true) 
 		 {
@@ -421,6 +491,7 @@ symbol  SetVHostOptions() {
                     "OVERHEAD" : ""]);
 		y2milestone("CGI support for virtual host added");
 		 }
+   		map <string, any> ssl_values = $[];
 
 		if (UI::QueryWidget(`ssl_support, `Value) == true)
 		{
@@ -476,11 +547,13 @@ symbol  SetVHostOptions() {
 
 		    
 		HttpServer::modified = true;
+		descr = [];
 	}
 
 
 
      }while(ret == nil);
+//	descr=[];
    return ret;
   }
 

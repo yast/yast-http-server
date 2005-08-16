@@ -24,6 +24,8 @@ import "Require";
 import "Report";
 import "Message";
 import "Hostname";
+import "HttpServerWidgets";
+import "HttpServer";
 
 include "http-server/wizards.ycp";
 

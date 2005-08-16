@@ -25,7 +25,8 @@ import "Service";
 import "Summary";
 import "Message";
 import "Directory";
-//import "HttpServerWidgets";
+import "Popup";
+import "DnsServerAPI";
 
 /**
  * Abort function
@@ -172,6 +173,7 @@ without installing the package.</p>"), "apache2" ) );
     import "SuSEFirewall";
     Progress::set(false);	//off();
     SuSEFirewall::Read();
+    DnsServerAPI::Read();
     Progress::set(true);	//on();
     
     firewall_started = SuSEFirewall::IsEnabled();			//Service::Enabled( "SuSEfirewall2_final" );
@@ -374,7 +376,7 @@ Install them now?
 	}
     });
     SuSEFirewall::Write ();
-
+    DnsServerAPI::Write ();
 	Progress::set(true);
 
     YaST::HTTPDData::WriteModuleList ();
