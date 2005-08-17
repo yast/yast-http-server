@@ -318,10 +318,10 @@ symbol  SetVHostOptions() {
                 _("CGI Options"),
                 `VBox(
                  `Left(
-                   `CheckBox(`id(`cgi_support), _("Enable &CGI For This Virtual Host"))),
+                   `CheckBox(`id(`cgi_support), _("Enable &CGI for This Virtual Host"))),
                    `HBox(
                         // translators: textentry, certificate file path
-                        `TextEntry( `id( `cgi_dir ), _("CGI - &Directory Path:") ),
+                        `TextEntry( `id( `cgi_dir ), _("CGI &Directory Path") ),
                         `VBox(
                             `Label(""),
                             `PushButton(`id(`browse_cgi_dir ), Label::BrowseButton () )
@@ -336,7 +336,7 @@ symbol  SetVHostOptions() {
                    `CheckBox(`id(`ssl_support), _("Enable &SSL Support For This Virtual Host"))),
                     `HBox(
                         // translators: textentry, certificate file path
-                        `TextEntry( `id( `certfile ), _("&Certificate File Path:") ),
+                        `TextEntry( `id( `certfile ), _("&Certificate File Path") ),
                         `VBox(
                             `Label(""),
                             `PushButton(`id(`browse_cert ), Label::BrowseButton () )
@@ -347,7 +347,7 @@ symbol  SetVHostOptions() {
 		`Frame(
 		 _("Directory Options"),
 		 `Left(
-		       `TextEntry( `id( `dir_index ), _("&Directory Index:") )
+		       `TextEntry( `id( `dir_index ), _("&Directory Index") )
                       )),
                `VSpacing (1),
                 `Frame(
@@ -455,7 +455,7 @@ string zone="";
 
         if (ret == `browse_cgi_dir)
          {
-          string cgi_dir = UI::AskForExistingDirectory("/srv/www/cgi-bin", _("Choose CGI Directory") );
+          string cgi_dir = UI::AskForExistingDirectory("/srv/www/cgi-bin", _("CGI Directory") );
           if (cgi_dir != nil) UI::ChangeWidget (`cgi_dir, `Value, cgi_dir );
 
           ret=nil;
@@ -499,7 +499,7 @@ string zone="";
 		 if (size((string) UI::QueryWidget(`certfile, `Value)) == 0)
 		  {
                     // translators: error popup
-                    Popup::Error ( _("Certificate File cannot be empty.") );
+                    Popup::Error ( _("Enter the certificate file.") );
                     ret = nil;
                     continue;
 
