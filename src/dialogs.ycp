@@ -378,7 +378,7 @@ string zone="";
 		 if ( (value["type"]:"" == "master") 
 			&& (regexpmatch(servername["VALUE"]:"", "\\."+key+"$" ))
 				&& (size(key)>size(zone)) ) zone=key;
-			   y2milestone("Master zone %1", key);
+			   y2milestone(_("Master zone %1"), key);
 		});
 		if (size(zone)>0)
 		 {
@@ -390,13 +390,13 @@ string zone="";
 		});
 		if (exists == true) 
 			{
-			 y2milestone("Record %1 already exists in zone %2", servername["VALUE"]:"", zone);
+			 y2milestone(_("Record %1 already exists in zone %2."), servername["VALUE"]:"", zone);
 			} else {
                    UI::ReplaceWidget(`replace, `Frame(_("DNS Settings"),
                                               `Left(
                                                 `HBox(
                                                  `Label(servername["VALUE"]:""),
-                                                 `PushButton(`id(`dns_add_rec), _("Add this record to zone"))
+                                                 `PushButton(`id(`dns_add_rec), _("Add to zone"))
                                                     ))));
 
 				}
@@ -421,8 +421,8 @@ string zone="";
                                               `Left(
                                                 `HBox(
                                                  `Label(servername["VALUE"]:""),
-						 `ComboBox(`id(`new_zone), "Select name for zone", newList),
-                                                 `PushButton(`id(`dns_create_zone), _("Create new zone"))
+						 `ComboBox(`id(`new_zone), _("Zone Name"), newList),
+                                                 `PushButton(`id(`dns_create_zone), _("Create New zone"))
                                                     ))));
 
 			}
@@ -436,7 +436,7 @@ string zone="";
 
 	if (ret == `dns_add_rec)
 	 {
-	  y2internal("Add record %1 to zone %2", servername["VALUE"]:"", zone);
+	  y2milestone(_("Add record %1 to zone %2"), servername["VALUE"]:"", zone);
 	  UI::ChangeWidget(`dns_add_rec, `Enabled, false);
 	  DnsServerAPI::AddZoneRR(zone, "A", servername["VALUE"]:""+".", ip["VALUE"]:"");
 	  ret = nil;
@@ -444,7 +444,7 @@ string zone="";
 
 	if (ret == `dns_create_zone)
 	 {
-	  y2internal("Create new zone ... %1", UI::QueryWidget(`new_zone, `Value));
+	  y2milestone("Create new zone ... %1", UI::QueryWidget(`new_zone, `Value));
 	  UI::ChangeWidget(`dns_create_zone, `Enabled, false);
 	  UI::ChangeWidget(`new_zone, `Enabled, false);
 	   zone = (string)UI::QueryWidget(`new_zone, `Value);
