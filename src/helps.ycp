@@ -184,13 +184,13 @@ This dialog allows you to specify additional information about a new virtual hos
 	+_("<p>Select <b>Enable CGI Support</b>
 to run CGI scripts in the path in <b>CGI Directory Path</b> using the alias <tt>/cgi-bin/</tt>.</p>")
 	// advanced new host dialog 3/5
-	+_("<p>For HTTPS access to this virtual host, select <b>Enable SSL Support</b>.\n"
-"Then enter the path for the certificate file in <b>Certificate File Path<b>.</p>")
+	+_("<p>For HTTPS access to this virtual host, select <b>Enable SSL Support</b>.\n
+Then enter the path for the certificate file in <b>Certificate File Path<b>.</p>")
 	// advanced new host dialog 4/5
 	+_("<p>In <b>Directory Index</b>, enter a space-separated list of files that Apache should look for and provide when a URL for a directory (one that ends in <tt>/</tt>) is requested.  The first matching file found is provided.</p>")
 	// advanced new host dialog 5/5
-	+_("<p><b>Public HTML</b>\n"
-"enables to access <tt>.public_html</tt> directories of all users.</p>")
+	+_("<p><b>Public HTML</b>\n
+enables to access <tt>.public_html</tt> directories of all users.</p>")
 
     ];
 
