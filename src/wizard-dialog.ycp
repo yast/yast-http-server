@@ -36,7 +36,7 @@ symbol WizardSequence1(){
         );
     list<string> widget_names = ["open_port", "listen_interfaces", "fw_open"];
     list<map<string,any> > w = CWM::CreateWidgets (widget_names, HttpServerWidgets::widgets);
-    string help = "<h3>Network Device Selection</h3>" + CWM::MergeHelps (w);
+    string help = "<h3>" + _("Network Device Selection") + "</h3>" + CWM::MergeHelps (w);
     contents = CWM::PrepareDialog (contents, w);
 
     Wizard::SetContentsButtons (caption, contents, help,
