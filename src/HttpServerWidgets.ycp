@@ -1764,7 +1764,7 @@ define string item2listen( string network, string port ) ``{
 	    // translators: server module status unknown
 	    string name = mod["name"]:_("unknown");
 	    // translators: server module status
-	    return `item (`id (index), name, contains( modules, name) ? _("Enabled") 
+	    return `item (`id (index), name, (contains( modules, name)||mod["default"]:"0"=="1") ? _("Enabled") 
 		// translators: server module status
 		: _("Disabled"), mod["summary"]:"" );
 	});
