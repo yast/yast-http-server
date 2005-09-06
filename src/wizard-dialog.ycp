@@ -106,7 +106,7 @@ symbol WizardSequence2(){
 
    list<string> widget_names = ["script_modules"];
     list<map<string,any> > w = CWM::CreateWidgets (widget_names, HttpServerWidgets::widgets);
-    string help = "<h3>Modules</h3>" + CWM::MergeHelps (w);
+    string help = "<h3>" + _("Modules") + "</h3>" + CWM::MergeHelps (w);
     contents = CWM::PrepareDialog (contents, w);
 
     Wizard::SetContentsButtons (caption, contents, help,
