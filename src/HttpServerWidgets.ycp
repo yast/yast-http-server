@@ -164,16 +164,16 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
     string servername = (string)get_host_value ( "ServerName", server, nil );
     string ip = (string)get_host_value ( "HostIP", server, nil );
     boolean namebased = ((string)get_host_value ( "VirtualByName", server, nil )) == "1";
-
+    string documentroot = (string) get_host_value ( "DocumentRoot", server, "" );
     if ( size ( servername ) == 0 )
     {
         //translators: popup error message when validate server
 	Report::Error ( _("Server name cannot be empty.") );
 	return false;
-    }    
-    
+    } 
+
     boolean res = true;
-    
+
     foreach (string host, hosts, ``{
 	if ( host == hostid )
 	{
@@ -181,7 +181,7 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	    continue;
 	}
 	list< map<string,any> > desc = YaST::HTTPDData::GetHost (host);
-	
+
 	// find out the server name
 	string value = (string)get_host_value ( "ServerName", desc, nil );
 	
@@ -195,7 +195,21 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	}
 	
 	value = (string)get_host_value ("HostIP", desc, nil);
-	
+
+	if (size(documentroot)<1){
+	 // error message - the entered document root is empty
+	 Report::Error (_("The root directory can't be empty."));
+         res = false;
+         break;
+	} else {
+		if ( SCR::Execute(.target.bash, "test -d " + documentroot) != 0){
+			// error message - the entered root directory is not valid directory
+	            Report::Error (_("The root directory must be exist directory."));
+	            res = false;
+	            break;
+		 }
+		}
+
 	if (value == ip)
 	{
 	    // this is valid only if both of them are name-based, not ip-based
@@ -1253,7 +1267,8 @@ define string item2listen( string network, string port ) ``{
 
 	// strip the log format, if present
 	string log = "";
-	log = select( splitstring( log, " " ), 0, "/var/log/apache2/access_log" );
+//	log = select( splitstring( log, " " ), 0, "/var/log/apache2/access_log" );
+	log = splitstring( log, " " )[0]:"/var/log/apache2/access_log" ;
 
 	LogView::Display ($[
 	    "command" : sformat( "tail -f %1 -n 100 | /usr/sbin/logresolve2", log ),
@@ -1281,7 +1296,8 @@ define string item2listen( string network, string port ) ``{
 	
 	// strip the log format, if present
 	string log = "";
-	log = select( splitstring( log, " " ), 0, "/var/log/apache2/error_log" );
+//	log = select( splitstring( log, " " ), 0, "/var/log/apache2/error_log" );
+	log = splitstring( log, " " )[0]:"/var/log/apache2/error_log";
 
 	LogView::Display ($[
 	    "command" : sformat( "tail -f %1 -n 100 | /usr/sbin/logresolve2", log ),
@@ -1780,16 +1796,34 @@ define string item2listen( string network, string port ) ``{
       */
     global define symbol handleModules (string key, map event) ``{
 	UI::SetFocus (`id (`modules));
-	integer current = (integer) UI::QueryWidget (`id (`modules), `CurrentItem);
         if (event["ID"]:nil == `toggle)
         {
 	    integer ci = (integer) UI::QueryWidget( `id( `modules ), `CurrentItem );
-	    string status = (string) select( (term) UI::QueryWidget( `id(`modules), `Item(ci) ), 2, _("Enabled") );
-	    string name = (string) select( (term) UI::QueryWidget( `id(`modules), `Item(ci) ), 1, nil );
+
+//	    string status = (string) select( (term) UI::QueryWidget( `id(`modules), `Item(ci) ), 2, _("Enabled") );
+	    string status = ((term)UI::QueryWidget( `id(`modules), `Item(ci) ))[2]: _("Enabled") ;
+//	    string name = (string) select( (term) UI::QueryWidget( `id(`modules), `Item(ci) ), 1, nil );
+	    string name = ((term) UI::QueryWidget( `id(`modules), `Item(ci) ))[1]:"";	
 	    y2debug( "Status of module: %1", status );
 	    if( status == _("Enabled") ) status = _("Disabled");
-	    else status = _("Enabled");
+	 	   else status = _("Enabled");
 	    UI::ChangeWidget( `id( `modules ), `Item( ci , 1 ) , status );
+	foreach(map<string, any> mods, YaST::HTTPDData::GetKnownModules(), {
+	 if (name == mods["name"]:"" && status == _("Enabled") && mods["exclude"]:nil != nil) 
+	  {
+		foreach(string exclude, mods["exclude"]:[], {
+		 YaST::HTTPDData::ModifyModuleList ([exclude], false);
+		  foreach (any excl_row, (list)UI::QueryWidget( `id(`modules), `Items ), {
+		    if (exclude == ((term)excl_row)[1]:"" ) {
+			integer row = (integer)((term)    ((term)excl_row)[0]:nil)[0]:nil;
+			if (row != nil) UI::ChangeWidget( `id( `modules ), `Item( row , 1 ) , _("Disabled") );
+			};
+		  });
+		 y2milestone("Disabling module %1 excluded by %2", exclude, name);
+		});
+	 }
+ 
+	});
 	    YaST::HTTPDData::ModifyModuleList ([name], status == _("Enabled"));
 	    HttpServer::modified = true;
         }
@@ -1874,7 +1908,7 @@ define string item2listen( string network, string port ) ``{
 	string network = (string) currentitem[1]:nil;
 	// translators: all network addresses Listen type
 	if( network == _("All Addresses") ) network = "";
-	string port = select(currentitem, 2, "");
+	string port = currentitem[2]:"";
 
         if (event["ID"]:nil == `add)
         {
@@ -2132,7 +2166,8 @@ void setServiceAutoStart(boolean status) ``{
 
 global define void initSummaryText (string key) ``{
 
- UI::ReplaceWidget(`id(`summary_text_rp), `RichText( select(HttpServer::Summary(),0, "error")  ));
+// UI::ReplaceWidget(`id(`summary_text_rp), `RichText( select(HttpServer::Summary(),0, "error")  ));
+   UI::ReplaceWidget(`id(`summary_text_rp), `RichText( HttpServer::Summary()[0]:"error" ));
 }
 
 /* EOF */

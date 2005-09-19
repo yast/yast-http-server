@@ -777,7 +777,8 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 490
+                    position  => 490,
+		    exclude   => [ "php5" ]
     },
     'php5' => {
                     summary   => 'Provides support for PHP5 dynamically generated pages',
@@ -785,7 +786,8 @@ package YaPI::HTTPDModules;
                     default   => 0,
                     required  => 0,
                     suggested => 0,
-                    position  => 490
+                    position  => 490,
+		    exclude   => [ "php4" ]
     },
     'perl' => {
                     summary   => 'Provides support for Perl dynamically generated pages',
