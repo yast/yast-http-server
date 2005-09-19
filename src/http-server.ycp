@@ -169,11 +169,11 @@ define boolean ListenHandler(map<string, string> options) ``{
 	string address = "";
 	string port = "";
         list listens = splitstring(options[command]:"", ":");
-        if (size(listens)==1) port = select(listens,0,"");
+        if (size(listens)==1) port = listens[0]:"";
          else if (size(listens)==2)
                 {
-                 address = select(listens, 0, "");
-                 port   = select(listens, 1, "");
+                 address = listens[0]:"";
+                 port   = listens[1]:"";
                 }
           else return false;
 
@@ -241,8 +241,10 @@ list <string> hosts = YaST::HTTPDData::GetHostsList ();
                                                 $[ "KEY": "DocumentRoot", "VALUE" : options["documentroot"]:"" ],
                                                 $[ "KEY": "VirtualByName", "VALUE" : "1" ],
                                                 $[ "KEY": "SSL", "VALUE" : "0" ],
-                                                $[ "KEY": "HostIP", "VALUE" : select(maplist( string ip, string dev, HttpServer::ip2device, ``( ip )),0, nil
-)] ];
+                                                $[ "KEY": "HostIP", "VALUE" :
+					(maplist( string ip, string dev, HttpServer::ip2device, ``( ip ))[0]:nil)
+						] ];
+			//select(maplist( string ip, string dev, HttpServer::ip2device, ``( ip )),0, nil
 
         if (!HttpServerWidgets::validate_server (options["servername"]:"", hostmap))
          {
@@ -250,8 +252,11 @@ list <string> hosts = YaST::HTTPDData::GetHostsList ();
           return false;
          }
 
-        YaST::HTTPDData::CreateHost (  select(maplist( string ip, string dev, HttpServer::ip2device, ``( ip )),0, nil)
+        YaST::HTTPDData::CreateHost (  maplist( string ip, string dev, HttpServer::ip2device, ``( ip ))[0]:""
                 +"/"+options["servername"]:"", hostmap );
+
+//        YaST::HTTPDData::CreateHost (  select(maplist( string ip, string dev, HttpServer::ip2device, ``( ip )),0, nil)
+//                +"/"+options["servername"]:"", hostmap );
 
 
       if (hostmap == nil) return false;

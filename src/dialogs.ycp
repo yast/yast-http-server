@@ -170,7 +170,7 @@
 	  * Return wizard for adding new virtual host	
 	  *
 	  */
-global list< map<string,any> > descr = [];
+ list< map<string,any> > descr = [];
     symbol AddHost () {
 	term contents = `HBox( `HSpacing(0.5), `VBox (
 	    `Frame(
