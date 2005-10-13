@@ -124,9 +124,9 @@ if( !Require::RequireAndConflictTarget( required, [],
 {
     if( !Require::IsPackageAvailable( "apache2" ) ) {
         // translators: error popup before aborting the module
-        Popup::Error( sformat( _("<p>The package <b>%1</b> is not available.<br>
+        Popup::Error( sformat( _("The package %1 is not available.
 YaST2 cannot continue the configuration
-without installing the package.</p>"), "apache2" ) );
+without installing the package."), "apache2" ) );
     } else {
         // translators: error popup before aborting the module
         Popup::Error( Message::CannotContinueWithoutPackagesInstalled() );
@@ -342,7 +342,7 @@ Install them now?
     // write httpd.conf
 
     // write hosts
-    YaST::HTTPDData::WriteHosts ();
+    YaST::HTTPDData::WriteHosts();
     
     import "SuSEFirewall";
 	Progress::set(false);//    Progress::off ();

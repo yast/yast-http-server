@@ -314,9 +314,9 @@ sub DeleteHost {
     return 1;
 }
 
+BEGIN { $TYPEINFO{WriteHosts} = ["function", "boolean" ]; }
 sub WriteHosts {
     my $self = shift;
-print "$self\n";
     foreach my $hostid( keys( %{$dirty{DEL}} ) ) {
         delete($certs{$hostid});
         YaPI::HTTPD->DeleteHost( $hostid );
