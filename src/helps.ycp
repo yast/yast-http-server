@@ -24,7 +24,7 @@ Please wait...<br></p>
 ") +
 
 	/* Read dialog help 2/2 */
-	_("<p><b><big>Aborting Initialization:</big></b><br>
+	_("<p><b><big>Aborting Initialization</big></b><br>
 Safely abort the configuration utility by pressing <b>Abort</b> now.</p>
 "),
 
@@ -34,7 +34,7 @@ Please wait...<br></p>
 ") +
 
 	/* Write dialog help 2/2 */
-	_("<p><b><big>Aborting Saving:</big></b><br>
+	_("<p><b><big>Aborting Saving</big></b><br>
 Abort the save procedure by pressing <b>Abort</b>.
 An additional dialog informs you whether it is safe to do so.</p>
 "),
@@ -49,8 +49,8 @@ An additional dialog informs you whether it is safe to do so.</p>
         //translators: Wizard dialog 5/5
 	"summary_text"	: _("<p>The summary displays the settings that will be written to the Apache2 configuration when you press <b>Finish</b>.</p>"),
         //translators: Wizard dialog 5/5
-	"expert_conf"	: _("<p>By pressing <b>HTTP Server Expert Configuration</b> 
-		button more detailed configuration is allowed before writing configuration.</p>"),
+	"expert_conf"	: _("<p>Press <b>HTTP Server Expert Configuration</b> 
+		to create a more detailed configuration before writing the configuration.</p>"),
 
 	// module dialog help 1/3
 	"modules" : _("<p><b><big>Editing HTTP Server Modules</big></b><br>
@@ -76,13 +76,13 @@ Activate the HTTP server by choosing <b>Enabled</b>. To deactive it, choose
 
 	// firewall adapting help 1/1
 	"firewall_adapt" : _("<p>By enabling <b>Open Firewall on Selected Ports</b>, 
-instruct YaST2 to adapt the firewall according the ports on which Apache2 listens. 
+adapt the firewall according the ports on which Apache2 listens. 
 The interfaces of the firewall are not added or deleted. 
 This option is only available if the firewall is enabled.</p>\n"),
 
 	// server configuration overview help 1/2
 	"overview_widget" : _("<p>The list of options presents
-several parts of the server configuration. <b>Listen on</b>
+several parts of the server configuration. <b>Listen On</b>
 contains a list of ports and IP addresses on which the
 server should listen for the incoming requests. 
 <b>Modules</b> allows configuring the modules loaded by the
@@ -96,7 +96,7 @@ default host is displayed.
 	// server configuration overview help 2/2
 	+ _("<p>Choose an appropriate entry from the table and click <b>Edit</b> to change settings.</p>")
 	// help of menu button for server configuration 1/1
-	+  _("<p><b>Log Files</b> allows displaying server log files.</p>"),
+	+  _("<p><b>Log Files</b> displays server log files.</p>"),
 
 
 	// hosts list help 1/2
@@ -110,10 +110,16 @@ press <b>Set as Default</b>.</p>
 	+ _("<p>Choose an appropriate entry of the table and click <b>Edit</b> to change the host.
 To add a host, click <b>Add</b>. To remove a host, select it and click <b>Delete</b>.</p>"),
 
-	// host editing help 1/1
+	// host editing help 1/2
 	"global_table": _("<p><b><big>Host Configuration</big></b><br>
 To edit the host settings, choose the appropriate entry of the table then click <b>Edit</b>.
-To add a new option, click <b>Add</b>. To remove an option, select it and click <b>Delete</b>.</p>"),
+To add a new option, click <b>Add</b>. To remove an option, select it and click <b>Delete</b>.</p>")
+
+	// host editing help 2/2
+	+ _("<p>The <b>Server Resolution</b> options set the resolution when using 
+virtual hosts. However, when you choose <b>Resolution via HTTP Headers</p>,
+	the default server will never be served requests to the IP address of
+	a name-based virtual host.</p>"),
 
 	// listen dialog editor help 1/2
 	"listen" : _("<p><b><big><i>Listen</i> Settings for a Host</big></b><br>
@@ -132,9 +138,9 @@ encrypting communication.</p>
 ")
 
 	// ssl options dialog help 2/4
-	+ _("<p>General behavior is determined by the <i>SSL</i> option. The host can
-not support SSL at all (<i>No SSL</i>), allow both non-SSL and SSL access (<i>Allowed</i>),
-or accept only connections encrypted via SSL (<i>Required</i>).
+	+ _("<p>General behavior is determined by the SSL option. The host can
+not support SSL at all (<tt>No SSL</tt>), allow both non-SSL and SSL access (<tt>Allowed</tt>),
+or accept only connections encrypted via SSL (<tt>Required</tt>).
 </p>
 ")
 
@@ -151,7 +157,7 @@ common certificate issued for this host.</p>
 ") : "" )
 
 	// ssl options dialog help 4/4
-	+ _("<p><b>Note:</b> If you enable use of SSL for a host, the <i>mod_ssl</i> 
+	+ _("<p><b>Note:</b> If you enable use of SSL for a host, the <tt>mod_ssl</tt> 
 module should be loaded by the server.</p>
 "),
 
@@ -160,7 +166,7 @@ module should be loaded by the server.</p>
 This dialog allows you to enter a basic information about a new virtual host.</p>")
 
 	// new host dialog help 2/3
-	+ _("<p><i>Server Identification</i> specifies the content and
+	+ _("<p><b>Server Identification</b> specifies the content and
 the presentation of the the new virtual host. <b>Server Name</b> is the DNS name returned as a part
 of the HTTP headers of the server response. <b>Server Contents Root</b>
 is an absolute path to a directory containing all documents provided by
@@ -170,13 +176,13 @@ address for feedback about this host.</p>
 
 	// new host dialog help 3/3
 	+ _("<p><big><b>Server Resolution</b></big><br>
-Apache 2 must be able to determine which virtual host
+Apache2 must be able to determine which virtual host
 settings it should use to create a response for an HTTP request. 
-In principle, there are two basic approaches. If using <i>HTTP headers</i>
+In principle, there are two basic approaches. If using HTTP headers
 from the incoming request, the server looks up the host name specified by
 the HTTP request headers. The other possibility is to determine the virtual host
-by the <i>IP address</i> used by the client when connecting to the server.
-Consult the Apache 2 manual for further details.</p>\n"),
+by the IP address used by the client when connecting to the server.
+Consult the Apache2 manual for further details.</p>\n"),
 	// advanced new host dialog 1/5
 	"set_vhost"	: _("<p><b><big>Details for New Host</big></b><br>
 This dialog allows you to specify additional information about a new virtual host.</p>")
@@ -190,7 +196,7 @@ Then enter the path for the certificate file in <b>Certificate File Path<b>.</p>
 	+_("<p>In <b>Directory Index</b>, enter a space-separated list of files that Apache should look for and provide when a URL for a directory (one that ends in <tt>/</tt>) is requested.  The first matching file found is provided.</p>")
 	// advanced new host dialog 5/5
 	+_("<p><b>Public HTML</b>\n
-enables to access <tt>.public_html</tt> directories of all users.</p>")
+enables access to <tt>.public_html</tt> directories of all users.</p>")
 
     ];
 
