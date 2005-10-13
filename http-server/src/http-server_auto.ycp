@@ -1,0 +1,124 @@
+/**
+ * File:	clients/http-server_auto.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Client for autoinstallation
+ * Authors:	Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ *
+ * This is a client for autoinstallation. It takes its arguments,
+ * goes through the configuration and return the setting.
+ * Does not do any changes to the configuration.
+ */
+
+/**
+ * @param function to execute
+ * @param map/list of http-server settings
+ * @return map edited settings, Summary or boolean on success depending on called function
+ * @example map mm = $[ "FAIL_DELAY" : "77" ];
+ * @example map ret = WFM::CallFunction ("http-server_auto", [ "Summary", mm ]);
+ */
+
+{
+
+textdomain "http-server";
+
+y2milestone("----------------------------------------");
+y2milestone("HttpServer auto started");
+
+import "HttpServer";
+include "http-server/wizards.ycp";
+
+any ret = nil;
+string func = "";
+map param = $[];
+
+/* Check arguments */
+if(size(WFM::Args()) > 0 && is(WFM::Args(0), string)) {
+    func = (string)WFM::Args(0);
+    if(size(WFM::Args()) > 1 && is(WFM::Args(1), map))
+	param = (map)WFM::Args(1);
+}
+y2debug("func=%1", func);
+y2debug("param=%1", param);
+
+/* Create a summary*/
+if(func == "Summary") {
+    ret = select(HttpServer::Summary(), 0, "");
+}
+/* Reset configuration */
+else if (func == "Reset") {
+    HttpServer::Import($[]);
+    HttpServer::configured = false;
+    ret = $[];
+}
+/* Change configuration (run AutoSequence) */
+else if (func == "Change") {
+    ret = HttpServerAutoSequence();
+}
+/* Import configuration */
+else if (func == "Import") {
+    HttpServer::configured = false;
+    ret = HttpServer::Import(param);
+}
+/* Return required packages */
+else if (func == "Packages") {
+    ret = HttpServer::AutoPackages();
+}
+else if (func == "GetModified") {
+    ret = HttpServer::modified;
+}
+else if (func == "SetModified") {
+    HttpServer::modified = true;
+    HttpServer::configured = true;
+    ret = true;
+}
+/* Return actual state */
+else if (func == "Export") {
+    ret = HttpServer::Export();
+}
+/* Read current state */
+else if (func == "Read") {
+    import "Progress";
+    Progress::off();
+    ret = HttpServer::Read();
+    Progress::on();
+}
+/* Write givven settings */
+else if (func == "Write") {
+    import "Progress";
+    Progress::off();
+    HttpServer::write_only = true;
+    ret = HttpServer::Write();
+    Progress::on();
+}
+/**
+ * Return if configuration  was changed
+ * return boolean
+ */
+else if (func == "GetModified") {
+    ret = HttpServer::modified;
+}
+
+/**
+ * Set modified flag
+ * return boolean
+ */
+else if (func == "SetModified") {
+    HttpServer::modified = true;
+    ret = true;
+}
+/* Unknown function */
+else {
+    y2error("Unknown function: %1", func);
+    ret = false;
+}
+
+y2debug("ret=%1", ret);
+y2milestone("HttpServer auto finished");
+y2milestone("----------------------------------------");
+
+return ret;
+
+/* EOF */
+}

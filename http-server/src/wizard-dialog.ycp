@@ -1,0 +1,245 @@
+/**
+ * File:        include/http-server/wizard-dialog.ycp
+ * Package:     Configuration of http-server
+ * Summary:     Dialogs for wizard
+ * Authors:     Michal Zugec <mzugec@suse.cz>
+ *
+ * $Id:$
+ */
+{
+
+textdomain "http-server";
+import "HttpServerWidgets";
+import "Wizard";
+import "CWM";
+import "Label";
+import "HttpServer";
+// 			-------------------------------------------------------------------------------------------------------------------------
+symbol WizardSequence1(){
+
+/*
+**	Sequention used for determining on which ip adresses and port apache2 will listen and if firewall is enebled
+**	whether to open firewall on this port.
+*/
+	string caption=_("HTTP Server Wizard (1/5)--Network Device Selection");
+    term contents =
+        `Top (
+            `VBox (
+                      `VSpacing(0.5),
+			"open_port",
+                      `VSpacing(0.5),
+			"listen_interfaces",
+                      `VSpacing(0.5),
+			"fw_open",
+                      `VSpacing(8)
+            )
+        );
+    list<string> widget_names = ["open_port", "listen_interfaces", "fw_open"];
+    list<map<string,any> > w = CWM::CreateWidgets (widget_names, HttpServerWidgets::widgets);
+    string help = "<h3>" + _("Network Device Selection") + "</h3>" + CWM::MergeHelps (w);
+    contents = CWM::PrepareDialog (contents, w);
+
+    Wizard::SetContentsButtons (caption, contents, help,
+        Label::BackButton (), Label::NextButton ());
+    Wizard::HideBackButton();
+    Wizard::SetAbortButton(`abort, Label::CancelButton () );
+
+    map event = $[];
+    any ret = CWM::Run (w, $[`abort : ReallyAbort ]);
+
+    if (ret == `next)
+    {
+/*
+**	Save entred parameters to map
+*/
+	list<string> if_all = maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) ;
+	list<string> if_sel = (list <string>) UI::QueryWidget( `id("multi_sel_box"), `SelectedItems );
+	y2milestone("All interfaces : %1", if_all);
+	y2milestone("going next %1", UI::QueryWidget( `id("open_port"), `Value ));
+	y2milestone("network interfaces : %1", if_sel);
+	boolean all=true;
+	boolean finded=false;
+	foreach(string interface, if_all, {
+	 finded=false;
+	 foreach(string selected, if_sel, {
+	  if ( selected == interface ) finded=true;
+	 });
+	 if (!finded) all=false;
+	});
+	y2milestone("All: %1", all);
+		// save port information
+                      foreach(map listens, YaST::HTTPDData::GetCurrentListen(),
+                        {
+                        YaST::HTTPDData::DeleteListen( tointeger(listens["PORT"]:"80"), tointeger(listens["PORT"]:"80"), listens["ADDRESS"]:"");
+                        } );
+		// save interface information
+	if (all==true) {
+                     YaST::HTTPDData::CreateListen( tointeger(UI::QueryWidget( `id("open_port"), `Value )), 
+				tointeger(UI::QueryWidget( `id("open_port"), `Value )), "");
+			} 
+		else {
+		// save firewall open port information 
+			foreach(string ip, if_sel, {
+				YaST::HTTPDData::CreateListen( tointeger(UI::QueryWidget( `id("open_port"), `Value )),
+                                	tointeger(UI::QueryWidget( `id("open_port"), `Value )), ip);
+	y2milestone("Listen on : %1", ip);
+
+				});
+	HttpServer::modified = true;
+			}
+    }
+	y2milestone("Listen string : %1", YaST::HTTPDData::GetCurrentListen());
+    return (symbol) ret;
+}
+
+//                      -------------------------------------------------------------------------------------------------------------------------
+
+symbol WizardSequence2(){
+/*
+** Sequence to choose some script language modules
+*/
+        string caption=_("HTTP Server Wizard (2/5)--Modules");
+    term contents =
+        `Top (
+		"script_modules"
+             );
+
+   list<string> widget_names = ["script_modules"];
+    list<map<string,any> > w = CWM::CreateWidgets (widget_names, HttpServerWidgets::widgets);
+    string help = "<h3>" + _("Modules") + "</h3>" + CWM::MergeHelps (w);
+    contents = CWM::PrepareDialog (contents, w);
+
+    Wizard::SetContentsButtons (caption, contents, help,
+        Label::BackButton (), Label::NextButton ());
+    Wizard::SetAbortButton(`abort, Label::CancelButton () );
+
+    map event = $[];
+    any ret = CWM::Run (w, $[`abort : ReallyAbort ]);
+    if (ret==`next){
+        boolean enable_php4=(boolean) UI::QueryWidget( `id(`scr_mod_php4), `Value );
+        boolean enable_perl=(boolean) UI::QueryWidget( `id(`scr_mod_perl), `Value );
+        boolean enable_python=(boolean) UI::QueryWidget( `id(`scr_mod_python), `Value );
+        boolean enable_ruby=(boolean) UI::QueryWidget( `id(`scr_mod_ruby), `Value );
+
+	y2milestone("Saving script modules");
+	y2milestone("PHP4 support %1", enable_php4);
+	y2milestone("Perl support %1", enable_perl);
+	y2milestone("Python support %1", enable_python);
+	y2milestone("Ruby support %1", enable_ruby);
+	// create list of all standard modules
+           list<string> existing = maplist (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), { 
+			YaST::HTTPDData::ModifyModuleList ([ mod["name"]:_("unknown") ], mod["default"]:_("0") == "1");
+		} );
+	// add selected modules to that list
+	YaST::HTTPDData::ModifyModuleList ([ "php4" ], enable_php4);
+        YaST::HTTPDData::ModifyModuleList ([ "perl" ], enable_perl);
+        YaST::HTTPDData::ModifyModuleList ([ "python" ], enable_python);
+        YaST::HTTPDData::ModifyModuleList ([ "ruby" ], enable_ruby);
+
+            HttpServer::modified = true;
+    }
+    return (symbol) ret;
+}
+
+//                      -------------------------------------------------------------------------------------------------------------------------
+
+symbol WizardSequence3(){
+/*
+**	Sequence to configure default host parameters
+*/
+        string caption=_("HTTP Server Wizard (3/5)--Default Host");
+       list< map<string,any> > w = CWM::CreateWidgets (["host"], HttpServerWidgets::widgets);
+        term contents = `HBox (`HSpacing (1), `VBox (
+            `VSpacing (1),
+            w[0, "widget"]:`VSpacing (0),
+            `VSpacing (1)
+        ), `HSpacing (1));
+
+        // dialog caption
+        string help = CWM::MergeHelps (w);
+
+        Wizard::SetContentsButtons (caption, contents, help, Label::BackButton (), Label::NextButton ());
+        Wizard::SetAbortButton ( `abort, Label::CancelButton() );
+
+	string servername = (string) HttpServerWidgets::get_host_value("ServerName", YaST::HTTPDData::GetHost("default"), "");
+
+	string serveradmin = (string) HttpServerWidgets::get_host_value("ServerAdmin", YaST::HTTPDData::GetHost("default"), "");
+
+	map hostname = (map) SCR::Execute(.target.bash_output, "/bin/hostname");
+y2milestone("Hostname : %1", hostname["stdout"]:"");
+	// if no ServerName or ServerAdmin readed from configuration file, the values based on machine hostname are used
+	if (size(servername) ==0) 
+	       YaST::HTTPDData::ModifyHost ("default", HttpServerWidgets::set_host_value("ServerName", YaST::HTTPDData::GetHost("default"), 
+																hostname["stdout"]:""));
+	if (size(serveradmin) ==0) 
+	      YaST::HTTPDData::ModifyHost ("default", HttpServerWidgets::set_host_value("ServerAdmin", YaST::HTTPDData::GetHost("default"), 
+															"root@"+hostname["stdout"]:""));
+
+        return CWM::Run (w, $[`abort : Abort]);
+}
+
+//                      -------------------------------------------------------------------------------------------------------------------------
+
+symbol WizardSequence4(){
+/*
+**	Sequence to cunfigure virtual hosts (add, remove, edit) and to change default host status
+*/
+        string caption=_("HTTP Server Wizard (4/5)--Virtual Hosts");
+
+       list< map<string,any> > w = CWM::CreateWidgets (["hosts"],
+            HttpServerWidgets::widgets);
+        term contents = `HBox (`HSpacing (1), `VBox (
+            `VSpacing (1),
+            w[0, "widget"]:`VSpacing (0),
+            `VSpacing (1)
+        ), `HSpacing (1));
+
+        // dialog caption
+        string help = CWM::MergeHelps (w);
+
+        Wizard::SetContentsButtons (caption, contents, help,
+            Label::BackButton (), Label::NextButton ());
+        Wizard::SetAbortButton ( `abort, Label::CancelButton() );
+
+        UI::ReplaceWidget( `id(`_tp_table_repl),
+            // menu button label
+            `PushButton( `id( `set_default ), _("Set as De&fault") ) );
+
+        return CWM::Run (w, $[`abort : Abort]);
+}
+
+//                      -------------------------------------------------------------------------------------------------------------------------
+
+symbol WizardSequence5(){
+/*
+**	Sequence to configure whether apache2 starts on boot or not (manually). Here is possible
+**	save all settings and exit or start expert configuration.
+*/
+        string caption=_("HTTP Server Wizard (5/5)--Summary");
+
+        term contents =
+        `Top (
+          `VBox (
+
+		   "booting",
+                "summary_text",
+                "expert_conf"
+                )
+             );
+    list<string> widget_names = ["booting", "summary_text", "expert_conf"];
+    list<map<string,any> > w = CWM::CreateWidgets (widget_names, HttpServerWidgets::widgets);
+    string help = CWM::MergeHelps (w);
+    contents = CWM::PrepareDialog (contents, w);
+
+    Wizard::SetContentsButtons (caption, contents, help,
+        Label::BackButton (), Label::FinishButton ());
+    Wizard::SetAbortButton(`abort, Label::CancelButton () );
+
+    map event = $[];
+    any ret = CWM::Run (w, $[`abort : ReallyAbort ]);
+    y2milestone("Return value from 5.th dialog : %1", ret);
+    return (symbol) ret;
+}
+
+}
+/* EOF */
