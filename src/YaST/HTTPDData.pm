@@ -23,6 +23,7 @@ sub SetError {
     return YaPI::HTTPD->SetError( @_ );
 }
 
+BEGIN { $TYPEINO{Error} = ["function", [ "map", "string", "string" ] ]; }
 sub Error {
     return YaPI::HTTPD->Error();
 }

@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Oct 19 09:38:47 CEST 2005 - visnov@suse.cz
+
+- added type info for HTTPData::Error 
+
+-------------------------------------------------------------------
 Thu Oct 13 11:52:13 CEST 2005 - mzugec@suse.cz
 
 - proofread 
