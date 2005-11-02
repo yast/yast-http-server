@@ -88,6 +88,7 @@ symbol MainSequence() {
 	    `add	: "addhost",
 	    `edit	: "host",
 	],
+*/
 	"host" : $[
 	    `abort	: `abort,
 	    `next	: "hosts",
@@ -95,7 +96,7 @@ symbol MainSequence() {
 	    `ssl	: "ssl",
 	    `dir	: "dir"
 	],
-*/
+
 	"addhost": $[
 	    `abort	: `abort,
 	    `next	: "setvhost",

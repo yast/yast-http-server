@@ -35,6 +35,7 @@ global string currenthost = "default";
 global string directory_param_regexp = "Directory \"?([^\"]+)\"?";
 global string dir_value = "";
 global map getSSLOptions();
+global string init_tab = "listen";
 
 boolean update_contents = false;
 
@@ -366,6 +367,7 @@ map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 
 global void HostsInit (string widget)
 {
+    init_tab = "hosts";
     TablePopup::TableInit(hosts_widget, widget);
 }
 
@@ -700,6 +702,7 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	]);
 
 global define void HostInit (string key) ``{
+    init_tab = "default_host";
     TablePopup::TableInit (HttpServerWidgets::hostwidget, key);
 }
 
@@ -735,59 +738,6 @@ global define map getSSLOptions()
  return used;
 }
 
-/*
-global map moduleslistwidget = $[
-	    "widget" : `custom,
-	    "custom_widget" : `VBox (
-		`Table (`id (`modules), `header (
-		    // table header: module name
-		    _("Name"),
-		    // table header: module status
-		    _("Status")+"    ",
-		    // table header: module description
-		    _("Description")
-		), []),
-		`HBox (
-		    `PushButton (`id (`toggle),
-		    // translators: toggle button label
-			_("&Toggle Status") ),
-		    `HStretch (),
-		    `PushButton (`id (`add_user),
-		    // translators: add user-defined module button label
-			_("&Add Module") )
-		)
-	    ),
-	    "init" : HttpServerWidgets::initModules,
-	    "handle" : HttpServerWidgets::handleModules,
-	    "help" : HELPS["modules"]:"",
-	];
-
-global map listenwidget = $[
-	    "widget" : `custom,
-	    "custom_widget" : `VBox (
-		// translators: radio button group label
-		`Left(`Label( _("Listen on Ports:") ) ),
-		`Table (`id (`listen), `header (
-		    // table header
-		    _("Network Address"),
-		    // table header
-		    _("Port")
-		), []),
-		`HBox (
-		    `PushButton (`id (`add), `opt (`key_F3),
-			Label::AddButton ()),
-		    `PushButton (`id (`edit), `opt (`key_F4),
-			Label::EditButton ()),
-		    `PushButton (`id (`delete), `opt (`key_F5),
-			Label::DeleteButton ()),
-		    `HStretch ()
-		)
-	    ),
-	    "init" : HttpServerWidgets::initListenSettings,
-	    "handle" : HttpServerWidgets::handleListenSettings,
-	    "help" : HELPS["listen"]:"",
-	];
-*/
 
 global symbol handleSSLTable(string key, map event );
 global list SSLTableContents (map descr);
@@ -1031,10 +981,6 @@ global map<string, map <string, any> > widgets = $[
                 "label_func" : HttpServerWidgets::HostName,
             ],
          ]),
-
-
-//	    "modules" : moduleslistwidget,
-//	    "listen" : listenwidget,
 	    "overview_widget" : overview_widget,
 	    "hosts"	: hosts_widget,
 	    "ssl" : sslwidget,
