@@ -102,7 +102,7 @@ map tabs_descr = $[
             "tab_order": [ "listen", "modules", "default_host", "hosts"],
             "tabs": tabs_descr,
             "widget_descr": HttpServerWidgets::widgets,
-            "initial_tab" : "listen",
+            "initial_tab" : HttpServerWidgets::init_tab,
             "tab_help" : "",
         ]),
     ];
