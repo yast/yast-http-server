@@ -32,8 +32,8 @@ symbol MainSequence() {
 	"hosts"		:   ``( HostsDialog()),
 	"host"		:   ``( HostDialog() ),
 	"host-default"	:   ``( HostDialog() ),			// different workflow
-	"listen"	:   ``( ListenDialog() ),
-	"modules"	:   ``( ModulesDialog() ),
+//	"listen"	:   ``( ListenDialog() ),
+//	"modules"	:   ``( ModulesDialog() ),
 	"addhost"	:   ``( AddHost() ),
 	"setvhost"	:   ``( SetVHostOptions() ),
 	"ssl"		:   ``( SSLDialog () ),
@@ -49,9 +49,14 @@ symbol MainSequence() {
 	    `next	: `next,
 	    `default	: "host-default",
 	    `hosts	: "hosts",
-	    `modules	: "modules",
-	    `listen	: "listen",
+	    `dir	: "dir",
+	    `ssl	: "ssl-default",
+	    `edit	: "host",
+	    `add	: "addhost",
+//	    `modules	: "modules",
+//	    `listen	: "listen",
 	],
+/*
 	"modules" : $[
 	    `abort	: `abort,
 	    `next	: "overview",
@@ -69,11 +74,13 @@ symbol MainSequence() {
 	    `ssl	: "ssl-default",
 	    `dir	: "dir",
 	],
+*/
 	"ssl-default" : $[
 	    `abort	: `abort,
 	    `next	: "host-default",
 	    `back	: "host-default",
 	],
+/*
 	"hosts" : $[
 	    `abort	: `abort,
 	    `next	: "overview",
@@ -88,6 +95,7 @@ symbol MainSequence() {
 	    `ssl	: "ssl",
 	    `dir	: "dir"
 	],
+*/
 	"addhost": $[
 	    `abort	: `abort,
 	    `next	: "setvhost",
