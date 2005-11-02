@@ -21,11 +21,12 @@
     import "ProductFeatures";
     import "Label";
     import "CWM";
+    import "CWMTab";
     import "Wizard";
     import "DnsServerAPI";
     import "DnsServer";
     import "Service";
-
+    import "TablePopup";
 
 
 
@@ -45,27 +46,81 @@
     }
 
 
+map tabs_descr = $[
+	"listen" : $[
+	  "header" :  _("Listen Ports and Addresses"),
+	  "contents" : `HBox (`HSpacing (1), `VBox (
+	    "server_enable",
+            `VSpacing (1),
+            "LISTEN",
+	    `VSpacing (0),
+	    "firewall_adapt",
+            `VSpacing (1)
+	     ), `HSpacing (1)),
+	    "widget_names" : [ "server_enable", "LISTEN", "firewall_adapt" ]
+	 ],
+	"modules" : $[
+	 "header" : _("Server Modules"),
+	 "contents" : `HBox (`HSpacing (1), `VBox (
+            `VSpacing (1),
+            "MODULES",
+            `VSpacing (1)
+        ), `HSpacing (1)),
+	"widget_names" : [ "MODULES" ]
+	 ],
+	"default_host" : $[
+
+	 "header" : _("Default Host"),
+	 "contents" : `HBox (`HSpacing (1), `VBox (
+            `VSpacing (1),
+            "DEF_HOST",
+            `VSpacing (1)
+        ), `HSpacing (1)),
+	"widget_names" : [ "DEF_HOST" ]
+	 ],
+	"hosts" : $[
+
+	 "header" : _("Hosts"),
+	 "contents" : `HBox (`HSpacing (1), `VBox (
+            `VSpacing (1),
+            "HOSTS",
+            `VSpacing (1)
+        ), `HSpacing (1)),
+	"widget_names" : [ "HOSTS" ]
+	 ]
+	];
+
 
     /**
       * Run server overview dialog
       * @return symbol for wizard sequencer
       */
     symbol OverviewDialog () {
-	term contents = `HBox (`HSpacing (1), `VBox (
-	    `VSpacing (1),
-	    "server_enable",
-	    `VSpacing (1),
-	    `Left("firewall_adapt"),
-	    `VSpacing (1),
-	    "overview_widget"
-	), `HSpacing (1));
-	// dialog caption
 	string caption = _("HTTP Server Configuration");
+    map widget_descr = $[
+        "tab": CWMTab::CreateWidget($[
+            "tab_order": [ "listen", "modules", "default_host", "hosts"],
+            "tabs": tabs_descr,
+            "widget_descr": HttpServerWidgets::widgets,
+            "initial_tab" : "listen",
+            "tab_help" : "",
+        ]),
+    ];
 
-	return CWM::ShowAndRunOrig (["server_enable", "firewall_adapt", "overview_widget" ]
-	    ,HttpServerWidgets::widgets
-	    ,contents, caption,
-	    Label::BackButton (), Label::FinishButton (), $[`abort : Abort]);
+    term contents = `VBox( "tab", `VStretch ());
+
+    list<map <string, any> > w = CWM::CreateWidgets (["tab"], (map <string, map <string, any> >)widget_descr);
+    string help = CWM::MergeHelps(w);
+    contents = CWM::PrepareDialog(contents, w);
+
+    Wizard::SetContentsButtons(caption, contents, help, Label::NextButton (), Label::FinishButton ());
+    Wizard::HideBackButton();
+
+    symbol ret = CWM::Run(w, $[`abort: Abort ]);
+
+    Wizard::RestoreBackButton ();
+
+    return ret;
     }
 
     /**
@@ -99,23 +154,6 @@
 	return ret;
     }
 
-    /**
-      * Run modules dialog
-      * @return symbol for wizard sequencer
-      */
-    symbol ModulesDialog () {
-	term contents = `HBox (`HSpacing (1), `VBox (
-	    `VSpacing (1),
-	    "modules",
-	    `VSpacing (1)
-	), `HSpacing (1));
-
-	// dialog caption
-	string caption = _("Server Modules");
-
-	return CWM::ShowAndRunOrig (["modules"], HttpServerWidgets::widgets, contents, caption,
-	  Label::BackButton(), Label::OKButton(), $[`abort : Abort]);
-    }
 
     /**
       * Run virtual host list dialog
@@ -144,27 +182,6 @@
 	return CWM::Run (w, $[`abort : Abort]);
     }
 
-    /**
-      * Run server settings edit dialog
-      * @return symbol for wizard sequencer
-      */
-    symbol ListenDialog () {
-	list< map<string,any> > w = CWM::CreateWidgets (["listen"],
-	    HttpServerWidgets::widgets);
-	term contents = `HBox (`HSpacing (1), `VBox (
-	    `VSpacing (1),
-	    w[0, "widget"]:`VSpacing (0),
-	    `VSpacing (1)
-	), `HSpacing (1));
-	// dialog caption for Listen statements configuration
-	string caption = _("Listen Ports and Addresses");
-	string help = CWM::MergeHelps (w);
-
-	Wizard::SetContentsButtons (caption, contents, help,
-	    Label::BackButton (), Label::OKButton ());
-
-	return CWM::Run (w, $[`abort : Abort]);
-    }
 
 	/**
 	  * Return wizard for adding new virtual host	

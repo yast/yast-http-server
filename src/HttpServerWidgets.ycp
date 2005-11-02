@@ -338,10 +338,10 @@ map<string, any> overview_widget = $[
 
 /******************************************************************************************/
 
-void HostsInit (string widget);
-symbol HostsHandle (string table, map event);
-list HostsContents (map descr);
-boolean HostsDelete (any opt_id, string opt_key);
+global void HostsInit (string widget);
+global symbol HostsHandle (string table, map event);
+global list HostsContents (map descr);
+global boolean HostsDelete (any opt_id, string opt_key);
 global boolean HostIsDefault (any widget, string opt_key);
 global string HostsMapId2Key( map desc, any id );
 global string HostDocumentRootSummary( any key, string id );
@@ -364,7 +364,7 @@ map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 	    ],
 	]);
 
-void HostsInit (string widget)
+global void HostsInit (string widget)
 {
     TablePopup::TableInit(hosts_widget, widget);
 }
@@ -442,7 +442,7 @@ the default host.
     return ret != `cancel ? $[ "name": servername, "ip" : ip ] : (map<string,string>)nil;
 }
 
-symbol HostsHandle (string table, map event)
+global symbol HostsHandle (string table, map event)
 {
     if ( event["ID"]:nil == `_tp_add )
     {
@@ -506,11 +506,11 @@ symbol HostsHandle (string table, map event)
     return nil;
 }
 
-list HostsContents (map descr) {
+global list HostsContents (map descr) {
     return YaST::HTTPDData::GetHostsList ();
 }
 
-boolean HostsDelete (any opt_id, string opt_key) {
+global boolean HostsDelete (any opt_id, string opt_key) {
     if (opt_id == "default")
     {
 	// translators: popup error message - default host cannot be deleted
@@ -673,7 +673,7 @@ global map<string,map> popups = $[
 	    ],
 	];
 
-define void HostInit (string key);
+global void HostInit (string key);
 
 global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	    $["add_delete_buttons" : true, 
@@ -699,7 +699,7 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	    "help" : HELPS["global_table"]:"",
 	]);
 
-define void HostInit (string key) ``{
+global define void HostInit (string key) ``{
     TablePopup::TableInit (HttpServerWidgets::hostwidget, key);
 }
 
@@ -735,7 +735,7 @@ global define map getSSLOptions()
  return used;
 }
 
-
+/*
 global map moduleslistwidget = $[
 	    "widget" : `custom,
 	    "custom_widget" : `VBox (
@@ -787,7 +787,7 @@ global map listenwidget = $[
 	    "handle" : HttpServerWidgets::handleListenSettings,
 	    "help" : HELPS["listen"]:"",
 	];
-
+*/
 
 global symbol handleSSLTable(string key, map event );
 global list SSLTableContents (map descr);
@@ -938,8 +938,103 @@ global map<string, map <string, any> > widgets = $[
 		"store"	 : HttpServerWidgets::storeAdaptFirewall,
 	    ],
 	    "host" : hostwidget,
-	    "modules" : moduleslistwidget,
-	    "listen" : listenwidget,
+        "LISTEN" : $[
+            "widget" : `custom,
+            "custom_widget" : `VBox (
+                // translators: radio button group label
+                `Left(`Label( _("Listen on Ports:") ) ),
+                `Table (`id (`listen), `header (
+                    // table header
+                    _("Network Address"),
+                    // table header
+                    _("Port")
+                ), []),
+                `HBox (
+                    `PushButton (`id (`add), `opt (`key_F3),
+                        Label::AddButton ()),
+                    `PushButton (`id (`edit), `opt (`key_F4),
+                        Label::EditButton ()),
+                    `PushButton (`id (`delete), `opt (`key_F5),
+                        Label::DeleteButton ()),
+                    `HStretch ()
+                )
+            ),
+            "init" : HttpServerWidgets::initListenSettings,
+            "handle" : HttpServerWidgets::handleListenSettings,
+            "help" : HELPS["listen"]:"",
+          ],
+        "MODULES" : $[
+                     "widget" : `custom,
+            "custom_widget" : `VBox (
+                `Table (`id (`modules), `header (
+                    // table header: module name
+                    _("Name"),
+                    // table header: module status
+                    _("Status")+"    ",
+                    // table header: module description
+                    _("Description")
+                ), []),
+                `HBox (
+                    `PushButton (`id (`toggle),
+                    // translators: toggle button label
+                        _("&Toggle Status") ),
+                    `HStretch (),
+                    `PushButton (`id (`add_user),
+                    // translators: add user-defined module button label
+                        _("&Add Module") )
+                )
+            ),
+            "init" : HttpServerWidgets::initModules,
+            "handle" : HttpServerWidgets::handleModules,
+            "help" : HELPS["modules"]:"",
+
+         ],
+
+        "DEF_HOST" :
+           TablePopup::CreateTableDescr (
+            $["add_delete_buttons" : true, "up_down_buttons" : false, "unique_keys" : false],
+             $[
+              "init" : HttpServerWidgets::HostInit,
+              "handle" : HttpServerWidgets::handleHostTable,
+              "store" : HttpServerWidgets::HostStore,
+              "validate_type" : `function,
+              "validate_function" : HttpServerWidgets::validate_server_fnc,
+              "options" : union( HttpServerWidgets::getHostOptions(), HttpServerWidgets::popups ),
+              "ids" : HttpServerWidgets::HostTableContents,
+              "id2key" : HttpServerWidgets::HostId2Key,
+              "fallback" : $[
+                "init" : HttpServerWidgets::DefaultHostPopupInit,
+                "store" : HttpServerWidgets::DefaultHostPopupStore,
+                "summary" : HttpServerWidgets::HostTableEntrySummary,
+                        ],
+              "option_delete" : HttpServerWidgets::HostTableEntryDelete,
+              "add_items" : maplist( string key, any value, (map<string,any>)union( HttpServerWidgets::getHostOptions(),
+                                                HttpServerWidgets::popups ), ``(key) ),
+              "help" : HELPS["global_table"]:""
+             ]
+            ),
+
+        "HOSTS" : TablePopup::CreateTableDescr (
+        $["add_delete_buttons" : true,
+              "up_down_buttons" : false,
+              "unique_keys" : true,
+              "changed_column" : true]
+        , $[
+            "init" : HttpServerWidgets::HostsInit,
+            "handle" : HttpServerWidgets::HostsHandle,
+            "ids" : HttpServerWidgets::HostsContents,
+            "option_delete" : HttpServerWidgets::HostsDelete,
+            "help" : HELPS["hosts"]:"",
+            "fallback": $[
+                "summary" : HttpServerWidgets::HostDocumentRootSummary,
+                "changed" : HttpServerWidgets::HostIsDefault,
+                "label_func" : HttpServerWidgets::HostName,
+            ],
+         ]),
+
+
+//	    "modules" : moduleslistwidget,
+//	    "listen" : listenwidget,
 	    "overview_widget" : overview_widget,
 	    "hosts"	: hosts_widget,
 	    "ssl" : sslwidget,
