@@ -218,13 +218,13 @@ symbol WizardSequence5(){
         string caption=_("HTTP Server Wizard (5/5)--Summary");
 
         term contents =
-        `Top (
+//        `Top (
           `VBox (
 
 		   "booting",
                 "summary_text",
                 "expert_conf"
-                )
+//                )
              );
     list<string> widget_names = ["booting", "summary_text", "expert_conf"];
     list<map<string,any> > w = CWM::CreateWidgets (widget_names, HttpServerWidgets::widgets);
@@ -236,7 +236,7 @@ symbol WizardSequence5(){
     Wizard::SetAbortButton(`abort, Label::CancelButton () );
 
     map event = $[];
-    any ret = CWM::Run (w, $[`abort : ReallyAbort ]);
+    any ret = CWM::Run (w, $[`abort : Abort ]);
     y2milestone("Return value from 5.th dialog : %1", ret);
     return (symbol) ret;
 }

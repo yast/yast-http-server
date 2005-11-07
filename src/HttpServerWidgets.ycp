@@ -253,6 +253,7 @@ list <string> host_ids = nil;
 
 void OverviewInit (string widget)
 {
+/*
     string listen_summary = mergestring (
 	maplist( map<string,any> listen, YaST::HTTPDData::GetCurrentListen(),
 	    ``(item2listen (listen["ADDRESS"]:"",listen["PORT"]:"80"))), ", ");
@@ -291,18 +292,21 @@ void OverviewInit (string widget)
 	    // translators: table entry for all configured hosts
 	    `item ( `id(`hosts), _("Hosts"), hosts ),
 	]);
+*/
 }
 
 symbol OverviewHandle (string table, map event)
 {
+/*
     if (event["ID"]:nil == `edit)
     {
 	symbol id = (symbol)UI::QueryWidget (`overview_table, `CurrentItem);
 	currenthost = "default";	// ensure to edit the default host, if `default was selected
 	return id;
     }
+*/
     // handle menu button entries
-    else if( event["ID"]:nil == `show_access_log ) {
+   if( event["ID"]:nil == `show_access_log ) {
 	return showAccessLogPopup( table, event );
     }
     else if( event["ID"]:nil == `show_error_log ) {
@@ -315,13 +319,6 @@ map<string, any> overview_widget = $[
     "widget"		: `custom,
     "custom_widget"	: 
 	`VBox(
-	    // translators: table heading - column describes part of the settings shown
-	    `Table (`id( `overview_table), `header( _("Settings")
-		// translators: table heading - column shows a summary of the settings
-		, _("Summary") )),
-	    `HBox( 
-		`PushButton ( `id(`edit), Label::EditButton ()),
-		`HStretch(),
 		Mode::config () ? `VSpacing(0) : (
 		// menu button label
         	`MenuButton( `id(`menu), _("&Log Files"),
@@ -330,7 +327,6 @@ map<string, any> overview_widget = $[
             	    // menu button item
             	    `item( `id( `show_error_log ), _("Show &Error Log") )
         	] ) )
-	    )
 	),
     "init"		:  OverviewInit,
     "handle"		:  OverviewHandle,
@@ -578,10 +574,10 @@ global void initListenInterfaces (string key);
 global boolean validateListenInterfaces(string key, map event);
 global void initFwOpen (string key);
 global void storeFwOpen (string opt_id, map event);
-global void initExpertConf (string key);
+void initExpertConf (string key);
 global symbol handleExpertConf (string key, map event);
-global void initScriptModules(string key);
-global void initSummaryText(string key); 
+void initScriptModules(string key);
+void initSummaryText(string key); 
 global symbol handleBooting (string key, map event);
 global map getHostOptions();
 boolean getServiceAutoStart();
@@ -702,7 +698,7 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	]);
 
 global define void HostInit (string key) ``{
-    init_tab = "default_host";
+    if (key == "DEF_HOST") init_tab = "default_host";
     TablePopup::TableInit (HttpServerWidgets::hostwidget, key);
 }
 
@@ -981,7 +977,7 @@ global map<string, map <string, any> > widgets = $[
                 "label_func" : HttpServerWidgets::HostName,
             ],
          ]),
-	    "overview_widget" : overview_widget,
+	    "logs" : overview_widget,
 	    "hosts"	: hosts_widget,
 	    "ssl" : sslwidget,
 	    "dir" : dirwidget,
@@ -1025,8 +1021,8 @@ global map<string, map <string, any> > widgets = $[
 		"widget" : `push_button,
 		//translators: button to enter expert configuration
 		"label"  : _("&HTTP Server Expert Configuration..."),
-		"init"	 : HttpServerWidgets::initExpertConf,
-		"handle" : HttpServerWidgets::handleExpertConf,
+		"init"	 : initExpertConf,
+		"handle" : handleExpertConf,
 		"help"	 : HELPS["expert_conf"]:""
 		],
 	  "script_modules" : $[
@@ -1034,13 +1030,13 @@ global map<string, map <string, any> > widgets = $[
 			"custom_widget" : `ReplacePoint(`id(`scr_mod_replace), 
 			`Label("") 
 	                ),
-		"init"   : HttpServerWidgets::initScriptModules,
+		"init"   : initScriptModules,
 		"help"	 : HELPS["script_modules"]:""
 		],
 	   "summary_text" : $[
 		"widget"  : `custom,
 		"custom_widget" : `ReplacePoint(`id(`summary_text_rp), `RichText("")),
-		"init"	  : HttpServerWidgets::initSummaryText,
+		"init"	  : initSummaryText,
 		"help"	  : HELPS["summary_text"]:""
 		]
 	];
@@ -2159,7 +2155,7 @@ global define void initFwOpen (string key) ``{
 
 
 // *********************** Wizard Dialog 2 Widgets *****************************************
-global define void initScriptModules(string key) ``{
+define void initScriptModules(string key) ``{
 	boolean enable_php4=false;
 	boolean enable_perl=false;
 	boolean enable_python=false;
@@ -2181,13 +2177,13 @@ list<string> modules = YaST::HTTPDData::GetModuleList();
                       `Left(`CheckBox(`id(`scr_mod_python), _("Enable P&ython Scripting"), enable_python)),
                         `VSpacing(1),   //translators: checkbox - support for ruby script language
                       `Left(`CheckBox(`id(`scr_mod_ruby), _("Enable &Ruby Scripting"), enable_ruby)),
-		     `VSpacing(5) 
+		     `VSpacing(2) 
 			)));
 	y2milestone("initializing script modules");
 }
 
 // *********************** Wizard Dialog 5 Widgets *****************************************
-global define void initExpertConf (string key) ``{
+define void initExpertConf (string key) ``{
 }
 
 global define symbol handleExpertConf (string key, map event) ``{
@@ -2205,9 +2201,8 @@ void setServiceAutoStart(boolean status) ``{
 }
 
 
-global define void initSummaryText (string key) ``{
+define void initSummaryText (string key) ``{
 
-// UI::ReplaceWidget(`id(`summary_text_rp), `RichText( select(HttpServer::Summary(),0, "error")  ));
    UI::ReplaceWidget(`id(`summary_text_rp), `RichText( HttpServer::Summary()[0]:"error" ));
 }
 

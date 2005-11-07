@@ -51,21 +51,26 @@ map tabs_descr = $[
 	  "header" :  _("Listen Ports and Addresses"),
 	  "contents" : `HBox (`HSpacing (1), `VBox (
 	    "server_enable",
-            `VSpacing (1),
+            `VSpacing (0),
             "LISTEN",
 	    `VSpacing (0),
 	    "firewall_adapt",
-            `VSpacing (1)
+            `VSpacing (0),
+	    "logs",
+	    `VSpacing(0)
 	     ), `HSpacing (1)),
-	    "widget_names" : [ "server_enable", "LISTEN", "firewall_adapt" ]
+	    "widget_names" : [ "server_enable", "LISTEN", "firewall_adapt", "logs" ]
 	 ],
 	"modules" : $[
 	 "header" : _("Server Modules"),
-	 "contents" : `HBox (`HSpacing (1), `VBox (
-            `VSpacing (1),
-            "MODULES",
-            `VSpacing (1)
-        ), `HSpacing (1)),
+	 "contents" : `HBox (
+			`HSpacing (1),
+			 `VBox (
+				`VSpacing (1),
+				"MODULES" ,
+				`VSpacing (1)
+			        ) , `HSpacing (1)
+			    ),
 	"widget_names" : [ "MODULES" ]
 	 ],
 	"default_host" : $[
@@ -90,7 +95,6 @@ map tabs_descr = $[
 	 ]
 	];
 
-
     /**
       * Run server overview dialog
       * @return symbol for wizard sequencer
@@ -106,8 +110,7 @@ map tabs_descr = $[
             "tab_help" : "",
         ]),
     ];
-
-    term contents = `VBox( "tab", `VStretch ());
+    term contents = `VBox( "tab"/*, `VStretch ()*/);
 
     list<map <string, any> > w = CWM::CreateWidgets (["tab"], (map <string, map <string, any> >)widget_descr);
     string help = CWM::MergeHelps(w);
@@ -116,12 +119,11 @@ map tabs_descr = $[
     Wizard::SetContentsButtons(caption, contents, help, Label::NextButton (), Label::FinishButton ());
     Wizard::HideBackButton();
 
-    symbol ret = CWM::Run(w, $[`abort: Abort ]);
-
-    Wizard::RestoreBackButton ();
+    symbol ret = CWM::Run(w, $[`abort:ReallyAbort ]);
 
     return ret;
     }
+
 
     /**
       * Run single host configuration dialog
@@ -147,7 +149,7 @@ map tabs_descr = $[
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
 
-	symbol ret = CWM::Run (w, $[`abort : Abort]);
+	symbol ret = CWM::Run (w, $[`abort : ReallyAbort]);
 	if (ret == `back) {
 	HttpServerWidgets::setHostOptions(nil);
 			}
@@ -389,7 +391,8 @@ map <string, any> servername = find(map<string,any> row, descr,``(row["KEY"]:"" 
 string zone="";
 
 // --- D N S ---
-
+if (Require::IsAnyPackageInstalled([ "bind" ]))
+        {
 	 if ( Service::Status("named") == 0 ){
 		foreach(string key, map<string, any> value, (map<string, map<string, any> >) DnsServerAPI::GetZones(), {
 		 if ( (value["type"]:"" == "master") 
@@ -402,7 +405,6 @@ string zone="";
 		  y2milestone("Matching zone %1", zone);
 		boolean exists=false;
 		foreach(map<string, any> records, DnsServerAPI::GetZoneRRs(zone), {
-		 y2internal("%1", records["key"]:"");
 		 if (records["key"]:"" == servername["VALUE"]:"" || records["key"]:"" == servername["VALUE"]:""+".") exists=true;
 		});
 		if (exists == true) 
@@ -444,13 +446,15 @@ string zone="";
 
 			}
 	 } else y2milestone(_("There is no DNS server running on this machine."));
+        }
 
 // --- D N S ---
 
    symbol ret = nil;
    do{
 	ret = (symbol)UI::UserInput (); 
-
+if (Require::IsAnyPackageInstalled([ "bind" ]))
+       {
 	if (ret == `dns_add_rec)
 	 {
 	  y2milestone(_("Add record %1 to zone %2"), servername["VALUE"]:"", zone);
@@ -469,6 +473,7 @@ string zone="";
           DnsServerAPI::AddZoneRR(zone, "A", servername["VALUE"]:""+".", ip["VALUE"]:"");
 	  ret = nil;
 	 }
+        }
 
         if (ret == `browse_cgi_dir)
          {
