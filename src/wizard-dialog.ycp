@@ -14,13 +14,13 @@ import "Wizard";
 import "CWM";
 import "Label";
 import "HttpServer";
-// 			-------------------------------------------------------------------------------------------------------------------------
-symbol WizardSequence1(){
 
-/*
-**	Sequention used for determining on which ip adresses and port apache2 will listen and if firewall is enebled
-**	whether to open firewall on this port.
-*/
+  /**
+   * Sequention used for determining on which ip adresses and port apache2 will listen and if firewall is enebled
+   * whether to open firewall on this port.
+   * @return symbol (`back, `abort, `next)
+   */
+symbol WizardSequence1(){
 	string caption=_("HTTP Server Wizard (1/5)--Network Device Selection");
     term contents =
         `Top (
@@ -92,12 +92,12 @@ symbol WizardSequence1(){
     return (symbol) ret;
 }
 
-//                      -------------------------------------------------------------------------------------------------------------------------
 
+ /**
+  * Sequence to choose some script language modules
+  * @return symbol (`back, `abort, `next)
+  */
 symbol WizardSequence2(){
-/*
-** Sequence to choose some script language modules
-*/
         string caption=_("HTTP Server Wizard (2/5)--Modules");
     term contents =
         `Top (
@@ -141,12 +141,12 @@ symbol WizardSequence2(){
     return (symbol) ret;
 }
 
-//                      -------------------------------------------------------------------------------------------------------------------------
 
+ /**
+  * Sequence to configure default host parameters
+  * @return symbol (`back, `abort, `next)
+  */
 symbol WizardSequence3(){
-/*
-**	Sequence to configure default host parameters
-*/
         string caption=_("HTTP Server Wizard (3/5)--Default Host");
        list< map<string,any> > w = CWM::CreateWidgets (["host"], HttpServerWidgets::widgets);
         term contents = `HBox (`HSpacing (1), `VBox (
@@ -178,12 +178,12 @@ y2milestone("Hostname : %1", hostname["stdout"]:"");
         return CWM::Run (w, $[`abort : Abort]);
 }
 
-//                      -------------------------------------------------------------------------------------------------------------------------
 
+ /**
+  * Sequence to cunfigure virtual hosts (add, remove, edit) and to change default host status
+  * @return symbol (`back, `abort, `next)
+  */
 symbol WizardSequence4(){
-/*
-**	Sequence to cunfigure virtual hosts (add, remove, edit) and to change default host status
-*/
         string caption=_("HTTP Server Wizard (4/5)--Virtual Hosts");
 
        list< map<string,any> > w = CWM::CreateWidgets (["hosts"],
@@ -208,13 +208,13 @@ symbol WizardSequence4(){
         return CWM::Run (w, $[`abort : Abort]);
 }
 
-//                      -------------------------------------------------------------------------------------------------------------------------
 
+/**
+ * Sequence to configure whether apache2 starts on boot or not (manually). Here is possible
+ * save all settings and exit or start expert configuration.
+ * @return symbol (`back, `abort, `next)
+ */
 symbol WizardSequence5(){
-/*
-**	Sequence to configure whether apache2 starts on boot or not (manually). Here is possible
-**	save all settings and exit or start expert configuration.
-*/
         string caption=_("HTTP Server Wizard (5/5)--Summary");
 
         term contents =

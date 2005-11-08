@@ -429,7 +429,12 @@ SCR::Write ( .target.string, Directory::vardir + "/http_server", "");
 }
 
 
-
+ /**
+  * For module name find description map in known_modules
+  * @param known_modules list< map<string,any> > known modules
+  * @param mod string module name
+  * @return map<string,any> module description
+  */
 map<string,any> find_known_module (list< map<string,any> > known_modules, string mod)
 {
     map<string,any> res = nil;
