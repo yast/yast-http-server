@@ -41,6 +41,10 @@ boolean update_contents = false;
 
 string item2listen( string network, string port );
 
+  /**
+   * Validate certificate
+   * @return boolean certificate valid
+   */
 boolean CheckCommonServerCertificate () {
     integer s = (integer)SCR::Read(.target.size, "/etc/ssl/servercerts/servercert.pem");
     if (s <= 0) {
@@ -53,6 +57,13 @@ boolean CheckCommonServerCertificate () {
     return true;
 }
 
+  /**
+   * Get host value
+   * @param keyword string
+   * @param host list< map<string, any> >
+   * @param defaultvalue any
+   * @return any host value
+   */
 global any get_host_value ( string keyword, list< map<string, any> > host, any defaultvalue )
 {
     any res = defaultvalue;
@@ -74,6 +85,13 @@ global any get_host_value ( string keyword, list< map<string, any> > host, any d
     return res;
 }
 
+  /**
+   * Set host value
+   * @param keyword string
+   * @param host list< map<string, any> >
+   * @param value any
+   * @return list< map<string,any> > host map
+   */
 global list< map<string,any> > set_host_value ( string keyword, list< map<string, any> > host, any value )
 {
     integer index = 0;
@@ -98,6 +116,13 @@ global list< map<string,any> > set_host_value ( string keyword, list< map<string
     return host;
 }
 
+  /**
+   * Validate server name
+   * @param key any
+   * @param id any
+   * @param event map
+   * @return boolean valid servername
+   */
 global boolean validate_servername (any key, any id, map event) 
 {
     import "Hostname";
@@ -114,7 +139,13 @@ global boolean validate_servername (any key, any id, map event)
     }
 }
 
-
+  /**
+   * Validate IP for host
+   * @param id any
+   * @param key any
+   * @param event map
+   * @return boolean is IP valid
+   */
 global boolean validate_serverip (any id, any key, map event) 
 {
     import "IP";
@@ -145,6 +176,12 @@ global boolean validate_serverip (any id, any key, map event)
     }
 }
 
+  /**
+   * Function for validate server entries
+   * @param hostid string
+   * @param server list < map<string,any> >
+   * @return boolean valid server
+   */
 global boolean validate_server (string hostid, list < map<string,any> > server )
 {
 	//default server can't use SSL
@@ -251,60 +288,16 @@ global symbol showErrorLogPopup (any key, map event);
 
 list <string> host_ids = nil;
 
-void OverviewInit (string widget)
-{
-/*
-    string listen_summary = mergestring (
-	maplist( map<string,any> listen, YaST::HTTPDData::GetCurrentListen(),
-	    ``(item2listen (listen["ADDRESS"]:"",listen["PORT"]:"80"))), ", ");
+//void OverviewInit (string widget) { }
 
-    // limit the text to 50 chars
-    if (size (listen_summary) > 50) listen_summary = substring (listen_summary, 0, 50) + "...";
-
-    y2milestone ("Current listen: %1", YaST::HTTPDData::GetCurrentListen() );
-
-    string default_host = (string)get_host_value( "ServerName", YaST::HTTPDData::GetHost ("default"), "");
-    if (default_host == "")
-    {
-	// if the default host does not have a servername specified, use it's
-	// document root, %1 is the full path
-	default_host = sformat( _("in %1"), get_host_value( "DocumentRoot", YaST::HTTPDData::GetHost ("default"), ""));
-    }
-
-    host_ids = YaST::HTTPDData::GetHostsList ();
-
-    string hosts = mergestring (
-	maplist( string host, host_ids, ``{
-	    return (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost (host), "" );
-	}), ", ");
-
-    // limit the text to 50 chars
-    if (size (hosts) > 50) hosts = substring (hosts, 0, 50) + "...";
-
-    UI::ChangeWidget (`overview_table, `Items, 
-	[
-	    // translators: table entry for Listen statements
-	    `item ( `id(`listen), _("Listen on"), listen_summary ),
-	    // translators: table entry for server modules
-	    `item ( `id(`modules), _("Modules"), "..." ),
-	    // translators: table entry for default host
-	    `item ( `id(`default), _("Default Host"), default_host ),
-	    // translators: table entry for all configured hosts
-	    `item ( `id(`hosts), _("Hosts"), hosts ),
-	]);
-*/
-}
-
+  /**
+   * Handle overview (listen) widget
+   * @param table string
+   * @param event map
+   * @return symbol (access/error popup)
+   */
 symbol OverviewHandle (string table, map event)
 {
-/*
-    if (event["ID"]:nil == `edit)
-    {
-	symbol id = (symbol)UI::QueryWidget (`overview_table, `CurrentItem);
-	currenthost = "default";	// ensure to edit the default host, if `default was selected
-	return id;
-    }
-*/
     // handle menu button entries
    if( event["ID"]:nil == `show_access_log ) {
 	return showAccessLogPopup( table, event );
@@ -328,7 +321,7 @@ map<string, any> overview_widget = $[
             	    `item( `id( `show_error_log ), _("Show &Error Log") )
         	] ) )
 	),
-    "init"		:  OverviewInit,
+//    "init"		:  OverviewInit,
     "handle"		:  OverviewHandle,
     "help"		:  HELPS["overview_widget"]:"",
 ];
@@ -349,24 +342,34 @@ map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 	      "unique_keys" : true,
 	      "changed_column" : true]
 	, $[
-	    "init" : HttpServerWidgets::HostsInit,
-	    "handle" : HttpServerWidgets::HostsHandle,
-	    "ids" : HttpServerWidgets::HostsContents,
-	    "option_delete" : HttpServerWidgets::HostsDelete,
+	    "init" : HostsInit,
+	    "handle" : HostsHandle,
+	    "ids" : HostsContents,
+	    "option_delete" : HostsDelete,
 	    "help" : HELPS["hosts"]:"",
 	    "fallback": $[
-		"summary" : HttpServerWidgets::HostDocumentRootSummary,
-		"changed" : HttpServerWidgets::HostIsDefault,
-		"label_func" : HttpServerWidgets::HostName,
+		"summary" : HostDocumentRootSummary,
+		"changed" : HostIsDefault,
+		"label_func" : HostName,
 	    ],
 	]);
 
+  /**
+   * Initialize hosts table widget
+   * @param widget string
+   */
 global void HostsInit (string widget)
 {
     init_tab = "hosts";
     TablePopup::TableInit(hosts_widget, widget);
 }
 
+  /**
+   *
+   * @param servername string
+   * @param ip string
+   * @return map<string,string> servername:ip
+   */
 map<string,string> AskNewInfo (string servername, string ip)
 {
     if (size (servername) == 0)
@@ -377,7 +380,7 @@ map<string,string> AskNewInfo (string servername, string ip)
 	servername = Hostname::MergeFQ (DNS::hostname, DNS::domain);
 	// maybe we should check, if there is such host already
     }
-    
+
     list ips = maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) ;
 
     UI::OpenDialog (
@@ -404,10 +407,10 @@ the default host.
 	    `HBox( `PushButton (`id(`ok), `opt(`default), Label::ContinueButton ()),
 		`PushButton (`id(`cancel), Label::CancelButton ()) )
 	));
-	
+
     UI::SetFocus (`id("servername"));
     UI::ChangeWidget (`id("ip"), `Value, ip);
-    
+
     symbol ret = nil;
 
     do
@@ -417,7 +420,7 @@ the default host.
 	{
 	    break;
 	}
-	
+
 	// it must be `ok
 	if (! validate_servername(nil, "servername",nil))
 	{
@@ -425,21 +428,27 @@ the default host.
 	}
 
 	servername = (string)UI::QueryWidget (`id("servername"), `Value);
-	
+
 	if (! validate_serverip("ip",nil,nil))
 	{
 	    continue;
 	}
 	ip = (string)UI::QueryWidget (`id("ip"), `Value);
-	
+
 	break;
-	
+
     } while (ret != nil);
-    
+
     UI::CloseDialog ();
     return ret != `cancel ? $[ "name": servername, "ip" : ip ] : (map<string,string>)nil;
 }
 
+  /**
+   * Handle host widget
+   * @param table string
+   * @param event map
+   * @return symbol (`add, `edit)
+   */
 global symbol HostsHandle (string table, map event)
 {
     if ( event["ID"]:nil == `_tp_add )
@@ -504,10 +513,21 @@ global symbol HostsHandle (string table, map event)
     return nil;
 }
 
+  /**
+   * Hosts contents
+   * @param descr map
+   * @return list host list
+   */
 global list HostsContents (map descr) {
     return YaST::HTTPDData::GetHostsList ();
 }
 
+  /**
+   * Widget for delete host
+   * @param opt_id any
+   * @param opt_key string
+   * @return boolean delete success
+   */
 global boolean HostsDelete (any opt_id, string opt_key) {
     if (opt_id == "default")
     {
@@ -523,6 +543,12 @@ global boolean HostsDelete (any opt_id, string opt_key) {
     return YaST::HTTPDData::DeleteHost ((string)opt_id);
 }
 
+  /**
+   * Get server name for host
+   * @param key any
+   * @param id string
+   * @return string server name
+   */
 global string HostName (any key, string id)
 {
     string res = (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost((string)key), (string)key );
@@ -531,12 +557,23 @@ global string HostName (any key, string id)
     return res;
 }
 
-
+  /**
+   * Get document root for host
+   * @param key any
+   * @param id string
+   * @return string document root
+   */
 global string HostDocumentRootSummary( any key, string id )
 {
     return (string) get_host_value ("DocumentRoot", YaST::HTTPDData::GetHost( (string)key), "");
 }
 
+  /**
+   * Is that host default?
+   * @param widget any
+   * @param key string
+   * @return boolean is_default?
+   */
 global boolean HostIsDefault( any widget, string key )
 {
     return key == "default";
@@ -574,7 +611,7 @@ global void initListenInterfaces (string key);
 global boolean validateListenInterfaces(string key, map event);
 global void initFwOpen (string key);
 global void storeFwOpen (string opt_id, map event);
-void initExpertConf (string key);
+//void initExpertConf (string key);
 global symbol handleExpertConf (string key, map event);
 void initScriptModules(string key);
 void initSummaryText(string key); 
@@ -697,11 +734,19 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	    "help" : HELPS["global_table"]:"",
 	]);
 
+  /**
+   * Initialize host widget
+   * @param key string
+   */
 global define void HostInit (string key) ``{
     if (key == "DEF_HOST") init_tab = "default_host";
     TablePopup::TableInit (HttpServerWidgets::hostwidget, key);
 }
 
+  /**
+   * Get host options
+   * @return map host options
+   */
 global define map getHostOptions()
 {
  map used = $[];
@@ -717,7 +762,10 @@ global define map getHostOptions()
 	});
  return used;
 }
-
+  /**
+   * Get SSL options
+   * @return map ssl options
+   */
 global define map getSSLOptions()
 {
  map used = $[];
@@ -777,30 +825,36 @@ map<string, any> dirwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	      "up_down_buttons" : false, 
 	      "unique_keys" : true]
 	, $[
-	    "init" : HttpServerWidgets::DirInit,
-	    "handle" : HttpServerWidgets::handleDirTable,
-	    "store" : HttpServerWidgets::DirStore,
+	    "init" : DirInit,
+	    "handle" : handleDirTable,
+	    "store" : DirStore,
 	    "options" : (map<string, any>) getDirOptions(), 
-	    "ids" : HttpServerWidgets::DirTableContents,
-	    "id2key" : HttpServerWidgets::HostId2Key,
+	    "ids" : DirTableContents,
+	    "id2key" : HostId2Key,
 	    "fallback" : $[
-		"init" : HttpServerWidgets::DirPopupInit,
-		"store" : HttpServerWidgets::DefaultHostPopupStore,
-		"summary" : HttpServerWidgets::HostTableEntrySummary,
+		"init" : DirPopupInit,
+		"store" : DefaultHostPopupStore,
+		"summary" : HostTableEntrySummary,
 	    ],
-	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
+	    "option_delete" : HostTableEntryDelete,
 	    "add_items" : 
 		maplist( string key, any value, (map<string,any>) getDirOptions(), ``(key) ),
 	    "help" : HELPS["dir"]:"",
 	]);
 
-
+  /**
+   * Initialize directory table
+   * @param widget string
+   */
 global void DirInit (string widget)
 {
    TablePopup::TableInit(dirwidget, widget);
 }
 
-
+  /**
+   * Get directory options
+   * @return map directory options
+   */
 global define map getDirOptions()
 {
  map used = $[];
@@ -817,7 +871,12 @@ global define map getDirOptions()
  return used;
 }
 
-
+  /**
+   * Handle directory table
+   * @param key string
+   * @param  event map
+   * @return symbol tablehandle
+   */
 global symbol handleDirTable( string key, map event )
 {
     if (event["ID"]:nil == `back ) host_options = nil;
@@ -825,13 +884,21 @@ global symbol handleDirTable( string key, map event )
     return TablePopup::TableHandle( dirwidget, key, event );
 }
 
-
+  /**
+   * Initialize directory popup
+   * @param option_id any
+   * @param option_type string
+   */
    global define void DirPopupInit (any option_id, string option_type) ``{
         any value = host_options[(integer)option_id, "VALUE"]:"";
     }
 
 
-
+  /**
+   * Store directory map
+   * @param key string
+   * @param event map
+   */
 global void DirStore (string key, map event)
  {
 	list< map<string,any> > options = [];
@@ -1021,7 +1088,7 @@ global map<string, map <string, any> > widgets = $[
 		"widget" : `push_button,
 		//translators: button to enter expert configuration
 		"label"  : _("&HTTP Server Expert Configuration..."),
-		"init"	 : initExpertConf,
+//		"init"	 : initExpertConf,
 		"handle" : handleExpertConf,
 		"help"	 : HELPS["expert_conf"]:""
 		],
@@ -1044,28 +1111,33 @@ global map<string, map <string, any> > widgets = $[
 
 /******************************** SSL widget ****************************/
 
-
+  /**
+   * Handle SSL widget table
+   * @param key string
+   * @param event map
+   * @return symbol sslhandle
+   */
 global symbol handleSSLTable( string key, map event )
 {
     if ( event["ID"]:nil == `import_certificate )
     {
 				//translators: dialog to set *.pem file with certificate
 	string pem = UI::AskForExistingFile ("/", "*.pem", _("Select Certificate"));
-	if (pem == nil) 
+	if (pem == nil)
 	{
-	    // cancel	    
+	    // cancel
 	    return nil;
 	}
-	
+
 	string cert = (string) SCR::Read ( .target.string, pem );
 	if (cert != nil)
 	{
 	    // pass the data to the backend
 	    YaST::HTTPDData::SetCert ( currenthost, "CERT", cert );
-	    
+
 	    // get the correct host name
 	    list<map<string,any> > host = YaST::HTTPDData::GetHost (currenthost);
-	    host = set_host_value( "SSLCertificateFile", host, 
+	    host = set_host_value( "SSLCertificateFile", host,
 		"/etc/apache2/ssl.crt/"
 		+ (string)get_host_value ("ServerName", host, "default")
 		+ "-cert.pem");
@@ -1073,10 +1145,10 @@ global symbol handleSSLTable( string key, map event )
 	    TablePopup::TableInitWrapper(key);
 	    return nil;
 	}
-	
+
 	// translators: error message un failed certificate import
 	Report::Error ( sformat( _("Cannot import certificate
-%1"), pem));	
+%1"), pem));
     }
     else if (event["ID"]:nil == `common_certificate )
     {
@@ -1110,22 +1182,30 @@ global symbol handleSSLTable( string key, map event )
     return TablePopup::TableHandle( sslwidget, key, event );
 }
 
+  /**
+   * Initialize SSL widget
+   * @param widget string
+   */
 global void SSLInit (string widget)
 {
     TablePopup::TableInit(sslwidget, widget);
 }
 
-
+  /**
+   * Store SSL setting
+   * @param key string
+   * @param event map
+   */
 global void SSLStore (string key, map event)
  {
- 	boolean found = false ;
+	boolean found = false ;
         list < map<string,any> > forssl = [];
         list < map<string,any> > fordir = [];
 
 
         foreach(integer key, map<string,any> value, host_options, {
       foreach(map<string,any> val, YaST::HTTPDData::GetKnownModules(), {
-	   if ( val["name"]:"" == "ssl" ) 
+	   if ( val["name"]:"" == "ssl" )
 	    {
 		foreach(map<string, any> pom, val["directives"]:[], {
 			if (pom["option"]:"" == value["KEY"]:"")
@@ -1213,19 +1293,19 @@ define string item2listen( string network, string port ) ``{
     /**
      * Show a popup for editing Listen statement.
      *
-     * @param network 	initial value for the network part of the statement
+     * @param network string initial value for the network part of the statement
      *                  If empty or _("All Addresses"), considered for all Listen for all interfaces.
-     * @param port	initial value for a port number
-     * @return string	the new Listen statement or nil if Cancel was pressed
+     * @param port string initial value for a port number
+     * @return map<string,string>	the new Listen statement or nil if Cancel was pressed
      */
     define map<string,string> AskListen( string network, string port ) ``{
 	// translators: all network addresses Listen type
 	boolean adr_type = ( network == _("All Addresses") || network == "" );
 	if( port == nil ) port = "";
-	
+
 	// translators: Listen type for all addresses;
 	string aa =  _("All Addresses");
-	
+
 	list ips = union( [ aa ], maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) );
 
 	UI::OpenDialog( `VBox(
@@ -1238,17 +1318,17 @@ define string item2listen( string network, string port ) ``{
 		`PushButton( `id(`cancel), Label::CancelButton() )
 	     )
 	));
-	
+
 	if( !adr_type ) {
 	    UI::ChangeWidget( `id( "address" ), `Value, network );
 	}
-	
+
 	symbol ret = nil;
 	map<string,string> res = $[];
 	do {
 
 	    ret = (symbol) UI::UserInput();
-	    
+
 	    if( ret == `ok ) {
 		res["ADDRESS"] = (string)UI::QueryWidget( `id("address"), `Value );
 		res["PORT"] = (string)UI::QueryWidget( `id(`port), `Value );
@@ -1266,7 +1346,7 @@ define string item2listen( string network, string port ) ``{
 			continue;
 		    }
 		}
-		
+
 		// validation
 		if( ! regexpmatch( res["PORT"]:"", "^[ \t]*[0-9]+[ \t]*$" ) ) {
 		    // translators: error message when validating Listen statement
@@ -1274,24 +1354,26 @@ define string item2listen( string network, string port ) ``{
 		    ret = nil;
 		    continue;
 		}
-		
+
 	    }
 	} while( ret != `ok && ret != `cancel );
-	
-	if( ret == `cancel ) res = nil;
-	
-	UI::CloseDialog();
-	
-	return res;
-    }	
-    
-// *************************************** log popups **************************
 
+	if( ret == `cancel ) res = nil;
+
+	UI::CloseDialog();
+
+	return res;
+    }
+
+// *************************************** log popups **************************
+  /**
+   * Reload server
+   */
     global void ReloadServer ()
     {
 	SCR::Execute (.target.bash, "rcapache2 reload");
     }
-    
+
     /**
       * Handle function of the access log button (the first defined access log file)
       * @param key any key of the widget
@@ -1353,9 +1435,14 @@ define string item2listen( string network, string port ) ``{
 // ************************************ default host table ********************
 
     integer option_counter = 0;
-#    map<integer, map<string, any> > host_options = nil;
     list<integer> deleted_options = [];
 
+  /**
+   * Validate server function
+   * @param id string
+   * @param key map
+   * @return boolean validate
+   */
     global boolean validate_server_fnc (string id, map key) 
     {
 	// convert the map to list
@@ -1364,12 +1451,21 @@ define string item2listen( string network, string port ) ``{
 	return validate_server ( currenthost, val );
     }
 
+  /**
+   * Get value from id
+   * @param desc map
+   * @param option_id any
+   * @return string value
+   */
     global string HostId2Key( map desc, any option_id )
     {
 	return host_options [ (integer)option_id, "KEY" ]: "";
     }
 
-	//find modules of all directives and check if are loaded
+  /**
+   * find modules of all directives and check if are loaded
+   * @param new string
+   */
     global void checkLoadedModuleFor(string new)
     {
 	list<string> loaded = YaST::HTTPDData::GetModuleList();
@@ -1383,6 +1479,11 @@ define string item2listen( string network, string port ) ``{
 
     }
 
+  /**
+   * Store host settings
+   * @param key string
+   * @param event map
+   */
     global void HostStore (string key, map event)
     {
 
@@ -1431,6 +1532,10 @@ define string item2listen( string network, string port ) ``{
 	setHostOptions(nil);
     }
 
+  /**
+   * Set host options
+   * @param new_options map < integer, map < string,any > >
+   */
     global void setHostOptions( map < integer, map < string,any > > new_options)
      {
 	host_options = new_options;
@@ -1683,8 +1788,8 @@ define string item2listen( string network, string port ) ``{
 
     /**
       * Fallback store function of a table entry / popup
-      * @param opt_id any option id
-      * @param opt_key any option key
+      * @param option_id any option id
+      * @param option_type string option key
       */
     global define void DefaultHostPopupStore (any option_id, string option_type) ``{
 	symbol property = (option_type == "VirtualByName") ? `CurrentButton : `Value;
@@ -1733,7 +1838,11 @@ define string item2listen( string network, string port ) ``{
 	}
     }
 
-
+  /**
+   * Store SSL type
+   * @param option_id any
+   * @param option_type string
+   */
     global void SSLTypeStore (any option_id, string option_type)
     {
 	// it is a radio button group
@@ -1742,7 +1851,11 @@ define string item2listen( string network, string port ) ``{
 	HttpServer::modified = true;
     }
 
-
+  /**
+   * Contents of host table
+   * @param descr map
+   * @return list host contents
+   */
     global define list DirTableContents (map descr) ``{
 	if (host_options == nil)
 	{
@@ -1751,24 +1864,24 @@ define string item2listen( string network, string port ) ``{
 	    host_options = $[];
 	    deleted_options = [];
 	    list res = [];
-	    
+
 	    list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
 	    foreach (map<string, any> option, host, ``{
 		string key = option["KEY"]: "unknown";
-		
+
 		if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory" 
-									&& option["SECTIONPARAM"]:"unknown"==dir_value) 
+									&& option["SECTIONPARAM"]:"unknown"==dir_value)
 		{
 			foreach(map<string, any> value, option["VALUE"]:[], {
 			if (!(value["KEY"]:""=="_SECTION" && value["SECTIONPARAM"]:""=="SSL"))
-			 { 
+			 {
 			  host_options[option_counter] = value;
 			  res = add (res, option_counter);
 			  option_counter = option_counter + 1;
 			 }
 			});
 		}
-		else 
+		else
 		{
 		    option_counter = option_counter + 1;
 		    continue;
@@ -1779,8 +1892,7 @@ define string item2listen( string network, string port ) ``{
 	else
 	{
 	    // just generate the list of ids
-	    return maplist( integer id, map<string,any> value, host_options,
-		``(id));
+	    return maplist( integer id, map<string,any> value, host_options, ``(id));
 	}
     }
 
@@ -2025,7 +2137,12 @@ listen cannot be empty.") );
 	YaST::HTTPDData::ModifyService( (boolean) UI::QueryWidget ( `id("enabled"), `Value ) );
 	HttpServer::modified = true;
     }
-
+  /**
+   * Handling service status
+   * @param key string
+   * @param event map
+   * @return symbol (`overview_table, `edit. `menu)
+   */
     global symbol handleServiceStatus (string key, map event)
     {
 	// enable/disable overview widget
@@ -2074,6 +2191,10 @@ on this machine.");
 
 // *********************** Wizard Dialog 1 Widgets *****************************************
 
+  /**
+   * Initialize open port
+   * @param key string
+   */
   global define void initOpenPort (string key) ``{
 	string port=nil;
 
@@ -2087,10 +2208,22 @@ on this machine.");
  UI::ChangeWidget(`id(key), `Value, port);
  }
 
+  /**
+   * Handling open port
+   * @param key string
+   * @param event map
+   * @return symbol nil
+   */
 global symbol handleOpenPort(string key, map event) ``{
  return nil;
 }
 
+  /**
+   * Validation open port
+   * @param key string
+   * @param event string
+   * @return boolean validate open port
+   */
 global boolean validateOpenPort(string key, map event) ``{
  string value = (string) UI::QueryWidget(`id(key), `Value);
  y2milestone("validate open port ... %1", value);
@@ -2102,6 +2235,10 @@ global boolean validateOpenPort(string key, map event) ``{
 	} else return true;
 }
 
+  /**
+   * Initialize listen interfaces
+   * @param key string
+   */
 
 global define void initListenInterfaces (string key) ``{
 
@@ -2125,6 +2262,12 @@ global define void initListenInterfaces (string key) ``{
  UI::ReplaceWidget(`id(mode_replace_point_key), `MultiSelectionBox(`id("multi_sel_box"),_("&Listen on Interfaces"),ips));
 }
 
+  /**
+   * 
+   * @param key string
+   * @param event map
+   * @return boolean validate interfaces
+   */
 global boolean validateListenInterfaces(string key, map event) ``{
  if( size((list)UI::QueryWidget( `id("multi_sel_box"), `SelectedItems )) < 1 ) {
 	//translators: popup error - multi selection box with server network adresses
@@ -2135,6 +2278,10 @@ global boolean validateListenInterfaces(string key, map event) ``{
 }
 
 
+  /**
+   * Initialize firewall settings
+   * @param key string 
+   */
 global define void initFwOpen (string key) ``{
  y2milestone("initializing firewall open ...");
        if( SuSEFirewall::IsStarted() ) {
@@ -2146,6 +2293,11 @@ global define void initFwOpen (string key) ``{
         }
 }
 
+   /**
+    * Store firewall settings
+    * @param opt_id string 
+    * @param event map
+    */
     global define void storeFwOpen (string opt_id, map event) ``{
         if( HttpServer::firewall_started || Mode::config ()) {
             HttpServer::firewall = (boolean)UI::QueryWidget (`id (opt_id), `Value);
@@ -2155,6 +2307,10 @@ global define void initFwOpen (string key) ``{
 
 
 // *********************** Wizard Dialog 2 Widgets *****************************************
+  /**
+   * Initialization of checkboxes
+   * @param key string
+   */
 define void initScriptModules(string key) ``{
 	boolean enable_php4=false;
 	boolean enable_perl=false;
@@ -2183,24 +2339,39 @@ list<string> modules = YaST::HTTPDData::GetModuleList();
 }
 
 // *********************** Wizard Dialog 5 Widgets *****************************************
-define void initExpertConf (string key) ``{
-}
 
+  /**
+   * Handler for expert configuration
+   * @param key string
+   * @param event map
+   * @return symbol (nil, `expert)
+   */
 global define symbol handleExpertConf (string key, map event) ``{
  if (event["ID"]:nil == "expert_conf" )  return (symbol) `expert;
 	else return (symbol) nil;
  }
+  /**
+   * Get service start
+   * @return status boolean
+   */
 
 boolean getServiceAutoStart() ``{
  if (YaST::HTTPDData::GetService()!=nil && YaST::HTTPDData::GetService()) return true;
 	else return false;
 }
 
+  /**
+   * Set service start
+   * @param status boolean
+   */
 void setServiceAutoStart(boolean status) ``{
  YaST::HTTPDData::ModifyService(status);
 }
 
-
+ /**
+  * Initialize widget with summary text
+  * @param key string
+  */
 define void initSummaryText (string key) ``{
 
    UI::ReplaceWidget(`id(`summary_text_rp), `RichText( HttpServer::Summary()[0]:"error" ));

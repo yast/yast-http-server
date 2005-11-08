@@ -212,10 +212,14 @@ define boolean ListenHandler(map<string, string> options) ``{
     return true;
 }
 
+  /**
+   * Handling hosts dialog
+   * @param map<string, string> options map to handle
+   * @return boolean correct execution
+   */
 define boolean HostsHandler(map<string, string> options) ``{
 
     // check the command to be present exactly once
-//    string command = CommandLine::UniqueOption( options, [ "create", "servername", "serveradmin", "documentroot", "remove", "setdefault", "list" ] );
 list <string> hosts = YaST::HTTPDData::GetHostsList ();
 
     if (haskey(options, "list"))
@@ -244,8 +248,6 @@ list <string> hosts = YaST::HTTPDData::GetHostsList ();
                                                 $[ "KEY": "HostIP", "VALUE" :
 					(maplist( string ip, string dev, HttpServer::ip2device, ``( ip ))[0]:nil)
 						] ];
-			//select(maplist( string ip, string dev, HttpServer::ip2device, ``( ip )),0, nil
-
         if (!HttpServerWidgets::validate_server (options["servername"]:"", hostmap))
          {
           Report::Error(_("Validate error "));
@@ -254,10 +256,6 @@ list <string> hosts = YaST::HTTPDData::GetHostsList ();
 
         YaST::HTTPDData::CreateHost (  maplist( string ip, string dev, HttpServer::ip2device, ``( ip ))[0]:""
                 +"/"+options["servername"]:"", hostmap );
-
-//        YaST::HTTPDData::CreateHost (  select(maplist( string ip, string dev, HttpServer::ip2device, ``( ip )),0, nil)
-//                +"/"+options["servername"]:"", hostmap );
-
 
       if (hostmap == nil) return false;
       HttpServer::modified = true;

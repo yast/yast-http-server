@@ -40,7 +40,10 @@
         return Popup::ReallyAbort (true);
     }
 
-
+  /**
+   * Abort dialog
+   * @return boolean do abort
+   */
     boolean Abort () {
 	return ( !HttpServer::modified || Popup::ReallyAbort(true) );
     }
@@ -185,11 +188,11 @@ map tabs_descr = $[
     }
 
 
+ list< map<string,any> > descr = [];
 	/**
 	  * Return wizard for adding new virtual host	
-	  *
+	  * @return symbol (`browse, `abort, `cancel, `next)
 	  */
- list< map<string,any> > descr = [];
     symbol AddHost () {
 	term contents = `HBox( `HSpacing(0.5), `VBox (
 	    `Frame(
@@ -326,7 +329,10 @@ map tabs_descr = $[
 	return ret;
     };
 
-
+  /**
+   * Set virtual host options
+   * @return symbol from host widget
+   */
 symbol  SetVHostOptions() {
         term contents = `HBox( `HSpacing(0.5), `VBox (
 	   `ReplacePoint(`id(`replace), `Empty()
@@ -619,6 +625,10 @@ if (Require::IsAnyPackageInstalled([ "bind" ]))
 	return CWM::Run (w, $[`abort : Abort]);
     }
 
+  /**
+   * Directory dialog
+   * @return symbol from directory widget
+   */
     symbol DirDialog () {
 	list< map<string,any> > w = CWM::CreateWidgets (["dir"],
 	    HttpServerWidgets::widgets);

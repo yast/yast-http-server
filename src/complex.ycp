@@ -52,6 +52,10 @@ symbol WriteDialog() {
     return ret ? `next : `abort;
 }
 
+/**
+ * Abort dialog ask user for abort application
+ * @return boolean do abort
+ */
 boolean ReallyAbort() {
     return !HttpServer::modified || Popup::ReallyAbort(true);
 }
