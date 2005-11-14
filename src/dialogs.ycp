@@ -54,13 +54,13 @@ map tabs_descr = $[
 	  "header" :  _("Listen Ports and Addresses"),
 	  "contents" : `HBox (`HSpacing (1), `VBox (
 	    "server_enable",
-            `VSpacing (0),
-            "LISTEN",
-	    `VSpacing (0),
+            `VSpacing (2),
+            `HBox(`HStretch(), "LISTEN", `HStretch()), 
+	    `VSpacing (2),
 	    "firewall_adapt",
-            `VSpacing (0),
+            `VSpacing (2),
 	    "logs",
-	    `VSpacing(0)
+	    `VSpacing(2)
 	     ), `HSpacing (1)),
 	    "widget_names" : [ "server_enable", "LISTEN", "firewall_adapt", "logs" ]
 	 ],
