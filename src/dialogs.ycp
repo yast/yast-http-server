@@ -52,16 +52,22 @@
 map tabs_descr = $[
 	"listen" : $[
 	  "header" :  _("Listen Ports and Addresses"),
-	  "contents" : `HBox (`HSpacing (1), `VBox (
-	    "server_enable",
-            `VSpacing (2),
-            `HBox(`HStretch(), "LISTEN", `HStretch()), 
-	    `VSpacing (2),
-	    "firewall_adapt",
-            `VSpacing (2),
-	    "logs",
-	    `VSpacing(2)
-	     ), `HSpacing (1)),
+	  "contents" : `HBox (
+			`HStretch(),
+			`HSpacing (1),
+			`VBox (
+			    "server_enable",
+		            `VSpacing (2),
+			    "LISTEN",
+			    `VSpacing (2),
+			    "firewall_adapt",
+		            `VSpacing (2),
+			    "logs",
+			    `VSpacing(2)
+			      ),
+			`HSpacing (1),
+			`HStretch()
+			),
 	    "widget_names" : [ "server_enable", "LISTEN", "firewall_adapt", "logs" ]
 	 ],
 	"modules" : $[
