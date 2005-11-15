@@ -23,8 +23,10 @@ import "HttpServer";
 symbol WizardSequence1(){
 	string caption=_("HTTP Server Wizard (1/5)--Network Device Selection");
     term contents =
-        `Top (
-            `VBox (
+//        `Top (
+            `HBox (
+		`HStretch(),
+		  `VBox(
                       `VSpacing(0.5),
 			"open_port",
                       `VSpacing(0.5),
@@ -32,7 +34,9 @@ symbol WizardSequence1(){
                       `VSpacing(0.5),
 			"fw_open",
                       `VSpacing(8)
-            )
+			),
+		`HStretch()
+  //          )
         );
     list<string> widget_names = ["open_port", "listen_interfaces", "fw_open"];
     list<map<string,any> > w = CWM::CreateWidgets (widget_names, HttpServerWidgets::widgets);

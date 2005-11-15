@@ -715,20 +715,20 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	      "up_down_buttons" : false, 
 	      "unique_keys" : false]
 	, $[
-	    "init" : HttpServerWidgets::HostInit,
-	    "handle" : HttpServerWidgets::handleHostTable,
-	    "store" : HttpServerWidgets::HostStore,
+	    "init" : HostInit,
+	    "handle" : handleHostTable,
+	    "store" : HostStore,
 	    "validate_type" : `function,
 	    "validate_function" : validate_server_fnc,
 	    "options" : union( getHostOptions(), popups ),
-	    "ids" : HttpServerWidgets::HostTableContents,
-	    "id2key" : HttpServerWidgets::HostId2Key,
+	    "ids" : HostTableContents,
+	    "id2key" : HostId2Key,
 	    "fallback" : $[
-		"init" : HttpServerWidgets::DefaultHostPopupInit,
-		"store" : HttpServerWidgets::DefaultHostPopupStore,
-		"summary" : HttpServerWidgets::HostTableEntrySummary,
+		"init" : DefaultHostPopupInit,
+		"store" : DefaultHostPopupStore,
+		"summary" : HostTableEntrySummary,
 	    ],
-	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
+	    "option_delete" : HostTableEntryDelete,
 	    "add_items" : 
 		maplist( string key, any value, (map<string,any>)union( getHostOptions(), popups ), ``(key) ),
 	    "help" : HELPS["global_table"]:"",
@@ -740,7 +740,7 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
    */
 global define void HostInit (string key) ``{
     if (key == "DEF_HOST") init_tab = "default_host";
-    TablePopup::TableInit (HttpServerWidgets::hostwidget, key);
+    TablePopup::TableInit (hostwidget, key);
 }
 
   /**
@@ -803,18 +803,18 @@ map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
 	      "up_down_buttons" : false, 
 	      "unique_keys" : true]
 	, $[
-	    "init" : HttpServerWidgets::SSLInit,
-	    "handle" : HttpServerWidgets::handleSSLTable,
-	    "store" : HttpServerWidgets::SSLStore,
+	    "init" : SSLInit,
+	    "handle" : handleSSLTable,
+	    "store" : SSLStore,
 	    "options" : (map<string, any>) getSSLOptions(),
-	    "ids" : HttpServerWidgets::SSLTableContents,
-	    "id2key" : HttpServerWidgets::HostId2Key,
+	    "ids" : SSLTableContents,
+	    "id2key" : HostId2Key,
 	    "fallback" : $[
-		"init" : HttpServerWidgets::DefaultHostPopupInit,
-		"store" : HttpServerWidgets::DefaultHostPopupStore,
-		"summary" : HttpServerWidgets::HostTableEntrySummary,
+		"init" : DefaultHostPopupInit,
+		"store" : DefaultHostPopupStore,
+		"summary" : HostTableEntrySummary,
 	    ],
-	    "option_delete" : HttpServerWidgets::HostTableEntryDelete,
+	    "option_delete" : HostTableEntryDelete,
 	    "add_items" : maplist( string key, any value, (map<string, any>) getSSLOptions(), ``(key) ),
 	    "help" : HELPS["ssl"]:"",
 	]);
@@ -935,9 +935,9 @@ global map<string, map <string, any> > widgets = $[
 		    // translators: service status radio button label
 		    [ "enabled", _("Enabled") ]
 		],
-		"init"	: HttpServerWidgets::initServiceStatus,
-		"handle" : HttpServerWidgets::handleServiceStatus,
-		"store"	 : HttpServerWidgets::storeServiceStatus,
+		"init"	: initServiceStatus,
+		"handle" : handleServiceStatus,
+		"store"	 : storeServiceStatus,
 		"handle_events" : [ "enabled", "disabled" ],
 		"opt" : [ `notify ],
 		"help" : HELPS["server_enable"]:"",
@@ -947,8 +947,8 @@ global map<string, map <string, any> > widgets = $[
 		// translators: checkbox label
 		"label" : _("Open &Firewall on Selected Ports"),
 		"help"	 : HELPS["firewall_adapt"]:"",
-		"init"	: HttpServerWidgets::initAdaptFirewall,
-		"store"	 : HttpServerWidgets::storeAdaptFirewall,
+		"init"	: initAdaptFirewall,
+		"store"	 : storeAdaptFirewall,
 	    ],
 	    "host" : hostwidget,
         "LISTEN" : $[
@@ -972,8 +972,8 @@ global map<string, map <string, any> > widgets = $[
                     `HStretch ()
                 )
             ),
-            "init" : HttpServerWidgets::initListenSettings,
-            "handle" : HttpServerWidgets::handleListenSettings,
+            "init" : initListenSettings,
+            "handle" : handleListenSettings,
             "help" : HELPS["listen"]:"",
           ],
         "MODULES" : $[
@@ -997,8 +997,8 @@ global map<string, map <string, any> > widgets = $[
                         _("&Add Module") )
                 )
             ),
-            "init" : HttpServerWidgets::initModules,
-            "handle" : HttpServerWidgets::handleModules,
+            "init" : initModules,
+            "handle" : handleModules,
             "help" : HELPS["modules"]:"",
 
          ],
@@ -1007,22 +1007,21 @@ global map<string, map <string, any> > widgets = $[
            TablePopup::CreateTableDescr (
             $["add_delete_buttons" : true, "up_down_buttons" : false, "unique_keys" : false],
              $[
-              "init" : HttpServerWidgets::HostInit,
-              "handle" : HttpServerWidgets::handleHostTable,
-              "store" : HttpServerWidgets::HostStore,
+              "init" : HostInit,
+              "handle" : handleHostTable,
+              "store" : HostStore,
               "validate_type" : `function,
-              "validate_function" : HttpServerWidgets::validate_server_fnc,
-              "options" : union( HttpServerWidgets::getHostOptions(), HttpServerWidgets::popups ),
-              "ids" : HttpServerWidgets::HostTableContents,
-              "id2key" : HttpServerWidgets::HostId2Key,
+              "validate_function" : validate_server_fnc,
+              "options" : union( getHostOptions(), popups ),
+              "ids" : HostTableContents,
+              "id2key" : HostId2Key,
               "fallback" : $[
-                "init" : HttpServerWidgets::DefaultHostPopupInit,
-                "store" : HttpServerWidgets::DefaultHostPopupStore,
-                "summary" : HttpServerWidgets::HostTableEntrySummary,
+                "init" : DefaultHostPopupInit,
+                "store" : DefaultHostPopupStore,
+                "summary" : HostTableEntrySummary,
                         ],
-              "option_delete" : HttpServerWidgets::HostTableEntryDelete,
-              "add_items" : maplist( string key, any value, (map<string,any>)union( HttpServerWidgets::getHostOptions(),
-                                                HttpServerWidgets::popups ), ``(key) ),
+              "option_delete" : HostTableEntryDelete,
+              "add_items" : maplist( string key, any value, (map<string,any>)union( getHostOptions(), popups ), ``(key) ),
               "help" : HELPS["global_table"]:""
              ]
             ),
@@ -1033,15 +1032,15 @@ global map<string, map <string, any> > widgets = $[
               "unique_keys" : true,
               "changed_column" : true]
         , $[
-            "init" : HttpServerWidgets::HostsInit,
-            "handle" : HttpServerWidgets::HostsHandle,
-            "ids" : HttpServerWidgets::HostsContents,
-            "option_delete" : HttpServerWidgets::HostsDelete,
+            "init" : HostsInit,
+            "handle" : HostsHandle,
+            "ids" : HostsContents,
+            "option_delete" : HostsDelete,
             "help" : HELPS["hosts"]:"",
             "fallback": $[
-                "summary" : HttpServerWidgets::HostDocumentRootSummary,
-                "changed" : HttpServerWidgets::HostIsDefault,
-                "label_func" : HttpServerWidgets::HostName,
+                "summary" : HostDocumentRootSummary,
+                "changed" : HostIsDefault,
+                "label_func" : HostName,
             ],
          ]),
 	    "logs" : overview_widget,
@@ -1053,31 +1052,31 @@ global map<string, map <string, any> > widgets = $[
 		"widget" : `textentry,
 		// translators: text entry
 		"label"	 : _("&Port:"),
-		"init"	 : HttpServerWidgets::initOpenPort,
+		"init"	 : initOpenPort,
 		"validate_type" : `function, 
-		"validate_function" : HttpServerWidgets::validateOpenPort,
+		"validate_function" : validateOpenPort,
 		"help" : HELPS["open_port"]:""
 		],
 	   "listen_interfaces" : $[
 		"widget" : `custom,
 		// translators: multi selection box
 		"custom_widget" : `ReplacePoint( `id(mode_replace_point_key),`MultiSelectionBox( _("&Listen on Interfaces"), [])),
-		"init"	 : HttpServerWidgets::initListenInterfaces,
+		"init"	 : initListenInterfaces,
                 "validate_type" : `function,
-                "validate_function" : HttpServerWidgets::validateListenInterfaces,
+                "validate_function" : validateListenInterfaces,
 		"help" : HELPS["listen_interfaces"]:""
 		],
 	   "fw_open" : $[
 		"widget" : `checkbox,
 		//translators: checkbox 
 		"label"  : _("Open &Firewall for Selected Ports"),
-		"init"	 : HttpServerWidgets::initFwOpen,
-		"store"	 : HttpServerWidgets::storeFwOpen,
+		"init"	 : initFwOpen,
+		"store"	 : storeFwOpen,
 		"help"   : HELPS["fw_open"]:""
 		],
 	  "booting" 	 : CWMServiceStart::CreateAutoStartWidget ($[
-		"get_service_auto_start" : HttpServerWidgets::getServiceAutoStart,
-		"set_service_auto_start" : HttpServerWidgets::setServiceAutoStart,
+		"get_service_auto_start" : getServiceAutoStart,
+		"set_service_auto_start" : setServiceAutoStart,
 		//translators: radiobutton - to start Apache2 service automatically
 		"start_auto_button"	 : _("Start Apache2 Server When Booting"),
 		//translators: radiobutton - to don't start Apache2 service 
@@ -2018,7 +2017,7 @@ define string item2listen( string network, string port ) ``{
 		}
 	    }
 	    UI::CloseDialog();
-	    HttpServerWidgets::initModules(nil);
+	    initModules(nil);
         }
 
     }
@@ -2349,7 +2348,7 @@ list<string> modules = YaST::HTTPDData::GetModuleList();
 global define symbol handleExpertConf (string key, map event) ``{
  if (event["ID"]:nil == "expert_conf" )  
 		{
-		 HttpServerWidgets::init_tab="listen";
+		 init_tab="listen";
 		 return (symbol) `expert;
 		}
 	else return (symbol) nil;
