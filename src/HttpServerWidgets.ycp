@@ -2347,7 +2347,11 @@ list<string> modules = YaST::HTTPDData::GetModuleList();
    * @return symbol (nil, `expert)
    */
 global define symbol handleExpertConf (string key, map event) ``{
- if (event["ID"]:nil == "expert_conf" )  return (symbol) `expert;
+ if (event["ID"]:nil == "expert_conf" )  
+		{
+		 HttpServerWidgets::init_tab="listen";
+		 return (symbol) `expert;
+		}
 	else return (symbol) nil;
  }
   /**
