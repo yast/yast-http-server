@@ -217,7 +217,7 @@ without installing the package."), "apache2" ) );
     NetworkDevices::Read();
 
     // generate the map: static IP -> device
-    ip2device = $[];
+    ip2device = $["127.0.0.1":"loopback"];
     list<string> devs = NetworkDevices::Locate("BOOTPROTO", "static");
     foreach(string dev, devs, {
 	string ip = NetworkDevices::GetValue(dev, "IPADDR");

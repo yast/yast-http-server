@@ -32,14 +32,11 @@ symbol MainSequence() {
 	"hosts"		:   ``( HostsDialog()),
 	"host"		:   ``( HostDialog() ),
 	"host-default"	:   ``( HostDialog() ),			// different workflow
-//	"listen"	:   ``( ListenDialog() ),
-//	"modules"	:   ``( ModulesDialog() ),
 	"addhost"	:   ``( AddHost() ),
 	"setvhost"	:   ``( SetVHostOptions() ),
 	"ssl"		:   ``( SSLDialog () ),
 	"dir"		:   ``( DirDialog () ),
 	"ssl-default"	:   ``( SSLDialog () ),
-#	"module_sel"	:   ``( ModuleSelectionsDialog ()),
     ];
 
     map sequence = $[
@@ -53,28 +50,7 @@ symbol MainSequence() {
 	    `ssl	: "ssl-default",
 	    `edit	: "host",
 	    `add	: "addhost",
-//	    `modules	: "modules",
-//	    `listen	: "listen",
 	],
-/*
-	"modules" : $[
-	    `abort	: `abort,
-	    `next	: "overview",
-	    `back	: "overview",
-	],
-	"listen" : $[
-	    `abort	: `abort,
-	    `next	: "overview",
-	    `back	: "overview",
-	],
-	"host-default" : $[
-	    `abort	: `abort,
-	    `next	: "overview",
-	    `back	: "overview",
-	    `ssl	: "ssl-default",
-	    `dir	: "dir",
-	],
-*/
 	"ssl-default" : $[
 	    `abort	: `abort,
 	    `next	: "host-default",
