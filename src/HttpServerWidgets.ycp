@@ -32,9 +32,9 @@
     include "http-server/helps.ycp";
 
 global string currenthost = "default";
-global string directory_param_regexp = "Directory \"?([^\"]+)\"?";
-global string dir_value = "";
-global map getSSLOptions();
+string directory_param_regexp = "Directory \"?([^\"]+)\"?";
+string dir_value = "";
+map getSSLOptions();
 global string init_tab = "listen";
 
 boolean update_contents = false;
@@ -283,8 +283,8 @@ global boolean validate_server_fnc (string id, map key);
 
 /*********************************** inital overview table ********************************/
 
-global symbol showAccessLogPopup (any key, map event);
-global symbol showErrorLogPopup (any key, map event);
+symbol showAccessLogPopup (any key, map event);
+symbol showErrorLogPopup (any key, map event);
 
 list <string> host_ids = nil;
 
@@ -619,7 +619,7 @@ global symbol handleBooting (string key, map event);
 global map getHostOptions();
 boolean getServiceAutoStart();
 void setServiceAutoStart(boolean enable);
-global void checkLoadedModuleFor(string new);
+void checkLoadedModuleFor(string new);
 
     global void setHostOptions(map < integer, map <string,any> > host_options);
 
@@ -766,7 +766,7 @@ global define map getHostOptions()
    * Get SSL options
    * @return map ssl options
    */
-global define map getSSLOptions()
+define map getSSLOptions()
 {
  map used = $[];
  list <string> directives = [];
@@ -1379,7 +1379,7 @@ define string item2listen( string network, string port ) ``{
       * @param event map event that occured
       * @return value for wizard sequencer, always nil
       */
-    global define symbol showAccessLogPopup (any key, map event) {
+    define symbol showAccessLogPopup (any key, map event) {
 	// FIXME: log files needs to be done via HTTPDData
 	// string log = (string) select( YaST::HTTPDData::GetAccessLogFiles( [currenthost] ), 0, "/var/log/apache2/access_log" );
 
@@ -1408,7 +1408,7 @@ define string item2listen( string network, string port ) ``{
       * @param event map event that occured
       * @return value for wizard sequencer, always nil
       */
-    global define symbol showErrorLogPopup (any key, map event) ``{
+    define symbol showErrorLogPopup (any key, map event) ``{
 	// FIXME: log files needs to be done via HTTPDData
 	// string log = (string) select( YaST::HTTPDData::GetErrorLogFiles( [currenthost] ), 0, "/var/log/apache2/error_log" );
 	
@@ -1465,7 +1465,7 @@ define string item2listen( string network, string port ) ``{
    * find modules of all directives and check if are loaded
    * @param new string
    */
-    global void checkLoadedModuleFor(string new)
+    void checkLoadedModuleFor(string new)
     {
 	list<string> loaded = YaST::HTTPDData::GetModuleList();
       foreach(map<string,any> value, YaST::HTTPDData::GetKnownModules(), {
