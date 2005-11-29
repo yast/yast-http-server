@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Nov 29 17:13:48 CET 2005 - mzugec@suse.cz
+
+- fixed #135884 - wizard mode without network cards 
+
+-------------------------------------------------------------------
 Wed Nov  9 10:19:35 CET 2005 - mzugec@suse.cz
 
 - tabbed main dialog 
