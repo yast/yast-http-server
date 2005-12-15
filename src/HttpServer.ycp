@@ -492,7 +492,7 @@ global define boolean Import (map s) ``{
 	else
 	{
 	    // check against the current default
-	    if (defaultstatus != nil && lookup( find_known_module(YaST::HTTPDData::GetKnownModules(), mod), "default", nil) != defaultstatus)
+	    if (defaultstatus != nil && (find_known_module(YaST::HTTPDData::GetKnownModules(), mod))["default"]:nil != defaultstatus)
 	    {
 		// translators: warning in autoyast loading the configuration description.
 		Report::Warning (sformat(_("Default value for module %1 does not match.
