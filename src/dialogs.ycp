@@ -397,9 +397,9 @@ symbol  SetVHostOptions() {
             Label::BackButton (), Label::OKButton ());
 
 
-map <string, any> documentroot = find(map<string,any> row, descr,``(row["KEY"]:"" == "DocumentRoot"));
-map <string, any> ip = find(map<string,any> row, descr,``(row["KEY"]:"" == "HostIP"));
-map <string, any> servername = find(map<string,any> row, descr,``(row["KEY"]:"" == "ServerName"));
+map <string, any> documentroot = search(map<string,any> row, descr,``(row["KEY"]:"" == "DocumentRoot"));
+map <string, any> ip = search(map<string,any> row, descr,``(row["KEY"]:"" == "HostIP"));
+map <string, any> servername = search(map<string,any> row, descr,``(row["KEY"]:"" == "ServerName"));
 string zone="";
 
 // --- D N S ---
@@ -567,7 +567,7 @@ if (Package::Installed("bind"))
 		 foreach(map<string, any>value, descr, {
 			if (value["KEY"]:"" == "_SECTION" && 
 				value["SECTIONNAME"]:"" == "Directory" && 
-				(find(value["SECTIONPARAM"]:"", documentroot["VALUE"]:""))>0) 
+				(search(value["SECTIONPARAM"]:"", documentroot["VALUE"]:""))!=nil) 
 				 {
 				  if (size(directory_index)>0)	
 						value["VALUE"]=add(value["VALUE"]:[], $["KEY":"DirectoryIndex", "VALUE":directory_index]);

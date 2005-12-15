@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Dec 15 18:14:05 CET 2005 - mzugec@suse.cz
+
+- change deprecated find to search 
+
+-------------------------------------------------------------------
 Tue Nov 29 17:13:48 CET 2005 - mzugec@suse.cz
 
 - fixed #135884 - wizard mode without network cards 

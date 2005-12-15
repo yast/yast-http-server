@@ -152,8 +152,8 @@ global boolean validate_serverip (any id, any key, map event)
     string value = (string)UI::QueryWidget (`id (id), `Value);
     
     // check, if there is also a port, if yes, skip it
-    integer pos = find (value, ":");
-    if (pos != -1)
+    integer pos = search (value, ":");
+    if (pos != nil)
     {
 	value = substring (value, 0, pos);
     }
