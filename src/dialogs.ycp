@@ -27,7 +27,7 @@
     import "DnsServer";
     import "Service";
     import "TablePopup";
-    import "Require";
+    import "Package";
 
 
 
@@ -403,7 +403,7 @@ map <string, any> servername = find(map<string,any> row, descr,``(row["KEY"]:"" 
 string zone="";
 
 // --- D N S ---
-if (Require::IsAnyPackageInstalled([ "bind" ]))
+if (Package::Installed("bind"))
         {
 	 if ( Service::Status("named") == 0 ){
 		foreach(string key, map<string, any> value, (map<string, map<string, any> >) DnsServerAPI::GetZones(), {
@@ -465,7 +465,7 @@ if (Require::IsAnyPackageInstalled([ "bind" ]))
    symbol ret = nil;
    do{
 	ret = (symbol)UI::UserInput (); 
-if (Require::IsAnyPackageInstalled([ "bind" ]))
+if (Package::Installed("bind"))
        {
 	if (ret == `dns_add_rec)
 	 {
