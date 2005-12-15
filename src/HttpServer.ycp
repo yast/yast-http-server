@@ -20,7 +20,7 @@ import "YaST::HTTPDData";
 import "NetworkDevices";
 import "Progress";
 import "Report";
-import "Require";
+import "Package";
 import "Service";
 import "Summary";
 import "Message";
@@ -111,18 +111,18 @@ global define boolean Read() ``{
     if(Abort()) return false;
 // check rpms
 list<string> required = (list<string>) HttpServer::required_packages;
-if( !Require::IsAnyPackageInstalledTarget( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
+if( !Package::InstalledAny( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
     // add a default MPM - prefork because of the PHP4 compatibility
     required = (list<string>) union (required, ["apache2-prefork"] );
 }
 
-if( !Require::RequireAndConflictTarget( required, [],
+if( !Package::InstallAllMsg( required,
     // notification about package needed 1/2
     _("<p>To configure the HTTP server, the <b>%1</b> packages must be installed.</p>") +
     // notification about package needed 2/2
     _("<p>Do you want to install it now?</p>")) )
 {
-    if( !Require::IsPackageAvailable( "apache2" ) ) {
+    if( !Package::Available("apache2") ) {
         // translators: error popup before aborting the module
         Popup::Error( sformat( _("The package %1 is not available.
 YaST2 cannot continue the configuration
@@ -173,7 +173,7 @@ without installing the package."), "apache2" ) );
     import "SuSEFirewall";
     Progress::set(false);	//off();
     SuSEFirewall::Read();
-    if (Require::IsAnyPackageInstalled([ "bind" ])) DnsServerAPI::Read();
+    if (Package::Installed("bind")) DnsServerAPI::Read();
     Progress::set(true);	//on();
     
     firewall_started = SuSEFirewall::IsEnabled();			//Service::Enabled( "SuSEfirewall2_final" );
@@ -333,7 +333,7 @@ global define boolean Write() ``{
     list<string> rpms = YaPI::HTTPD::GetModulePackages();
 
     // install required RPMs for modules
-    Require::RequireAndConflictTarget( rpms, [], _("The enabled modules require
+    Package::InstallAllMsg( rpms, _("The enabled modules require
 installation of some of these additional packages:
 %1
 Install them now?
@@ -376,7 +376,7 @@ Install them now?
 	}
     });
     SuSEFirewall::Write ();
-    if (Require::IsAnyPackageInstalled([ "bind" ])) DnsServerAPI::Write ();
+    if (Package::Installed("bind")) DnsServerAPI::Write ();
 	Progress::set(true);
 
     YaST::HTTPDData::WriteModuleList ();
@@ -668,7 +668,7 @@ else {
  * @return map of packages to be installed and to be removed
  */
 global define map AutoPackages() ``{
-       if( !Require::IsAnyPackageInstalledTarget( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
+       if( !Package::InstalledAny( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
            // add a default MPM - prefork because of the PHP4 compatibility
         required_packages = (list<string>)union (required_packages, ["apache2-prefork"] );
        }

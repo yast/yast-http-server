@@ -20,7 +20,6 @@ textdomain "http-server";
 import "CommandLine";
 import "YaPI::HTTPD";
 import "Popup";
-import "Require";
 import "Report";
 import "Message";
 import "Hostname";
