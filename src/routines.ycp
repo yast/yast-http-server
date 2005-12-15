@@ -59,12 +59,12 @@ global define void ProgressNextStage(string title) ``{
  * @return term		term for the table
  */
 global define term listen2item( string arg, integer id ) ``{
-    integer colon = find( arg, ":" );
+    integer colon = search( arg, ":" );
 
     string address = _("All Addresses");
     string port = arg;
     
-    if( colon != -1 ) {
+    if( colon != nil ) {
 	// address is present
 	address = substring( arg, 0, colon );
 	port = substring( arg, colon+1 );
@@ -79,12 +79,12 @@ global define term listen2item( string arg, integer id ) ``{
  * @return map		map with the result
  */
 global define map listen2map( string arg ) ``{
-    integer colon = find( arg, ":" );
+    integer colon = search( arg, ":" );
 
     string address = "all";
     string port = arg;
     
-    if( colon != -1 ) {
+    if( colon != nil ) {
 	// address is present
 	address = substring( arg, 0, colon );
 	port = substring( arg, colon+1 );
