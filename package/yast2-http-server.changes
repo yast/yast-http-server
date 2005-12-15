@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Dec 15 18:20:58 CET 2005 - mzugec@suse.cz
+
+- remove deprecated lookup 
+
+-------------------------------------------------------------------
 Thu Dec 15 18:14:05 CET 2005 - mzugec@suse.cz
 
 - change deprecated find to search 
