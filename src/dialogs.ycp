@@ -397,9 +397,9 @@ symbol  SetVHostOptions() {
             Label::BackButton (), Label::OKButton ());
 
 
-map <string, any> documentroot = search(map<string,any> row, descr,``(row["KEY"]:"" == "DocumentRoot"));
-map <string, any> ip = search(map<string,any> row, descr,``(row["KEY"]:"" == "HostIP"));
-map <string, any> servername = search(map<string,any> row, descr,``(row["KEY"]:"" == "ServerName"));
+map <string, any> documentroot = find(map<string,any> row, descr,``(row["KEY"]:"" == "DocumentRoot"));
+map <string, any> ip = find(map<string,any> row, descr,``(row["KEY"]:"" == "HostIP"));
+map <string, any> servername = find(map<string,any> row, descr,``(row["KEY"]:"" == "ServerName"));
 string zone="";
 
 // --- D N S ---
