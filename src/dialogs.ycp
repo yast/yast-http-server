@@ -364,7 +364,7 @@ symbol  SetVHostOptions() {
                 _("SSL Support"),
                  `VBox(
                   `Left(
-                   `CheckBox(`id(`ssl_support), _("Enable &SSL Support For This Virtual Host"))),
+                   `CheckBox(`id(`ssl_support), _("Enable &SSL Support for This Virtual Host"))),
                     `HBox(
                         // translators: textentry, certificate file path
                         `TextEntry( `id( `certfile ), _("&Certificate File Path") ),
@@ -410,7 +410,7 @@ if (Package::Installed("bind"))
 		 if ( (value["type"]:"" == "master") 
 			&& (regexpmatch(servername["VALUE"]:"", "\\."+key+"$" ))
 				&& (size(key)>size(zone)) ) zone=key;
-			   y2milestone(_("Master zone %1"), key);
+			   y2milestone(_("Master Zone %1"), key);
 		});
 		if (size(zone)>0)
 		 {
@@ -427,7 +427,7 @@ if (Package::Installed("bind"))
                                               `Left(
                                                 `HBox(
                                                  `Label(servername["VALUE"]:""),
-                                                 `PushButton(`id(`dns_add_rec), _("Add to zone"))
+                                                 `PushButton(`id(`dns_add_rec), _("Add to Zone"))
                                                     ))));
 
 				}
@@ -453,7 +453,7 @@ if (Package::Installed("bind"))
                                                 `HBox(
                                                  `Label(servername["VALUE"]:""),
 						 `ComboBox(`id(`new_zone), _("Zone Name"), newList),
-                                                 `PushButton(`id(`dns_create_zone), _("Create New zone"))
+                                                 `PushButton(`id(`dns_create_zone), _("Create New Zone"))
                                                     ))));
 
 			}
