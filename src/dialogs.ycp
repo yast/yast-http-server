@@ -469,7 +469,7 @@ if (Package::Installed("bind"))
        {
 	if (ret == `dns_add_rec)
 	 {
-	  y2milestone(_("Add record %1 to zone %2"), servername["VALUE"]:"", zone);
+	  y2milestone("Add record %1 to zone %2", servername["VALUE"]:"", zone);
 	  UI::ChangeWidget(`dns_add_rec, `Enabled, false);
 	  DnsServerAPI::AddZoneRR(zone, "A", servername["VALUE"]:""+".", ip["VALUE"]:"");
 	  ret = nil;
