@@ -236,13 +236,13 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 
 	if (size(documentroot)<1){
 	 // error message - the entered document root is empty
-	 Report::Error (_("The root directory can't be empty."));
+	 Report::Error (_("The root directory cannot be empty."));
          res = false;
          break;
 	} else {
 		if ( SCR::Execute(.target.bash, "test -d " + documentroot) != 0){
 			// error message - the entered root directory is not valid directory
-	            Report::Error (_("The root directory must be exist directory."));
+	            Report::Error (_("The root directory must be an existing directory."));
 	            res = false;
 	            break;
 		 }
