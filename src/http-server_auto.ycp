@@ -44,7 +44,7 @@ y2debug("param=%1", param);
 
 /* Create a summary*/
 if(func == "Summary") {
-    ret = select(HttpServer::Summary(), 0, "");
+    ret = (HttpServer::Summary())[0]:"";
 }
 /* Reset configuration */
 else if (func == "Reset") {
