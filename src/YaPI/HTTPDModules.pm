@@ -771,15 +771,17 @@ package YaPI::HTTPDModules;
                                     VirtualScriptAliasIP => 'mod_vhost_alias'
                     }
     },
-    'php4' => {
-                    summary   => 'Provides support for PHP4 dynamically generated pages',
-                    packages  => ["apache2-mod_php4"],
-                    default   => 0,
-                    required  => 0,
-                    suggested => 0,
-                    position  => 490,
-		    exclude   => [ "php5" ]
-    },
+
+#    'php4' => {
+#                    summary   => 'Provides support for PHP4 dynamically generated pages',
+#                    packages  => ["apache2-mod_php4"],
+#                    default   => 0,
+#                    required  => 0,
+#                    suggested => 0,
+#                    position  => 490,
+#		    exclude   => [ "php5" ]
+#    },
+
     'php5' => {
                     summary   => 'Provides support for PHP5 dynamically generated pages',
                     packages  => ["apache2-mod_php5"],
