@@ -2311,12 +2311,12 @@ global define void initFwOpen (string key) ``{
    * @param key string
    */
 define void initScriptModules(string key) ``{
-	boolean enable_php4=false;
+	boolean enable_php5=false;
 	boolean enable_perl=false;
 	boolean enable_python=false;
 	boolean enable_ruby=false;
 list<string> modules = YaST::HTTPDData::GetModuleList();
-	if (contains(modules, "php4")) enable_php4 = true;
+	if (contains(modules, "php5")) enable_php5 = true;
 	if (contains(modules, "perl")) enable_perl = true;
 	if (contains(modules, "python")) enable_python = true;
 	if (contains(modules, "ruby")) enable_ruby = true;
@@ -2325,7 +2325,7 @@ list<string> modules = YaST::HTTPDData::GetModuleList();
 		    `HBox(`HSpacing(6),
 		     `VBox(
 		     `VSpacing(3),	//translators: checkbox - support for php script language
-                      `Left(`CheckBox(`id(`scr_mod_php4),_("Enable &PHP4 Scripting"), enable_php4)),
+                      `Left(`CheckBox(`id(`scr_mod_php5),_("Enable &PHP5 Scripting"), enable_php5)),
 			`VSpacing(1),   //translators: checkbox - support for perl script language
                       `Left(`CheckBox(`id(`scr_mod_perl), _("Enable P&erl Scripting"), enable_perl)),
                         `VSpacing(1),   //translators: checkbox - support for python script language
