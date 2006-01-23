@@ -27,6 +27,7 @@ import "Message";
 import "Directory";
 import "Popup";
 import "DnsServerAPI";
+import "NetworkService";
 
 /**
  * Abort function
@@ -83,7 +84,7 @@ global define boolean Read() ``{
     /* HttpServer read dialog caption */
     string caption = _("Initializing HTTP Server Configuration");
 
-    integer steps = 3;
+    integer steps = 4;
 
     // We do not set help text here, because it was set outside
     Progress::New( caption, " ", steps, [
@@ -106,6 +107,11 @@ global define boolean Read() ``{
 	],
 	""
     );
+
+
+    if (!NetworkService::ConfirmNetworkManager()) return false;
+    Progress::NextStep();
+
 
     // check the environment
     if(Abort()) return false;
