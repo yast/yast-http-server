@@ -1905,7 +1905,6 @@ define string item2listen( string network, string port ) ``{
 	list< map<string,any> > known = YaST::HTTPDData::GetKnownModules();
 	list<string> modules = YaST::HTTPDData::GetModuleList();
 	integer index = -1;
-
        // create temporary list of maps from modules
        list< map<string, any > > listmodules = maplist(string name , modules,{
                        return( mapmap(string k,any v, $["default":"1", "name":name, "summary":_("unknown"), "required":"0", "suggested":"0"],
@@ -1927,6 +1926,7 @@ define string item2listen( string network, string port ) ``{
 	    index = index + 1;
 	    // translators: server module status unknown
 	    string name = mod["name"]:_("unknown");
+	if ((mod["default"]:"0" == "1") && (!contains(modules, name))) YaST::HTTPDData::ModifyModuleList ([name], true);
 	    // translators: server module status
 	    return `item (`id (index), name, (contains( modules, name)||mod["default"]:"0"=="1") ? _("Enabled") 
 		// translators: server module status
