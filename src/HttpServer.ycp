@@ -124,7 +124,7 @@ if( !Package::InstallAllMsg( required,
 {
     if( !Package::Available("apache2") ) {
         // translators: error popup before aborting the module
-        Popup::Error( sformat( _("The package %1 is not available.
+        Popup::Error( sformat( _("The package %1 is not available.\n
 Configuration cannot continue\n
 without installing the package."), "apache2" ) );
     } else {
