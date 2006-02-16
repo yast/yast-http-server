@@ -57,13 +57,13 @@ map tabs_descr = $[
 			`HSpacing (1),
 			`VBox (
 			    "server_enable",
-		            `VSpacing (2),
+		            `VSpacing (1),
 			    "LISTEN",
-			    `VSpacing (2),
+			    `VSpacing (1),
 			    "firewall_adapt",
-		            `VSpacing (2),
+		            `VSpacing (1),
 			    "logs",
-			    `VSpacing(2)
+			    `VSpacing(1)
 			      ),
 			`HSpacing (1),
 			`HStretch()
