@@ -372,6 +372,7 @@ global void HostsInit (string widget)
    */
 map<string,string> AskNewInfo (string servername, string ip)
 {
+y2internal("Using DNS !!! %1", servername);
     if (size (servername) == 0)
     {
 	import "DNS";
@@ -465,7 +466,6 @@ global symbol HostsHandle (string table, map event)
     else if (event["ID"]:nil == `set_default)
     {
 	string host = (string)UI::QueryWidget (`_tp_table, `CurrentItem);
-	
 	if (host == "default")
 	{
 	    // popup - it is already the default host

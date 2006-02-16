@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Feb 16 15:04:09 CET 2006 - mzugec@suse.cz
+
+- fixed #147613 - optimalize listen dialog for 25 lines
+
+-------------------------------------------------------------------
 Mon Jan 23 18:36:21 CET 2006 - mzugec@suse.cz
 
 - NetworkManager confirmation 
