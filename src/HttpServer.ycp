@@ -55,7 +55,7 @@ global boolean proposal_valid = false;
  */
 global boolean write_only = false;
 
-
+boolean configured_dns = false;
 /**
  * Data was modified?
  * @return true if modified
@@ -179,9 +179,11 @@ without installing the package."), "apache2" ) );
     import "SuSEFirewall";
     Progress::set(false);	//off();
     SuSEFirewall::Read();
-    if (Package::Installed("bind")) DnsServerAPI::Read();
+    if ((Package::Installed("bind")) &&(false == SCR::Read (.target.stat, Directory::vardir + "/dns_server"))){
+		DnsServerAPI::Read();
+		configured_dns = true;
+	}
     Progress::set(true);	//on();
-    
     firewall_started = SuSEFirewall::IsEnabled();			//Service::Enabled( "SuSEfirewall2_final" );
 
     // read current settings from httpd.conf and sysconfig
@@ -382,9 +384,8 @@ Install them now?
 	}
     });
     SuSEFirewall::Write ();
-    if (Package::Installed("bind")) DnsServerAPI::Write ();
+    if (configured_dns) DnsServerAPI::Write ();
 	Progress::set(true);
-
     YaST::HTTPDData::WriteModuleList ();
 
     // in autoyast, quit here
