@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Feb 17 12:34:05 CET 2006 - mzugec@suse.cz
+
+- fixed #147600 - dont use unconfigured dns 
+
+-------------------------------------------------------------------
 Thu Feb 16 15:04:09 CET 2006 - mzugec@suse.cz
 
 - fixed #147613 - optimalize listen dialog for 25 lines
