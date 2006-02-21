@@ -1,7 +1,7 @@
 @HEADER-COMMENT@
 
 @HEADER@
-BuildRequires:	yast2-devel-packages yast2-dns-server yast2-network
+BuildRequires:	yast2-dns-server yast2-network docbook-xsl-stylesheets doxygen libxslt perl-XML-Writer popt-devel sgml-skel update-desktop-files yast2 yast2-devtools yast2-packagemanager-devel yast2-perl-bindings yast2-testsuite
 Requires:	yast2 yast2-network yast2-firewall yast2-perl-bindings libzio
 
 BuildArchitectures:	noarch
