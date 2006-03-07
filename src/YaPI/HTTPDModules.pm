@@ -1,6 +1,6 @@
 package YaPI::HTTPDModules;
 %modules = (
-    'access' => {
+    'authz_host' => {
                     summary   => 'Provides access control based on client host name, IP address, etc.',
                     packages  => [],
                     default   => 1,
@@ -40,16 +40,46 @@ package YaPI::HTTPDModules;
 				   { option => "ScriptAliasMatch",	"context" => [ "Server", "Virtual" ] }
 				]
     },
-    'auth' => {
+    'auth_basic' => {
+                    summary   => 'Basic authentication',
+                    packages  => [],
+                    default   => 1,
+                    required  => 0,
+                    suggested => 0,
+                    position  => 40,
+		    directives=> [ { option => "AuthBasicAuthoritative", "context" => [ "Directory" ] , "values" => [ "On", "Off" ] },
+				   { option => "AuthBasicProvider",     "context" => [ "Directory" ] }
+				]
+    },
+    'authn_file' => {
                     summary   => 'User authentication using text files',
                     packages  => [],
                     default   => 1,
                     required  => 0,
                     suggested => 0,
                     position  => 40,
-		    directives=> [ { option => "AuthAuthoritative", "context" => [ "Directory" ] , "values" => [ "On", "Off" ] },
-				   { option => "AuthGroupFile",     "context" => [ "Directory" ] },
-				   { option => "AuthUserFile", 	    "context" => [ "Directory" ] }
+		    directives=> [ { option => "AuthUserFile", "context" => [ "Directory" ] }
+				]
+    },
+    'authz_user' => {
+                    summary   => 'User Authorization',
+                    packages  => [],
+                    default   => 1,
+                    required  => 0,
+                    suggested => 0,
+                    position  => 40,
+		    directives=> [ { option => "AuthzUserAuthoritative", "context" => [ "Directory" ], "values" => [ "On", "Off" ] }
+				]
+    },
+    'authz_groupfile' => {
+                    summary   => 'Group authorization using plaintext files',
+                    packages  => [],
+                    default   => 1,
+                    required  => 0,
+                    suggested => 0,
+                    position  => 40,
+		    directives=> [ { option => "AuthGroupFile", "context" => [ "Directory" ] },
+				   { option => "AuthzGroupFileAuthoritative", "context" => [ "Directory" ], "values" => [ "On", "Off" ] }
 				]
     },
     'auth_dbm' => {
@@ -312,22 +342,19 @@ package YaPI::HTTPDModules;
 				   { option =>"AuthDigestShmemSize", 		"context" => [ "Server" ] } 
 				]
     },
-    'auth_ldap' => {
+    'authnz_ldap' => {
                     summary   => 'Allows an LDAP directory to be used to store the database for HTTP Basic authentication',
                     packages  => [],
                     default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 355,
-                    directives=> [ { option =>"AuthLDAPAuthoritative", 		"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
-				   { option =>"AuthLDAPBindDN", 		"context" => [ "Directory" ] },
+                    directives=> [ { option =>"AuthLDAPBindDN", 		"context" => [ "Directory" ] },
 				   { option =>"AuthLDAPBindPassword", 		"context" => [ "Directory" ] },
 				   { option =>"AuthLDAPCharsetConfig", 		"context" => [ "Server" ] },
 				   { option =>"AuthLDAPCompareDNOnServer", 	"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
  				   { option =>"AuthLDAPDereferenceAliases", 	"context" => [ "Directory" ], 
 											"values" => [ "Never", "Searching", "Finding", "Always" ] }, 
-				   { option =>"AuthLDAPEnabled", 		"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
-				   { option =>"AuthLDAPFrontPageHack", 		"context" => [ "Directory" ] },
 				   { option =>"AuthLDAPGroupAttribute", 	"context" => [ "Directory" ] },
 				   { option =>"AuthLDAPGroupAttributeIsDN", 	"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
 				   { option =>"AuthLDAPRemoteUserIsDN", 	"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
@@ -492,7 +519,7 @@ package YaPI::HTTPDModules;
                                 ]
 
     },
-    'imap' => {
+    'imagemap' => {
                     summary   => 'Server-side image map processing',
                     packages  => [],
                     default   => 1,
