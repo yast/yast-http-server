@@ -82,21 +82,22 @@ package YaPI::HTTPDModules;
 				   { option => "AuthzGroupFileAuthoritative", "context" => [ "Directory" ], "values" => [ "On", "Off" ] }
 				]
     },
-    'auth_dbm' => {
-                    summary   => 'Provides for user authentication using DBM files',
+    'authn_dbm' => {
+                    summary   => 'User authentication using DBM files',
                     packages  => [],
                     default   => 0,
                     required  => 0,
                     suggested => 0,
                     position  => 50,
                     module    => {
-                                    AuthDBMAuthoritative => 'mod_auth_dbm',
-                                    AuthDBMGroupFile => 'mod_auth_dbm',
+#                                    AuthDBMAuthoritative => 'mod_auth_dbm',
+#                                    AuthDBMGroupFile => 'mod_auth_dbm',
                                     AuthDBMType => 'mod_auth_dbm',
                                     AuthDBMUserFile => 'mod_auth_dbm'
                     },
-                    directives=> [ { option => "AuthDBMAuthoritative", "context" => [ "Directory" ] , "values" => [ "On", "Off" ] },
-				   { option => "AuthDBMGroupFile",     "context" => [ "Directory" ] },
+                    directives=> [ 
+#{ option => "AuthDBMAuthoritative", "context" => [ "Directory" ] , "values" => [ "On", "Off" ] },
+#				   { option => "AuthDBMGroupFile",     "context" => [ "Directory" ] },
 				   { option => "AuthDBMType", 	       "context" => [ "Directory" ] , 
 										"values" => [ "default", "SDBM", "GDBM", "NDBM", "DB" ] },
 				   { option => "AuthDBMUserFile",      "context" => [ "Directory" ] }
@@ -121,6 +122,7 @@ package YaPI::HTTPDModules;
 				   { option => "IndexIgnore", 		"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "IndexOptions", 		"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "IndexOrderDefault", 	"context" => [ "Directory", "Server", "Virtual" ] },
+				   { option => "IndexStyleSheet", 	"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "ReadmeName", 		"context" => [ "Directory", "Server", "Virtual" ] }
 				]
     },
@@ -297,11 +299,9 @@ package YaPI::HTTPDModules;
                     default   => 1,
                     required  => 0,
                     suggested => 0,
-                    position  => 190,
-                    directives=> [ { option =>"AddHandler", "context" => [ "Directory", "Server", "Virtual" ] } 
-				]
+                    position  => 190
     },
-    'auth_anon' => {
+    'authn_anon' => {
                     summary   => 'Allows "anonymous" user access to authenticated areas',
                     packages  => [],
                     default   => 0,
@@ -333,10 +333,9 @@ package YaPI::HTTPDModules;
                     position  => 210,
                     directives=> [ { option =>"AuthDigestAlgorithm", 		"context" => [ "Directory" ], "values" => [ "MD5", "MD5-sess" ] },
 				   { option =>"AuthDigestDomain", 		"context" => [ "Directory" ] },
-				   { option =>"AuthDigestFile", 		"context" => [ "Directory" ] },
-				   { option =>"AuthDigestGroupFile", 		"context" => [ "Directory" ] },
 				   { option =>"AuthDigestNcCheck", 		"context" => [ "Server" ], "values" => [ "On", "Off" ] },
 				   { option =>"AuthDigestNonceFormat", 		"context" => [ "Directory" ] },
+				   { option =>"AuthDigestProvider", 		"context" => [ "Directory" ] },
 				   { option =>"AuthDigestNonceLifetime", 	"context" => [ "Directory" ] },
 				   { option =>"AuthDigestQop", 			"context" => [ "Directory" ] },
 				   { option =>"AuthDigestShmemSize", 		"context" => [ "Server" ] } 
@@ -358,7 +357,8 @@ package YaPI::HTTPDModules;
 				   { option =>"AuthLDAPGroupAttribute", 	"context" => [ "Directory" ] },
 				   { option =>"AuthLDAPGroupAttributeIsDN", 	"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
 				   { option =>"AuthLDAPRemoteUserIsDN", 	"context" => [ "Directory" ], "values" => [ "On", "Off" ] },
-				   { option =>"AuthLDAPUrl", 			"context" => [ "Directory" ] }
+				   { option =>"AuthLDAPUrl", 			"context" => [ "Directory" ] },
+				   { option =>"AuthzLDAPAuthoritative", 	"context" => [ "Directory" ], "values" => [ "On", "Off" ] }
 				]
     },
     'cache' => {
@@ -371,12 +371,13 @@ package YaPI::HTTPDModules;
                     directives=> [ { option =>"CacheDefaultExpire", 	"context" => [ "Server", "Virtual" ] },
 				   { option =>"CacheDisable", 		"context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheEnable", 		"context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheForceCompletion", 	"context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheIgnoreCacheControl","context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
                                    { option =>"CacheIgnoreHeaders", 	"context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheIgnoreNoLastMod", 	"context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
                                    { option =>"CacheLastModifiedFactor","context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheMaxExpire", 	"context" => [ "Server", "Virtual" ] }
+                                   { option =>"CacheMaxExpire", 	"context" => [ "Server", "Virtual" ] },
+                                   { option =>"CacheStoreNoStore", 	"context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
+                                   { option =>"CacheStorePrivate", 	"context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] }
                                 ]
     },
     'charset_lite' => {
@@ -452,17 +453,9 @@ package YaPI::HTTPDModules;
                     position  => 280,
                     directives=> [ { option =>"CacheDirLength",		"context" => [ "Server", "Virtual" ] },
 				   { option =>"CacheDirLevels",         "context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheExpiryCheck",       "context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
-                                   { option =>"CacheGcClean",           "context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheGcDaily",           "context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheGcInterval",        "context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheGcMemUsage",        "context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheGcUnused",          "context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheMaxFileSize",       "context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheMinFileSize",       "context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheRoot",              "context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheSize",              "context" => [ "Server", "Virtual" ] },
-                                   { option =>"CacheTimeMargin",        "context" => [ "Server", "Virtual" ] }
 				]
     },
     'echo' => {
@@ -558,7 +551,10 @@ package YaPI::HTTPDModules;
                                    { option =>"LDAPOpCacheTTL", 	"context" => [ "Server" ] },
                                    { option =>"LDAPSharedCacheFile", 	"context" => [ "Server" ] },
                                    { option =>"LDAPSharedCacheSize", 	"context" => [ "Server" ] },
-                                   { option =>"LDAPTrustedCA", 		"context" => [ "Server" ] },
+                                   { option =>"LDAPTrustedGlobalCert",	"context" => [ "Server" ] },
+                                   { option =>"LDAPTrustedClientCert",	"context" => [ "Server" ] },
+                                   { option =>"LDAPTrustedMode",	"context" => [ "Server" ] },
+                                   { option =>"LDAPVerifyServerCert",	"context" => [ "Server" ], "values" => [ "On", "Off" ] },
                                    { option =>"LDAPTrustedCAType", 	"context" => [ "Server" ], 
 							"values" => [ "DER_FILE", "BASE64_FILE", "CERT7_DB_PATH" ] }	
                                 ]
@@ -621,7 +617,9 @@ package YaPI::HTTPDModules;
                                     ProxyRemoteMatch => 'mod_proxy',
                                     ProxyRequests => 'mod_proxy',
                                     ProxyTimeout => 'mod_proxy',
-                                    ProxyVia => 'mod_proxy'
+                                    ProxyVia => 'mod_proxy',
+				    ProxyPassReverseCookieDomain => 'mod_proxy',
+				    ProxyPassReverseCookiePath => 'mod_proxy'
                     },
                     directives=> [ { option =>"AllowCONNECT",         	"context" => [ "Server", "Virtual" ] },
 				   { option =>"NoProxy",         	"context" => [ "Server", "Virtual" ] },
@@ -636,6 +634,8 @@ package YaPI::HTTPDModules;
                                    { option =>"ProxyPassReverse",       "context" => [ "Server", "Virtual", "Directory" ] },
                                    { option =>"ProxyPreserveHost",      "context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
                                    { option =>"ProxyReceiveBufferSize", "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyPassReverseCookieDomain", "context" => [ "Server", "Virtual" ] },
+                                   { option =>"ProxyPassReverseCookiePath", "context" => [ "Server", "Virtual" ] },
                                    { option =>"ProxyRemote",	        "context" => [ "Server", "Virtual" ] },
                                    { option =>"ProxyRemoteMatch",       "context" => [ "Server", "Virtual" ] },
                                    { option =>"ProxyRequests",          "context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
@@ -796,7 +796,12 @@ package YaPI::HTTPDModules;
                                     VirtualDocumentRootIP => 'mod_vhost_alias',
                                     VirtualScriptAlias => 'mod_vhost_alias',
                                     VirtualScriptAliasIP => 'mod_vhost_alias'
-                    }
+                    },
+                    directives=> [ { option =>"VirtualDocumentRoot", 	"context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"VirtualDocumentRootIP",  "context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"VirtualScriptAlias",  "context" => [ "Server", "Virtual", "Directory" ] },
+                                   { option =>"VirtualScriptAliasIP",     "context" => [ "Server", "Virtual", "Directory" ] }
+				]
     },
 
 #    'php4' => {
