@@ -1,5 +1,7 @@
 package YaST::httpdUtils;
 use YaST::YCP;
+use YaPI;
+textdomain "http-server";
 
 YaST::YCP::Import ("SuSEFirewall");
 YaST::YCP::Import ("NetworkDevices");
