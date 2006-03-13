@@ -846,7 +846,16 @@ package YaPI::HTTPDModules;
                     required  => 0,
                     suggested => 0,
                     position  => 520
-    }
+    },
+    'apparmor' => {
+                    summary   => 'Provides support for AppArmor subprocess confinement within apache',
+                    packages  => ["apache2-mod-apparmor"],
+                    default   => 0,
+                    required  => 0,
+                    suggested => 0,
+                    position  => 530
+     }
+
 );
 
 
