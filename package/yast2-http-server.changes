@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Mar 13 11:28:08 CET 2006 - mzugec@suse.cz
+
+- fixed #152015 - added mod_apparmor to modules, apache2.0->2.2 modules 
+
+-------------------------------------------------------------------
 Fri Feb 17 12:34:05 CET 2006 - mzugec@suse.cz
 
 - fixed #147600 - dont use unconfigured dns 
