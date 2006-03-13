@@ -1,0 +1,112 @@
+/**
+ * File:	include/http-server/routines.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Miscelanous functions for configuration of http-server.
+ * Authors:	Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ */
+
+{
+
+textdomain "http-server";
+
+import "Directory";
+import "Progress";
+import "String";
+import "Popup";
+
+/**
+ * Abort function
+ * @return blah blah lahjk
+ */
+global define boolean Abort() ``{
+    if(AbortFunction != nil)
+	return AbortFunction() == true;
+    return false;
+}
+
+/**
+ * Check for pending Abort press
+ * @return true if pending abort
+ */
+global define boolean PollAbort() ``{
+    return UI::PollInput() == `abort;
+}
+
+/**
+ * If modified, ask for confirmation
+ * @return true if abort is confirmed
+ */
+global define boolean ReallyAbort() ``{
+    return !Modified() || Popup::ReallyAbort(true);
+}
+
+/**
+ * Progress::NextStage and Progress::Title combined into one function
+ * @param title progressbar title
+ */
+global define void ProgressNextStage(string title) ``{
+    Progress::NextStage();
+    Progress::Title(title);
+}
+
+/**
+ * Convert a Listen string to an item for table. Splits by the colon.
+ *
+ * @param arg		the Listen string
+ * @param id		the id of this item
+ * @return term		term for the table
+ */
+global define term listen2item( string arg, integer id ) ``{
+    integer colon = search( arg, ":" );
+
+    string address = _("All Addresses");
+    string port = arg;
+    
+    if( colon != nil ) {
+	// address is present
+	address = substring( arg, 0, colon );
+	port = substring( arg, colon+1 );
+    }
+    return `item( `id(id), address, port );
+}
+
+/**
+ * Convert a Listen string to a pair: $[ "port": port, "address": network ]
+ *
+ * @param arg		the Listen string
+ * @return map		map with the result
+ */
+global define map listen2map( string arg ) ``{
+    integer colon = search( arg, ":" );
+
+    string address = "all";
+    string port = arg;
+    
+    if( colon != nil ) {
+	// address is present
+	address = substring( arg, 0, colon );
+	port = substring( arg, colon+1 );
+    }
+    return $[ "port": port, "address": address ];
+}
+
+/**
+ * Convert a Listen string to an item for table. Splits by the colon.
+ *
+ * @param network	network address
+ * @param port		port number
+ * @return string 	Listen value
+ */
+global define string item2listen( string network, string port ) ``{
+
+    if( network == _("All Addresses") ) network = "";
+    
+    if( size(network) > 0 ) port = network +":"+ port ;
+    
+    return port;
+}
+
+/* EOF */
+}

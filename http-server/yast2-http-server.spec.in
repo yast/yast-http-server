@@ -1,0 +1,32 @@
+@HEADER-COMMENT@
+
+@HEADER@
+BuildRequires:	yast2-dns-server yast2-network docbook-xsl-stylesheets doxygen libxslt perl-XML-Writer popt-devel sgml-skel update-desktop-files yast2 yast2-devtools yast2-packagemanager-devel yast2-perl-bindings yast2-testsuite
+Requires:	yast2 yast2-network yast2-firewall yast2-perl-bindings libzio
+
+BuildArchitectures:	noarch
+
+Summary:	Configuration of http-server
+
+%description
+-
+
+@PREP@
+
+@BUILD@
+
+@INSTALL@
+
+@CLEAN@
+
+%files
+%defattr(-,root,root)
+%dir @yncludedir@/http-server
+@yncludedir@/http-server/*
+@clientdir@/http-server.ycp
+@clientdir@/http-server_*.ycp
+@moduledir@/*
+@desktopdir@/http-server.desktop
+@scrconfdir@/*
+@agentdir@/*
+%doc @docdir@

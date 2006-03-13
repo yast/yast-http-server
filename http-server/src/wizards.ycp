@@ -1,0 +1,252 @@
+/**
+ * File:	include/http-server/wizards.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Wizards definitions
+ * Authors:	Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ */
+
+{
+
+textdomain "http-server";
+
+import "Label";
+import "Sequencer";
+import "Wizard";
+import "Directory";
+
+include "http-server/complex.ycp";
+include "http-server/dialogs.ycp";
+include "http-server/wizard-dialog.ycp";
+
+
+/**
+ * Main workflow of the http-server configuration
+ * @return sequence result
+ */
+symbol MainSequence() {
+
+    map aliases = $[
+	"overview"	:   ``( OverviewDialog() ),
+	"hosts"		:   ``( HostsDialog()),
+	"host"		:   ``( HostDialog() ),
+	"host-default"	:   ``( HostDialog() ),			// different workflow
+	"addhost"	:   ``( AddHost() ),
+	"setvhost"	:   ``( SetVHostOptions() ),
+	"ssl"		:   ``( SSLDialog () ),
+	"dir"		:   ``( DirDialog () ),
+	"ssl-default"	:   ``( SSLDialog () ),
+    ];
+
+    map sequence = $[
+	"ws_start" : "overview",
+	"overview" : $[
+	    `abort	: `abort,
+	    `next	: `next,
+	    `default	: "host-default",
+	    `hosts	: "hosts",
+	    `dir	: "dir",
+	    `ssl	: "ssl-default",
+	    `edit	: "host",
+	    `add	: "addhost",
+	],
+	"ssl-default" : $[
+	    `abort	: `abort,
+	    `next	: "host-default",
+	    `back	: "host-default",
+	],
+	"hosts" : $[
+	    `abort	: `abort,
+	    `next	: "overview",
+	    `back	: "overview",
+	    `add	: "addhost",
+	    `edit	: "host",
+	],
+	"host" : $[
+	    `abort	: `abort,
+	    `next	: "overview",
+	    `back	: "hosts",
+	    `ssl	: "ssl",
+	    `dir	: "dir"
+	],
+
+	"addhost": $[
+	    `abort	: `abort,
+	    `next	: "setvhost",
+	    `back	: "hosts",
+	],
+	"setvhost": $[
+	    `abort	: `abort,
+	    `next	: "overview",
+	    `back	: "addhost"
+	],
+	"ssl": $[
+	    `abort	: `abort,
+	    `next	: "host",
+	    `back	: "host"
+	],
+	"dir": $[
+	    `abort	: `abort,
+	    `next	: "host",
+	    `back	: "host"
+	]
+    ];
+
+    symbol ret = Sequencer::Run(aliases, sequence);
+
+    return ret;
+}
+
+/**
+ * Sequences for wizard mode
+ * @return sequence result
+ */
+
+symbol WizardSequence() {
+	map aliases = $[
+		"network-device":``(WizardSequence1()),
+	        "modules"       :``(WizardSequence2()),
+                "defhost"       :``(WizardSequence3()),
+                "hosts"	        :``(WizardSequence4()),
+                "summary"       :``(WizardSequence5()),
+		"addhost"	: ``(AddHost()),
+	        "setvhost"      :   ``( SetVHostOptions() ),
+	        "ssl"           :   ``( SSLDialog () ),
+		"dir"           :   ``( DirDialog () ),
+	        "main"  	:   ``( MainSequence() ),
+	        "host"          :   ``( HostDialog() )
+	];
+
+	map sequence =	$[
+		"ws_start" : "network-device",
+		"network-device"  : $[
+		`abort	   : `abort,
+		`next	   : "modules"
+		],
+               "modules"  : $[
+                `abort     : `abort,
+                `next      : "defhost"
+		],
+               "defhost"  : $[
+                `abort     : `abort,
+                `next      : "hosts",
+		`ssl	   : "ssl",
+		`dir	   : "dir"
+                ],
+	       "ssl"	  : $[
+		`abort	  : `abort,
+		`next	  : "defhost"
+		],
+               "dir"      : $[
+                `abort    : `abort,
+                `next     : "defhost"
+                ],
+               "hosts"  : $[
+                `abort     : `abort,
+                `next      : "summary",
+                `add        : "addhost",
+		`edit	   : "host"
+                ],
+		"addhost"  : $[
+		`abort	   : `abort,
+		`next	   : "setvhost",
+		`back	   : "hosts"
+		], 
+	        "setvhost": $[
+	            `abort      : `abort,
+	            `next       : "hosts",
+	            `back       : "addhost"
+	        ],
+               "summary"  : $[
+                `abort     : `abort,
+		`next	  : `next,
+		`expert	  : "main"
+                ],
+	       "host"	  : $[
+		`abort	  : `abort,
+		`ssl	  : "ssl",
+		`next	  : "hosts",
+		`dir	  : "dir"
+		],
+	       "main"	  : $[
+		`abort	  : `abort, 
+		`next	  : `next
+		]
+	];
+
+        symbol ret = Sequencer::Run(aliases, sequence);
+        return ret;
+}
+
+ /**
+  * Sequences for whole server
+  * @return boolean correct finish
+  */
+boolean HttpServerSequence() {
+
+    map aliases = $[
+	"read"	: [ ``( ReadDialog() ), true ],
+	"main"	:   ``( MainSequence() ),
+	"wizard" : ``( WizardSequence() ),
+	"write"	: [ ``( WriteDialog() ), true ]
+    ];
+
+    map sequence = $[
+	"ws_start" : "read",
+	"read" : $[
+	    `abort	: `abort,
+	    `next	: "main"
+	],
+	"main" : $[
+	    `abort	: `abort,
+	    `next	: "write"
+	],
+	"wizard" : $[
+	    `abort	: `abort,
+	    `next	: "write"
+	],
+	"write" : $[
+	    `abort	: `abort,
+	    `next	: `next
+	]
+    ];
+
+    Wizard::CreateDialog();
+    Wizard::SetDesktopIcon("http-server");
+
+       if ($[] == SCR::Read (.target.stat, Directory::vardir + "/http_server"))
+        {
+	 sequence["read", `next] = "wizard";
+        }
+
+    symbol ret = Sequencer::Run(aliases, sequence);
+
+    UI::CloseDialog();
+    return ret == `next;
+}
+
+/**
+ * Whole configuration of http-server but without reading and writing.
+ * For use with autoinstallation.
+ * @return sequence result
+ */
+symbol HttpServerAutoSequence() {
+    // translators: initialization dialog caption
+    string caption = _("HTTP Server Configuration");
+    // translators: initialization dialog message
+    term contents = `Label(_("Initializing ..."));
+
+    Wizard::CreateDialog();
+    Wizard::SetDesktopIcon("http-server");
+    Wizard::SetContentsButtons(caption, contents, "",
+	    Label::BackButton(), Label::NextButton());
+
+    symbol ret = MainSequence();
+
+    UI::CloseDialog();
+    return ret;
+}
+
+/* EOF */
+}
