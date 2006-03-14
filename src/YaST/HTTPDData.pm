@@ -110,7 +110,6 @@ sub addDir {
 #bool ReadHosts();
 BEGIN { $TYPEINFO{ReadHosts} = ["function", "boolean" ]; }
 sub ReadHosts {
-print "here I am";
     my $self = shift;
     foreach my $hostid ( @{YaPI::HTTPD->GetHostsList()} ) {
     	$hosts{$hostid} = YaPI::HTTPD->GetHost($hostid) if( $hostid );
