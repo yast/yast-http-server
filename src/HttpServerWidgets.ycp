@@ -123,10 +123,10 @@ global list< map<string,any> > set_host_value ( string keyword, list< map<string
    * @param event map
    * @return boolean valid servername
    */
-global boolean validate_servername (any id, any key, map event) 
+global boolean validate_servername (any key, map event) 
 {
     import "Hostname";
-    string value = (string)UI::QueryWidget (`id (id), `Value);
+    string value = (string)UI::QueryWidget (`id (key), `Value);
     if (!Hostname::CheckFQ (value))
     {
 	//translators: popup error message when validate servername
@@ -423,7 +423,7 @@ the default host.
 	}
 
 	// it must be `ok
-	if (! validate_servername(nil, "servername",nil))
+	if (! validate_servername("servername",nil))
 	{
 	    continue;
 	}
