@@ -32,13 +32,13 @@ symbol WizardSequence1(){
                       `VSpacing(0.5),
 			"listen_interfaces",
                       `VSpacing(0.5),
-			"fw_open",
+			"firewall_adapt",
                       `VSpacing(8)
 			),
 		`HStretch()
   //          )
         );
-    list<string> widget_names = ["open_port", "listen_interfaces", "fw_open"];
+    list<string> widget_names = ["open_port", "listen_interfaces", "firewall_adapt"];
     list<map<string,any> > w = CWM::CreateWidgets (widget_names, HttpServerWidgets::widgets);
     string help = "<h3>" + _("Network Device Selection") + "</h3>" + CWM::MergeHelps (w);
     contents = CWM::PrepareDialog (contents, w);

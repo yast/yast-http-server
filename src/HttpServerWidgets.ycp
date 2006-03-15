@@ -2162,7 +2162,7 @@ listen cannot be empty.") );
       */
     global void initAdaptFirewall (string key) ``{
 	if( SuSEFirewall::IsStarted() ) {
-	    UI::ChangeWidget (`id (key), `Value, HttpServer::firewall);
+	    UI::ChangeWidget (`id (key), `Value, HttpServer::getFirewallStatus());
 	    UI::ChangeWidget (`id (key), `Enabled, true );
 	} else {
 	    // disable the widget
@@ -2176,7 +2176,8 @@ listen cannot be empty.") );
       * @param event map event description
       */
     global void storeAdaptFirewall (string opt_id, map event) ``{
-	if( HttpServer::firewall_started || Mode::config ()) {
+//	if( HttpServer::firewall_started || Mode::config ()) {
+	if( SuSEFirewall::IsStarted() ) {
 	    HttpServer::firewall = (boolean)UI::QueryWidget (`id (opt_id), `Value);
 	    HttpServer::modified = true;
 	}

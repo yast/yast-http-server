@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Mar 15 17:30:44 CET 2006 - mzugec@suse.cz
+
+- fixed #157895 - handling firewall settings
+
+-------------------------------------------------------------------
 Mon Mar 13 11:28:08 CET 2006 - mzugec@suse.cz
 
 - fixed #152015 - added mod_apparmor to modules, apache2.0->2.2 modules 

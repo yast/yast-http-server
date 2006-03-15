@@ -28,6 +28,7 @@ import "Directory";
 import "Popup";
 import "DnsServerAPI";
 import "NetworkService";
+import "SuSEFirewall";
 
 /**
  * Abort function
@@ -74,6 +75,14 @@ global boolean firewall_started = true;
  * Mapping of IPs to network devices
  */
 global map<string,string> ip2device = $[];
+
+
+global boolean getFirewallStatus(){
+ y2error("get firewall status %1", firewall);
+ return firewall;
+}
+
+
 
 /**
  * Read all http-server settings
@@ -176,7 +185,6 @@ without installing the package."), "apache2" ) );
 	}
     }
     
-    import "SuSEFirewall";
     Progress::set(false);	//off();
     SuSEFirewall::Read();
     if ((Package::Installed("bind")) &&(false == SCR::Read (.target.stat, Directory::vardir + "/dns_server"))){
@@ -371,6 +379,7 @@ Install them now?
 	string port = listen["PORT"]:"";
 	string ip = listen["ADDRESS"]:"";
 	
+y2internal("firewall %1", firewall);
 	if (!firewall)
 	{
 	    y2milestone ("Removing service %1:%2", ip, port);
