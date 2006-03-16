@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Mar 16 16:52:22 CET 2006 - mzugec@suse.cz
+
+- fixed #157922 - ssl apache flag
+
+-------------------------------------------------------------------
 Wed Mar 15 18:04:21 CET 2006 - mzugec@suse.cz
 
 - fixed problem in validate_servername()

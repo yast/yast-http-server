@@ -395,6 +395,12 @@ sub WriteModuleList {
     %delModules = ();
     %newModules = ();
     @oldModules = @{YaPI::HTTPD->GetModuleList()};
+
+    my $use_ssl = 0;
+    foreach( @{GetModuleList()} ){  $use_ssl = 1 if /^ssl$/ }
+
+    if ($use_ssl == 1) {YaPI::HTTPD->SetServerFlags("SSL");}
+	else {YaPI::HTTPD->SetServerFlags("");}
     return 1;
 }
 
