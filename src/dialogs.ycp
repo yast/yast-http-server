@@ -537,13 +537,16 @@ if (Package::Installed("bind"))
                     ret = nil;
                     continue;
 
-		  } else ssl_values = $[
+		  } else {
+				YaST::HTTPDData::ModifyModuleList ([ "ssl" ], true);
+				ssl_values = $[
 					"KEY":"_SECTION", 
 					"SECTIONNAME":"IfDefine", 
 					"SECTIONPARAM":"SSL", 
 					"VALUE":[ $["KEY":"SSLCertificateFile", "VALUE":UI::QueryWidget(`certfile, `Value)], 
 							$["KEY":"SSLEngine", "VALUE":"on"] ]
 					];
+			}
 		}
 
 		if (size(ssl_values)>0) descr = add(descr, ssl_values);
