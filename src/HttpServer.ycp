@@ -396,7 +396,7 @@ y2internal("firewall %1", firewall);
     if (configured_dns) DnsServerAPI::Write ();
 	Progress::set(true);
     YaST::HTTPDData::WriteModuleList ();
-y2internal("selscted modules %1", YaST::HTTPDData::GetModuleSelectionsList());
+//y2internal("selscted modules %1", YaST::HTTPDData::GetModuleSelectionsList());
     // in autoyast, quit here
     // Wrong, service still has to be enabled...
     // if( write_only ) return true;
