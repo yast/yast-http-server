@@ -29,6 +29,7 @@ import "Popup";
 import "DnsServerAPI";
 import "NetworkService";
 import "SuSEFirewall";
+import "Confirm";
 
 /**
  * Abort function
@@ -117,13 +118,13 @@ global define boolean Read() ``{
 	""
     );
 
+    // check the environment
+    if(!Confirm::MustBeRoot()) return false;
 
     if (!NetworkService::ConfirmNetworkManager()) return false;
     Progress::NextStep();
 
 
-    // check the environment
-    if(Abort()) return false;
 // check rpms
 list<string> required = (list<string>) HttpServer::required_packages;
 if( !Package::InstalledAny( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
