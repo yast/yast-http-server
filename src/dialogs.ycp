@@ -564,9 +564,10 @@ if (Package::Installed("bind"))
 		}
 		descr = YaST::HTTPDData::GetHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"");
 		string directory_index=(string)UI::QueryWidget(`dir_index, `Value);
-
-		if (size(directory_index)>0 || (boolean)UI::QueryWidget(`pub_html, `Value)){
+		
+		if ( size(directory_index)>0 ){
 		  list< map<string, any> > tmp_descr = [];
+
 		 foreach(map<string, any>value, descr, {
 			if (value["KEY"]:"" == "_SECTION" && 
 				value["SECTIONNAME"]:"" == "Directory" && 
@@ -574,11 +575,11 @@ if (Package::Installed("bind"))
 				 {
 				  if (size(directory_index)>0)	
 						value["VALUE"]=add(value["VALUE"]:[], $["KEY":"DirectoryIndex", "VALUE":directory_index]);
-				  if (UI::QueryWidget(`pub_html, `Value)==true)	
-						value["VALUE"]=add(value["VALUE"]:[], $["KEY":"UserDir", "VALUE":"public_html"]);
 				 }
 			tmp_descr  = add(tmp_descr, value);
 			});
+if (UI::QueryWidget(`pub_html, `Value)==true) tmp_descr=add(tmp_descr, 	$["KEY":"UserDir", "VALUE":"public_html"]);
+
 			YaST::HTTPDData::ModifyHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"", tmp_descr);
 		}
 
