@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Apr  7 07:55:59 CEST 2006 - mzugec@suse.cz
+
+- #164036 - Bad entry in http-server for UserDir 
+
+-------------------------------------------------------------------
 Thu Mar 23 16:15:23 CET 2006 - mzugec@suse.cz
 
 - fixed #160315 - check if user is root 
