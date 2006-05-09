@@ -709,7 +709,6 @@ sub WriteCert {
 # void InitializeDefaults ();
 BEGIN { $TYPEINFO{InitializeDefaults} = ["function", "void" ]; }
 sub InitializeDefaults {
-    use Data::Dumper ;
     
     my $self = shift;
 

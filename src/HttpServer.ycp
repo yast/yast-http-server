@@ -380,7 +380,6 @@ Install them now?
 	string port = listen["PORT"]:"";
 	string ip = listen["ADDRESS"]:"";
 	
-y2internal("firewall %1", firewall);
 	if (!firewall)
 	{
 	    y2milestone ("Removing service %1:%2", ip, port);
@@ -473,7 +472,6 @@ map<string,any> find_known_module (list< map<string,any> > known_modules, string
  * @return boolean True on success
  */
 global define boolean Import (map s) ``{
-
     YaST::HTTPDData::InitializeDefaults ();
     
     string version = s["version"]:"unknown";
@@ -533,7 +531,8 @@ This can cause inconsistent module configuration."), mod));
     });
 
     // setup hosts
-    foreach (string host, list<map<string, any> > desc, s["hosts"]:$[], ``{ YaST::HTTPDData::CreateHost(host,desc); }); // check host name
+//    foreach (string host, list<map<string, any> > desc, s["hosts"]:$[], ``{ YaST::HTTPDData::CreateHost(host,desc); }); // check host name
+    foreach (map<string, any> row, s["hosts"]:[], ``{ YaST::HTTPDData::CreateHost(row["KEY"]:"",row["VALUE"]:[]); }); // check host name
     
     // setup service
     if (haskey( s, "service" ))
@@ -596,12 +595,16 @@ global define map Export () ``{
 	    ]);
 	}
     });
-    
+
     // hosts
-    map <string, list< map<string,any> > > hosts = listmap (string host, YaST::HTTPDData::GetHostsList(), ``(
-	$[ host : YaST::HTTPDData::GetHost(host) ]
-    ));
-    
+    list< map <string, any> > hosts = [];
+//listmap (string host, YaST::HTTPDData::GetHostsList(), ``(
+//	$[ "KEY":host, "VALUE":YaST::HTTPDData::GetHost(host) ]
+//    ));
+foreach(string host, YaST::HTTPDData::GetHostsList(), {
+ hosts = add(hosts, $["KEY":host, "VALUE":YaST::HTTPDData::GetHost(host)]);
+});
+
     y2milestone ("Hosts: %1", hosts);
 
     map result = $[
@@ -614,7 +617,6 @@ global define map Export () ``{
     ];
 
     configured = true;
-
     return result;
 }
 
