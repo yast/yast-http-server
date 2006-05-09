@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue May  9 09:18:26 CEST 2006 - mzugec@suse.cz
+
+- fixed #173801 - autoyast profile problem (virtualhosts use IP/server_name syntax)
+
+-------------------------------------------------------------------
 Fri Apr  7 07:55:59 CEST 2006 - mzugec@suse.cz
 
 - #164036 - Bad entry in http-server for UserDir 

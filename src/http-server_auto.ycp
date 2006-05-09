@@ -96,18 +96,18 @@ else if (func == "Write") {
  * Return if configuration  was changed
  * return boolean
  */
-else if (func == "GetModified") {
-    ret = HttpServer::modified;
-}
+//else if (func == "GetModified") {
+//    ret = HttpServer::modified;
+//}
 
 /**
  * Set modified flag
  * return boolean
  */
-else if (func == "SetModified") {
-    HttpServer::modified = true;
-    ret = true;
-}
+//else if (func == "SetModified") {
+//    HttpServer::modified = true;
+//    ret = true;
+//}
 /* Unknown function */
 else {
     y2error("Unknown function: %1", func);
