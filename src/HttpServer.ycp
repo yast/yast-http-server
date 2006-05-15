@@ -69,8 +69,8 @@ global define boolean Modified() ``{
 
 include "http-server/routines.ycp";
 
-global boolean firewall = true;
-global boolean firewall_started = true;
+global boolean firewall = false;
+global boolean firewall_first = true;
 
 /**
  * Mapping of IPs to network devices
@@ -79,7 +79,7 @@ global map<string,string> ip2device = $[];
 
 
 global boolean getFirewallStatus(){
- y2error("get firewall status %1", firewall);
+ y2internal("get firewall status %1", firewall);
  return firewall;
 }
 
@@ -193,7 +193,7 @@ without installing the package."), "apache2" ) );
 		configured_dns = true;
 	}
     Progress::set(true);	//on();
-    firewall_started = SuSEFirewall::IsEnabled();			//Service::Enabled( "SuSEfirewall2_final" );
+//    firewall_started = SuSEFirewall::IsEnabled();			//Service::Enabled( "SuSEfirewall2_final" );
 
     // read current settings from httpd.conf and sysconfig
     Progress::NextStage();
@@ -273,7 +273,7 @@ without installing the package."), "apache2" ) );
     });
 
     y2milestone ("Mapping of IP addresses and network devices: %1", ip2device);    
-    
+   
     // now, check the firewall status to set up the original status correctly
     firewall = true;
     
@@ -374,6 +374,8 @@ Install them now?
 
     // firewall should not be open, close all ports still open
     // the ones from deleted Listen statements were closed in WriteListen    
+  if (firewall_first)
+   {
     foreach (map<string,any> listen, YaST::HTTPDData::GetCurrentListen (),
     {
 	// find out the port and host
@@ -392,6 +394,7 @@ Install them now?
 
 	}
     });
+   }
     SuSEFirewall::Write ();
     if (configured_dns) DnsServerAPI::Write ();
 	Progress::set(true);
