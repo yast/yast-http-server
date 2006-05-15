@@ -28,6 +28,7 @@
     import "Confirm";
     import "SuSEFirewall";
     import "CWMServiceStart";
+    import "CWMFirewallInterfaces";
 
     include "http-server/helps.ycp";
 
@@ -942,7 +943,12 @@ global map<string, map <string, any> > widgets = $[
 		"opt" : [ `notify ],
 		"help" : HELPS["server_enable"]:"",
 	    ],
-	    "firewall_adapt" : $[
+	    "firewall_adapt" : CWMFirewallInterfaces::CreateOpenFirewallWidget ($[
+                "services" : [ "http" ],
+		"help" : HELPS["firewall_adapt"]:"",
+                "display_details" : true,
+              ]),
+	     "firewall_first" : $[
 		"widget" : `checkbox,
 		// translators: checkbox label
 		"label" : _("Open &Firewall on Selected Ports"),
@@ -2176,13 +2182,11 @@ listen cannot be empty.") );
       * @param event map event description
       */
     global void storeAdaptFirewall (string opt_id, map event) ``{
-//	if( HttpServer::firewall_started || Mode::config ()) {
 	if( SuSEFirewall::IsStarted() ) {
 	    HttpServer::firewall = (boolean)UI::QueryWidget (`id (opt_id), `Value);
 	    HttpServer::modified = true;
 	}
     }
-
 /* these are for future use: */
 
 // error message - the entered ip address is not found
@@ -2299,7 +2303,7 @@ global define void initFwOpen (string key) ``{
     * @param event map
     */
     global define void storeFwOpen (string opt_id, map event) ``{
-        if( HttpServer::firewall_started || Mode::config ()) {
+        if( SuSEFirewall::IsEnabled() || Mode::config ()) {
             HttpServer::firewall = (boolean)UI::QueryWidget (`id (opt_id), `Value);
             HttpServer::modified = true;
         }

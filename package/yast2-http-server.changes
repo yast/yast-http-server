@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon May 15 11:27:30 CEST 2006 - mzugec@suse.cz
+
+- fixed #175516 - open firewall on selected ports checkbox is always checked by default 
+
+-------------------------------------------------------------------
 Tue May  9 09:18:26 CEST 2006 - mzugec@suse.cz
 
 - fixed #173801 - autoyast profile problem (virtualhosts use IP/server_name syntax)

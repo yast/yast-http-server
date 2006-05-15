@@ -218,7 +218,10 @@ boolean HttpServerSequence() {
        if ($[] == SCR::Read (.target.stat, Directory::vardir + "/http_server"))
         {
 	 sequence["read", `next] = "wizard";
-        }
+        } else
+		{
+		 HttpServer::firewall_first = false;
+		}
 
     symbol ret = Sequencer::Run(aliases, sequence);
 
