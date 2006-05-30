@@ -276,7 +276,6 @@ without installing the package."), "apache2" ) );
    
     // now, check the firewall status to set up the original status correctly
     firewall = true;
-    
     foreach (map<string,any> listen, YaST::HTTPDData::GetCurrentListen (),
     {
 	// find out the port and host
@@ -376,6 +375,12 @@ Install them now?
     // the ones from deleted Listen statements were closed in WriteListen    
   if (firewall_first)
    {
+list<string> zones = [];
+foreach(map<string, any> ifc, SuSEFirewall::GetAllKnownInterfaces(), {
+ if (!contains(zones, ifc["zone"]:"")) zones = add(zones, ifc["zone"]:"");
+});
+y2milestone("Firewall zones %1", zones);
+
     foreach (map<string,any> listen, YaST::HTTPDData::GetCurrentListen (),
     {
 	// find out the port and host
@@ -385,13 +390,19 @@ Install them now?
 	if (!firewall)
 	{
 	    y2milestone ("Removing service %1:%2", ip, port);
-	    SuSEFirewall::RemoveService ( port, "TCP", ip2device[ip]:"all");
+	 if (ip2device[ip]:""=="") foreach(string zone, zones, {
+				SuSEFirewall::RemoveService ( port, "TCP", zone);
+				});
+		else  SuSEFirewall::RemoveService ( port, "TCP", ip2device[ip]:"all");
 	}
 	else
 	{
 	    y2milestone ("Adding service %1:%2", ip, port);
-	    SuSEFirewall::AddService ( port, "TCP", ip2device[ip]:"all");
 
+	 if (ip2device[ip]:""=="") foreach(string zone, zones, {
+				SuSEFirewall::AddService ( port, "TCP", zone);
+				});
+		else  SuSEFirewall::AddService ( port, "TCP", ip2device[ip]:"all");
 	}
     });
    }
