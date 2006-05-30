@@ -386,7 +386,8 @@ y2milestone("Firewall zones %1", zones);
 	// find out the port and host
 	string port = listen["PORT"]:"";
 	string ip = listen["ADDRESS"]:"";
-	
+	// fixed #176722 - assigned loopback for firewall
+        if(ip == "127.0.0.1") continue;
 	if (!firewall)
 	{
 	    y2milestone ("Removing service %1:%2", ip, port);

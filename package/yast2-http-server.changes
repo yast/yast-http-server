@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue May 30 10:15:19 CEST 2006 - mzugec@suse.cz
+
+- fixed #176722 - assigned loopback for firewall 
+
+-------------------------------------------------------------------
 Tue May 30 09:02:51 CEST 2006 - mzugec@suse.cz
 
 - fixed #177797 - in wizard mode open/close firewall only for assigned zones
