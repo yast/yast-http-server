@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue May 30 09:02:51 CEST 2006 - mzugec@suse.cz
+
+- fixed #177797 - in wizard mode open/close firewall only for assigned zones
+
+-------------------------------------------------------------------
 Mon May 15 11:27:30 CEST 2006 - mzugec@suse.cz
 
 - fixed #175516 - open firewall on selected ports checkbox is always checked by default 
