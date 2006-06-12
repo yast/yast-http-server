@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Jun 12 09:51:16 CEST 2006 - mzugec@suse.cz
+
+- fixed reopened bug #177797 - assigning to firewall zones using 'any' string
+
+-------------------------------------------------------------------
 Tue May 30 10:15:19 CEST 2006 - mzugec@suse.cz
 
 - fixed #176722 - assigned loopback for firewall 
