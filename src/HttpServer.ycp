@@ -375,11 +375,19 @@ Install them now?
     // the ones from deleted Listen statements were closed in WriteListen    
   if (firewall_first)
    {
-list<string> zones = [];
+// list<string> zones = [];
+/*
 foreach(map<string, any> ifc, SuSEFirewall::GetAllKnownInterfaces(), {
  if (!contains(zones, ifc["zone"]:"")) zones = add(zones, ifc["zone"]:"");
+y2internal("%1", ifc);
 });
+*/
+//list <string> interfaces=[];
+//foreach(map<string, any> row, SuSEFirewall::GetAllKnownInterfaces(), { interfaces = add(interfaces, row["id"]:""); });
+//y2internal("interfaces %1", interfaces);
+list<string> zones = SuSEFirewall::GetZonesOfInterfacesWithAnyFeatureSupported( SuSEFirewall::GetListOfKnownInterfaces() );
 y2milestone("Firewall zones %1", zones);
+
 
     foreach (map<string,any> listen, YaST::HTTPDData::GetCurrentListen (),
     {
