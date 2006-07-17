@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Jul 17 17:35:56 CEST 2006 - mzugec@suse.cz
+
+- 2.13.19 fixed #180792 - untranslated text
+
+-------------------------------------------------------------------
 Mon Jul 17 14:09:43 CEST 2006 - mzugec@suse.cz
 
 - 2.13.18 fixed #188528 - open firewall port 443 if SSLEngine=on

@@ -79,7 +79,7 @@ global map<string,string> ip2device = $[];
 
 
 global boolean getFirewallStatus(){
- y2internal("get firewall status %1", firewall);
+ y2milestone("get firewall status %1", firewall);
  return firewall;
 }
 
@@ -676,7 +676,7 @@ global define list Summary() ``{
 	    summary = Summary::AddLine(summary, interfaces + ", port " + port );
 
 		// "Default host" information 
-	    summary = Summary::AddLine(summary, "<h3>Default Host</h3>" ); 
+	    summary = Summary::AddLine(summary, sformat("<h3>%1</h3>", _("Default Host")) ); 
 	    string serv_name = "";
 	    string doc_root = "";
 	    boolean ssl = false;
@@ -691,12 +691,11 @@ global define list Summary() ``{
             summary = Summary::AddLine(summary, "SSL " + ((ssl)?_("enabled"):_("disabled")));
 
 		// the same information as in default host but for other virtual hosts
-            summary = Summary::AddLine(summary, "<h3>Virtual Hosts</h3>");
+            summary = Summary::AddLine(summary, sformat("<h3>%1</h3>", _("Virtual Hosts")) );
 
 	foreach(string host, YaST::HTTPDData::GetHostsList (), {
 		if (host == "default") continue;
              foreach(map<string, any> params, YaST::HTTPDData::GetHost(host), {
-y2internal("%1", params);
                 if ( params["KEY"]:"" == "ServerName" ) serv_name = params["VALUE"]:"";
                 if ( params["KEY"]:"" == "DocumentRoot" ) doc_root = params["VALUE"]:"";
                 if ( params["KEY"]:"" == "_SECTION" && params["SECTIONPARAM"]:""=="SSL") ssl = true;
