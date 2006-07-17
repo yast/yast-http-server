@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Jul 17 14:09:43 CEST 2006 - mzugec@suse.cz
+
+- 2.13.18 fixed #188528 - open firewall port 443 if SSLEngine=on
+
+-------------------------------------------------------------------
 Mon Jun 12 09:51:16 CEST 2006 - mzugec@suse.cz
 
 - fixed reopened bug #177797 - assigning to firewall zones using 'any' string

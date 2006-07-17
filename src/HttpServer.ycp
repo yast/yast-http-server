@@ -371,22 +371,15 @@ Install them now?
 	y2error ("Writing listen failed, firewall problems?");
     }
 
+    YaST::HTTPDData::WriteModuleList ();
+    Progress::set(true);
+
     // firewall should not be open, close all ports still open
     // the ones from deleted Listen statements were closed in WriteListen    
   if (firewall_first)
    {
-// list<string> zones = [];
-/*
-foreach(map<string, any> ifc, SuSEFirewall::GetAllKnownInterfaces(), {
- if (!contains(zones, ifc["zone"]:"")) zones = add(zones, ifc["zone"]:"");
-y2internal("%1", ifc);
-});
-*/
-//list <string> interfaces=[];
-//foreach(map<string, any> row, SuSEFirewall::GetAllKnownInterfaces(), { interfaces = add(interfaces, row["id"]:""); });
-//y2internal("interfaces %1", interfaces);
-list<string> zones = SuSEFirewall::GetZonesOfInterfacesWithAnyFeatureSupported( SuSEFirewall::GetListOfKnownInterfaces() );
-y2milestone("Firewall zones %1", zones);
+    list<string> zones = SuSEFirewall::GetZonesOfInterfacesWithAnyFeatureSupported( SuSEFirewall::GetListOfKnownInterfaces() );
+    y2milestone("Firewall zones %1", zones);
 
 
     foreach (map<string,any> listen, YaST::HTTPDData::GetCurrentListen (),
@@ -394,6 +387,7 @@ y2milestone("Firewall zones %1", zones);
 	// find out the port and host
 	string port = listen["PORT"]:"";
 	string ip = listen["ADDRESS"]:"";
+	string sslport = "443";
 	// fixed #176722 - assigned loopback for firewall
         if(ip == "127.0.0.1") continue;
 	if (!firewall)
@@ -401,8 +395,12 @@ y2milestone("Firewall zones %1", zones);
 	    y2milestone ("Removing service %1:%2", ip, port);
 	 if (ip2device[ip]:""=="") foreach(string zone, zones, {
 				SuSEFirewall::RemoveService ( port, "TCP", zone);
+				SuSEFirewall::RemoveService ( sslport, "TCP", zone);
 				});
-		else  SuSEFirewall::RemoveService ( port, "TCP", ip2device[ip]:"all");
+		else  {
+			SuSEFirewall::RemoveService ( port, "TCP", ip2device[ip]:"all");
+			SuSEFirewall::RemoveService ( sslport, "TCP", ip2device[ip]:"all");
+			}
 	}
 	else
 	{
@@ -410,15 +408,27 @@ y2milestone("Firewall zones %1", zones);
 
 	 if (ip2device[ip]:""=="") foreach(string zone, zones, {
 				SuSEFirewall::AddService ( port, "TCP", zone);
+				if ( contains(YaPI::HTTPD::GetModuleList(), "ssl") ) SuSEFirewall::AddService ( sslport, "TCP", zone);
 				});
-		else  SuSEFirewall::AddService ( port, "TCP", ip2device[ip]:"all");
+		else  {
+			SuSEFirewall::AddService ( port, "TCP", ip2device[ip]:"all");
+			if ( contains(YaPI::HTTPD::GetModuleList(), "ssl") )  SuSEFirewall::AddService ( sslport, "TCP", ip2device[ip]:"all");
+			}
 	}
     });
-   }
+   } else {
+	   boolean ssl_enable = contains(YaPI::HTTPD::GetModuleList(), "ssl"); 
+		map<string, any> serv_fw = SuSEFirewall::GetServices(["http", "https"]);
+		foreach(string zone, SuSEFirewall::GetKnownFirewallZones(), {
+		 if ( serv_fw["http", zone]:false==true ) {
+							 if (ssl_enable) SuSEFirewall::AddService ( "443", "TCP", zone);
+								else SuSEFirewall::RemoveService ( "443", "TCP", zone);
+							}
+			else SuSEFirewall::RemoveService ( "443", "TCP", zone);
+		});
+	  }
     SuSEFirewall::Write ();
     if (configured_dns) DnsServerAPI::Write ();
-	Progress::set(true);
-    YaST::HTTPDData::WriteModuleList ();
 //y2internal("selscted modules %1", YaST::HTTPDData::GetModuleSelectionsList());
     // in autoyast, quit here
     // Wrong, service still has to be enabled...
@@ -686,9 +696,10 @@ global define list Summary() ``{
 	foreach(string host, YaST::HTTPDData::GetHostsList (), {
 		if (host == "default") continue;
              foreach(map<string, any> params, YaST::HTTPDData::GetHost(host), {
+y2internal("%1", params);
                 if ( params["KEY"]:"" == "ServerName" ) serv_name = params["VALUE"]:"";
                 if ( params["KEY"]:"" == "DocumentRoot" ) doc_root = params["VALUE"]:"";
-                if ( params["KEY"]:"" == "SSL" && params["VALUE"]:""!="0") ssl = true;
+                if ( params["KEY"]:"" == "_SECTION" && params["SECTIONPARAM"]:""=="SSL") ssl = true;
 
                         });
 		//translators: assiciation server name with document root
