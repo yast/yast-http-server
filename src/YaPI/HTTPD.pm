@@ -298,6 +298,8 @@ B<Example Code using the API>
 
 package YaPI::HTTPD;
 BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
+use Switch;
+use Data::Dumper;
 use YaPI;
 use YaST::YCP;
 use YaPI::HTTPDModules;
@@ -349,15 +351,31 @@ sub GetHostsList {
     my $self = shift;
     my @ret = ();
     my @data = $self->readHosts();
-    if( ref($data[0]) eq 'HASH' ) {
-        foreach my $hostList ( values(%{$data[0]}) ) {
-            foreach my $hostentryHash ( @$hostList ) {
-                push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
-            }
-        }
-    } else {
-        return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
-    }
+
+   if( ref($data[0]) eq 'HASH' ) {
+     foreach my $key ( keys(%{$data[0]}) ) {
+	switch($key)
+	 {
+	 case "ip-based" {
+	       foreach my $hostList ( $data[0]->{'ip-based'} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
+	          }
+		 }
+		}
+	 case "main" { push( @ret, $data[0]->{'main'}{HOSTID} ) if( defined($data[0]->{'main'}{HOSTID}) ); }
+	 else { 
+	       foreach my $hostList ( $data[0]->{$key} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
+	           }
+		  }
+		 }
+	 }	
+     }
+   } else {
+            return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
+          }
     return \@ret;
 }
 
@@ -397,30 +415,64 @@ sub GetHost {
     # in the first file.
     my @data = $self->readHosts();
 
-    if( ref($data[0]) eq 'HASH' ) {
-        $vhost_files = $data[0];
-    } else {
-        return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
-    }
+    if( ref($data[0]) eq 'HASH' ) { $vhost_files = $data[0]; } 
+	else { return $self->SetError( %{SCR->Error(".http_server.vhosts")} ); }
+#    my $filename = $self->getFileByHostid( $hostid, $vhost_files );
+    my $ret="";
+    my $vbnHash = {};#{ KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
+    my $ipHash = {}; #{ KEY => 'HostIP', VALUE => $hostHash->{HostIP} };
+    foreach my $key ( keys( %{$data[0]} ) ){
+	switch($key)
+	 {
+	 case "ip-based" {
+	       foreach my $hostList ( $data[0]->{'ip-based'} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)){
+				$ret = $hostentryHash;
+				}
+	          }
+		 }
+		}
+	 case "main" { if (( defined($data[0]->{'main'}{HOSTID}) ) && ($data[0]->{'main'}{HOSTID} eq $hostid)) {$ret = $data[0]->{'main'};  } }
+	 else { 
+	       foreach my $hostList ( $data[0]->{$key} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)){
+				$ret = $hostentryHash;
+				}
+	           }
+		  }
+		 }
+	 }	
+      }
 
-    my $filename = $self->getFileByHostid( $hostid, $vhost_files );
-    return $self->SetError( summary => __('hostid not found'),code => 'HOSTID_NOT_FOUND' ) unless( $filename );
-    foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
-        if( $hostHash->{HOSTID} eq $hostid ) {
-            my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
+
+   return [ @{$ret->{'DATA'}}, $vbnHash , $ipHash ];
+
+
+
+
+
+#my $filename = "";
+#    return $self->SetError( summary => __('hostid not found'),code => 'HOSTID_NOT_FOUND' ) unless( $filename );
+#    foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
+#        if( $hostHash->{HOSTID} eq $hostid ) {
+#            my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
 #            my $sslHash = { KEY => 'SSL', VALUE => 0 };
-            my $overheadHash = { KEY => 'OVERHEAD', VALUE => $hostHash->{'OVERHEAD'} };
-            my $ipHash = { KEY => 'HostIP', VALUE => $hostHash->{HostIP} };
-            my $sslEngine = 'off';
-            my @newHH = ();
-            foreach my $h ( @{$hostHash->{'DATA'}} ) {
-                if( $h->{'KEY'} eq 'SSLEngine' ) {
-                    $sslEngine = $h->{'VALUE'};
-                } else {
-                    push( @newHH, $h );
-                }
-            }
-            $hostHash->{'DATA'} = \@newHH;
+#            my $overheadHash = { KEY => 'OVERHEAD', VALUE => $hostHash->{'OVERHEAD'} };
+#            my $ipHash = { KEY => 'HostIP', VALUE => $hostHash->{HostIP} };
+#            my $sslEngine = 'off';
+#            my @newHH = ();
+#            foreach my $h ( @{$hostHash->{'DATA'}} ) {
+#                if( $h->{'KEY'} eq 'SSLEngine' ) {
+#                    $sslEngine = $h->{'VALUE'};
+#                } else {
+#                    push( @newHH, $h );
+#                }
+#            }
+#            $hostHash->{'DATA'} = \@newHH;
+
+
 	    # set sslHash to 1, if there are SSLRequire option set it to 2 
 #            if( $sslEngine eq 'on' ) {
 #		foreach my $tmp ( @{$hostHash->{'DATA'}})
@@ -437,10 +489,10 @@ sub GetHost {
 #		   }
 #                 }
 #            } 
-            return [ @{$hostHash->{'DATA'}}, $vbnHash, $ipHash ];
-        }
-    }
-    return $self->SetError( summary => __('hostid not found'),code => 'HOSTID_NOT_FOUND' );
+#            return [ @{$hostHash->{'DATA'}}, $vbnHash, $ipHash ];
+#        }
+#    }
+#    return $self->SetError( summary => __('hostid not found'),code => 'HOSTID_NOT_FOUND' );
 }
 
 =item *
@@ -1041,9 +1093,11 @@ EXAMPLE
  print "apache2 is ".( (ReadService())?('on'):('off') )."\n";
 
 =cut
+
 BEGIN { $TYPEINFO{ReadService} = ["function", "boolean"]; }
 sub ReadService {
     my $self = shift;
+
     return Service->Enabled('apache2');
 }
 

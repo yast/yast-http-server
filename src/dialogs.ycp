@@ -82,23 +82,24 @@ map tabs_descr = $[
 			    ),
 	"widget_names" : [ "MODULES" ]
 	 ],
-	"default_host" : $[
+	"main_host" : $[
 
-	 "header" : _("Default Host"),
+	 "header" : _("Main Host"),
 	 "contents" : `HBox (`HSpacing (1), `VBox (
             `VSpacing (1),
-            "DEF_HOST",
+            "MAIN_HOST",
             `VSpacing (1)
         ), `HSpacing (1)),
-	"widget_names" : [ "DEF_HOST" ]
+	"widget_names" : [ "MAIN_HOST" ]
 	 ],
 	"hosts" : $[
 
 	 "header" : _("Hosts"),
 	 "contents" : `HBox (`HSpacing (1), `VBox (
             `VSpacing (1),
-            "HOSTS",
+            "HOSTS", `PushButton( `id( `set_default ), _("Set as De&fault") ),
             `VSpacing (1)
+//, `PushButton( `id( `set_default ), _("Set as De&fault") )
         ), `HSpacing (1)),
 	"widget_names" : [ "HOSTS" ]
 	 ]
@@ -113,7 +114,7 @@ map tabs_descr = $[
     if (HttpServer::firewall_first) tabs_descr["listen", "widget_names"]= [ "server_enable", "LISTEN", "logs" ];
     map widget_descr = $[
         "tab": CWMTab::CreateWidget($[
-            "tab_order": [ "listen", "modules", "default_host", "hosts"],
+            "tab_order": [ "listen", "modules", "main_host", "hosts"],
             "tabs": tabs_descr,
             "widget_descr": HttpServerWidgets::widgets,
             "initial_tab" : HttpServerWidgets::init_tab,
@@ -140,17 +141,17 @@ map tabs_descr = $[
       * @return symbol for wizard sequencer
       */
     symbol HostDialog () {
-	list< map<string,any> > w = CWM::CreateWidgets (["host" ],
-	    HttpServerWidgets::widgets);
+	list< map<string,any> > w = CWM::CreateWidgets (["host", "vhost_res" ], HttpServerWidgets::widgets);
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
-	    w[0, "widget"]:`VSpacing (1)
+	    w[0, "widget"]:`VSpacing (1),
+	    w[1, "widget"]:`VSpacing (1)
 	), `HSpacing (1));
 
 	// translators: dialog caption
 	string caption = sformat(_("Host '%1' Configuration"), 
 	    // translators: human-readable "default host"
-	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") 
+	    HttpServerWidgets::currenthost == "main" ? _("Main Host") 
 		: HttpServerWidgets::get_host_value ( "ServerName"
 		, YaST::HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ));
 
@@ -194,47 +195,17 @@ map tabs_descr = $[
 	return CWM::Run (w, $[`abort : Abort]);
     }
 
-
  list< map<string,any> > descr = [];
 	/**
 	  * Return wizard for adding new virtual host	
 	  * @return symbol (`browse, `abort, `cancel, `next)
 	  */
     symbol AddHost () {
+	list< map<string,any> > w = CWM::CreateWidgets (["vhost_id", "vhost_res" ], HttpServerWidgets::widgets);
 	term contents = `HBox( `HSpacing(0.5), `VBox (
-	    `Frame(
-		// translators: frame title for new hsot identification details
-		_("Server Identification"),
-		`VBox(
-		    // translators: textentry, new host server name
-		    `TextEntry( `id( "servername" ), _("Server &Name:") ),
-		    `HBox(
-			// translators: textentry, document root for the new host
-			`TextEntry( `id( `documentroot ), _("Server &Contents Root:") ),
-			`VBox(
-                	    `Label(""),
-			    `PushButton( `id( `browse ), Label::BrowseButton () )
-			)
-		    ),
-		    // translators: textentry, administrator's e-mail for the new host
-		    `TextEntry( `id( `admin ), _("&Administrator E-Mail:") )
-		)),
+		w[0, "widget"]:`VSpacing (0),
 	    `VSpacing (1),
-	    `Frame(
-		// translators: frame title for method of incoming request resolution
-		_("Server Resolution"),
-		`VBox(
-		// translators: IP address for the new host
-		`Left( `ComboBox( `id( "ipaddress" ), `opt(`editable), _("&IP Address:"), maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) ) ),
-		`RadioButtonGroup(
-		    `id ( `resolution ),
-		    `VBox (
-			// translators: radio button for name-based virtual hosts
-			`Left(`RadioButton ( `id ( `name_based ), _("Determine Request Server by HTTP &Headers"), true ) ),
-			// translators: radio button for IP-based virtual hosts
-			`Left(`RadioButton ( `id ( `ip_based ), _("Determine Request Server by Server IP &Address") ) )
-		    )
-		))),
+		w[1, "widget"]:`VSpacing (0),
 		`HSpacing (0.5)
 	));
 
@@ -247,7 +218,9 @@ map tabs_descr = $[
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::NextButton ());
 	    
+	CWM::Run (w, $[`abort : Abort]);
 		// remember values
+/*
 	if (descr!=[]){
                 string ip = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "HostIP") ip = row["VALUE"]:"";});
                 string servername = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "ServerName") servername = row["VALUE"]:"";});
@@ -262,14 +235,13 @@ map tabs_descr = $[
 		if (namebased) UI::ChangeWidget(`resolution, `CurrentButton, `name_based);
 			else UI::ChangeWidget(`resolution, `CurrentButton, `ip_based);
 	}
-
-	UI::SetFocus (`id("servername"));
+*/
+//	UI::SetFocus (`id("servername"));
 
 	symbol ret = nil;
 
-	do {
-	    ret = (symbol)UI::UserInput ();
-
+//	    ret = (symbol)UI::UserInput ();
+/*
 	    if (ret == `browse)
 	    {
 		// Allow to choose a directory
@@ -303,13 +275,10 @@ map tabs_descr = $[
 		    ret = nil;
         	    continue;
     		}
-		
 		if ( size(admin) == 0 )
 		{
-		
 		    // translators: error popup
 		    string invalid = _("Administrator E-Mail is invalid.");
-		    
 		    // translators: error popup
 		    Popup::Error ( _("Administrator E-Mail cannot be empty.") );
 		    ret = nil;
@@ -323,16 +292,13 @@ map tabs_descr = $[
 			$[ "KEY": "VirtualByName", "VALUE" : virtualbyname ? "1" : "0" ],
 			$[ "KEY": "HostIP", "VALUE" : ip ]
 		    ];
-		    
 		if ( !HttpServerWidgets::validate_server (nil, descr) )
 		{
 		    ret = nil;
 		    continue;
 		}
-		
 	    }
-	} while (ret == nil);
-
+*/
 	return ret;
     };
 
@@ -592,7 +558,6 @@ if (UI::QueryWidget(`pub_html, `Value)==true) tmp_descr=add(tmp_descr, 	$["KEY":
 
 
      }while(ret == nil);
-//	descr=[];
    return ret;
   }
 

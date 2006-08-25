@@ -28,6 +28,9 @@ use strict;
 my %vhost_files = ();
 # %vhost_by_name is just a uniq array
 
+# IP-address hash - virtual hosts map 
+my %hash_table = ();
+
 
 # %listen ist just a uniq array
 # $listen{1.2.3.4:80-100} = 1;
@@ -36,6 +39,9 @@ my %listen;
 sub parse_vhost_files {
     my $class = shift;
     my %vhost_by_name = ();
+
+    # you don't need it read twice
+    return 1 if (keys(%hash_table));    
 
     if( open( FILE, "< /etc/apache2/default-server.conf" ) ) {
         while( my $line = <FILE> ) {
@@ -105,10 +111,34 @@ sub parse_vhost_files {
     };
     $entry->{DATA} = sectionParser();
     close(FILE);
-    $entry->{HOSTID} = 'default';
+    $entry->{HOSTID} = 'main';
     $entry->{VirtualByName} = 0;
     $vhost_files{'default-server.conf'} = [ $entry ];
 
+    #new hash - map sorted by virtual hosts
+   foreach my $file (keys (%vhost_files))  {
+    foreach my $conf ($vhost_files{$file}){
+     foreach my $vhost ( @$conf )        {
+     if ($file eq 'default-server.conf'){
+      $hash_table{'main'} = $vhost;
+      foreach my $data ( @{$vhost->{'DATA'}} )
+       { if ($data->{'KEY'} eq 'NameVirtualHost'){ $hash_table{ $data->{'VALUE'} } = []; }
+       }
+      } else {
+	   if (exists $vhost->{'HostIP'}){
+             if ( exists $hash_table{  $vhost->{'HostIP'}} ){ push(@{$hash_table{  $vhost->{'HostIP'}}}, $vhost); }
+                 else { push(@{$hash_table{'ip-based'}}, $vhost); }
+			}
+         }
+      }
+     }
+   }
+
+#use Data::Dumper;
+#open(FILE2, '>>/tmp/yast.log');
+#print FILE2 "here I am\n";
+#print FILE2 Dumper(\%hash_table);
+#close(FILE2);
     return 1;
 }
 
@@ -303,7 +333,7 @@ sub Read {
 
     if( $path eq '.vhosts' ) {
         $class->parse_vhost_files();
-        return \%vhost_files;
+        return \%hash_table; #\%vhost_files;
     } elsif( $path eq '.listen' )  {
         $class->parse_listen_conf();
         return [ keys(%listen) ];
