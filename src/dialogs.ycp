@@ -28,7 +28,7 @@
     import "Service";
     import "TablePopup";
     import "Package";
-
+    import "DnsServerPunycode";
 
 
 
@@ -292,7 +292,7 @@ map tabs_descr = $[
 		string admin = (string) UI::QueryWidget( `admin, `Value );
 		boolean virtualbyname = (boolean) UI::QueryWidget( `name_based, `Value );
 
-    		if (! HttpServerWidgets::validate_servername("servername",nil))
+    		if (! HttpServerWidgets::validate_servername("servername","", nil))
     		{
 		    ret = nil;
         	    continue;
