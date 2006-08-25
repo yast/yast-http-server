@@ -29,6 +29,7 @@
     import "SuSEFirewall";
     import "CWMServiceStart";
     import "CWMFirewallInterfaces";
+    import "DnsServerPunycode";
 
     include "http-server/helps.ycp";
 
@@ -124,7 +125,7 @@ global list< map<string,any> > set_host_value ( string keyword, list< map<string
    * @param event map
    * @return boolean valid servername
    */
-global boolean validate_servername (any key, map event) 
+global boolean validate_servername (any id, string key, map event) 
 {
     import "Hostname";
     string value = (string)UI::QueryWidget (`id (key), `Value);
@@ -135,6 +136,7 @@ global boolean validate_servername (any key, map event)
 	return false;
     }
     else
+
     {
 	return true;
     }
@@ -373,7 +375,7 @@ global void HostsInit (string widget)
    */
 map<string,string> AskNewInfo (string servername, string ip)
 {
-y2internal("Using DNS !!! %1", servername);
+ y2milestone("Using DNS %1", servername);
     if (size (servername) == 0)
     {
 	import "DNS";
@@ -424,7 +426,7 @@ the default host.
 	}
 
 	// it must be `ok
-	if (! validate_servername("servername",nil))
+	if (! validate_servername("servername","", nil))
 	{
 	    continue;
 	}
@@ -520,6 +522,13 @@ global symbol HostsHandle (string table, map event)
    * @return list host list
    */
 global list HostsContents (map descr) {
+/*
+    list hosts = [];
+    foreach(string host, (list<string>)YaST::HTTPDData::GetHostsList (), {
+	hosts = add( hosts, DnsServerPunycode::EncodeDomainName(host));
+    });
+    return hosts;
+*/
     return YaST::HTTPDData::GetHostsList ();
 }
 
@@ -553,6 +562,7 @@ global boolean HostsDelete (any opt_id, string opt_key) {
 global string HostName (any key, string id)
 {
     string res = (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost((string)key), (string)key );
+    res = DnsServerPunycode::DecodeDomainName(res);
     // translators: human-readable "default host"
     if (key == "default" && res == "default" ) res = _("Default Host");
     return res;
@@ -1785,7 +1795,9 @@ define string item2listen( string network, string port ) ``{
 	{
 	    UI::ChangeWidget (`id (option_type), `CurrentButton, value);
 	}
-	else
+	else if (option_type == "ServerName"){
+		UI::ChangeWidget (`id (option_type), `Value, DnsServerPunycode::DecodeDomainName((string)value) );
+	} else
 	{
 	    UI::ChangeWidget (`id (option_type), `Value, value);
 	}
@@ -1808,8 +1820,9 @@ define string item2listen( string network, string port ) ``{
 	    option_id = option_counter;
 	    option_counter = option_counter + 1;
 	}
-	
-	host_options[ (integer)option_id, "VALUE" ] = (string)UI::QueryWidget (`id (option_type), property);
+	string value = (string)UI::QueryWidget (`id (option_type), property);
+	if (option_type=="ServerName") value = DnsServerPunycode::EncodeDomainName(value);
+	host_options[ (integer)option_id, "VALUE" ] = value;
 	HttpServer::modified = true;
     }
 
@@ -1837,8 +1850,11 @@ define string item2listen( string network, string port ) ``{
 	{
 	    return host_options[ (integer)option_id, "VALUE" ]:"" + "...";
 	}
-	else 
+	else if (option_type == "ServerName"){
+		return DnsServerPunycode::DecodeDomainName(host_options[ (integer)option_id, "VALUE" ]: "");
+	} else
 	{
+
 	    return host_options[ (integer)option_id, "VALUE" ]: "";
 	}
     }
