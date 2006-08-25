@@ -32,14 +32,14 @@
 
     include "http-server/helps.ycp";
 
-global string currenthost = "default";
+global string currenthost = "main";
 string directory_param_regexp = "Directory \"?([^\"]+)\"?";
 string dir_value = "";
 map getSSLOptions();
 global string init_tab = "listen";
 
 boolean update_contents = false;
-
+list< map<string,any> > vhost_descr = [];
 string item2listen( string network, string port );
 
   /**
@@ -124,7 +124,7 @@ global list< map<string,any> > set_host_value ( string keyword, list< map<string
    * @param event map
    * @return boolean valid servername
    */
-global boolean validate_servername (any key, map event) 
+global boolean validate_servername (string key, map event) 
 {
     import "Hostname";
     string value = (string)UI::QueryWidget (`id (key), `Value);
@@ -185,8 +185,10 @@ global boolean validate_serverip (any id, any key, map event)
    */
 global boolean validate_server (string hostid, list < map<string,any> > server )
 {
-	//default server can't use SSL
-	if ( hostid == "default" )
+
+	//TODO: don't allow user to use this directive !!!
+	//main server can't use SSL
+	if ( hostid == "main" )
 	 {
 	  foreach(map<string,any> value, server, {
 	   if (value["KEY"]:"" == "SSL")
@@ -199,31 +201,35 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	 }
 
     list <string> hosts = YaST::HTTPDData::GetHostsList ();
-    
+
     string servername = (string)get_host_value ( "ServerName", server, nil );
     string ip = (string)get_host_value ( "HostIP", server, nil );
     boolean namebased = ((string)get_host_value ( "VirtualByName", server, nil )) == "1";
     string documentroot = (string) get_host_value ( "DocumentRoot", server, "" );
+
+	// for apache2.2 ServerName is not forced (if not - hostname will be used)
     if ( size ( servername ) == 0 )
     {
         //translators: popup error message when validate server
-	Report::Error ( _("Server name cannot be empty.") );
-	return false;
-    } 
+//	Report::Error ( _("Server name cannot be empty.") );
+//	return false;
+	Report::Warning(_("When no Server name is defined, hostname will be used instead."));
+	return true;
+    }
 
     boolean res = true;
 
     foreach (string host, hosts, ``{
-	if ( host == hostid )
+	if (( host == hostid ) || (hostid == "main"))
 	{
-	    // skip ourself
+	    // skip ourself also when this is main server
 	    continue;
 	}
 	list< map<string,any> > desc = YaST::HTTPDData::GetHost (host);
 
 	// find out the server name
 	string value = (string)get_host_value ( "ServerName", desc, nil );
-	
+
 	if (value == servername)
 	{
 	    // error message - the entered server name is already configured 
@@ -232,7 +238,7 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	    res = false;
 	    break;
 	}
-	
+
 	value = (string)get_host_value ("HostIP", desc, nil);
 
 	if (size(documentroot)<1){
@@ -264,7 +270,7 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	    }
 	}
     });
-    
+
     // validate server admin
     string serveradmin = (string)get_host_value ( "ServerAdmin", server, nil );
     if ( ! regexpmatch ( serveradmin, ".+@.+" ))
@@ -273,7 +279,7 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	Report::Error (_("Administrator E-Mail is invalid."));
 	res = false;
     }
-    
+
     return res;
 }
 
@@ -284,8 +290,72 @@ global boolean validate_server_fnc (string id, map key);
 
 /*********************************** inital overview table ********************************/
 
-symbol showAccessLogPopup (any key, map event);
-symbol showErrorLogPopup (any key, map event);
+  /**
+   * Reload server
+   */
+    global void ReloadServer ()
+    {
+	SCR::Execute (.target.bash, "rcapache2 reload");
+    }
+    /**
+      * Handle function of the access log button (the first defined access log file)
+      * @param key any key of the widget
+      * @param event map event that occured
+      * @return value for wizard sequencer, always nil
+      */
+    define symbol showAccessLogPopup (any key, map event) {
+	// FIXME: log files needs to be done via HTTPDData
+	// string log = (string) select( YaST::HTTPDData::GetAccessLogFiles( [currenthost] ), 0, "/var/log/apache2/access_log" );
+
+	// strip the log format, if present
+	string log = "";
+//	log = select( splitstring( log, " " ), 0, "/var/log/apache2/access_log" );
+	log = splitstring( log, " " )[0]:"/var/log/apache2/access_log" ;
+
+	LogView::Display ($[
+	    "command" : sformat( "tail -f %1 -n 100 | /usr/sbin/logresolve2", log ),
+	    "save" : true,
+	    "actions" : [
+		// menubutton entry, try to keep short
+		[ _("&Reload HTTP Server"), ReloadServer ],
+		// menubutton entry, try to keep short
+		[ _("Save Settings and Re&start HTTP Server"),
+		    HttpServer::Write, true ],
+	    ],
+	]);
+	return nil;
+    }
+
+    /**
+      * Handle function of the error log button
+      * @param key any key of the widget
+      * @param event map event that occured
+      * @return value for wizard sequencer, always nil
+      */
+    define symbol showErrorLogPopup (any key, map event) ``{
+	// FIXME: log files needs to be done via HTTPDData
+	// string log = (string) select( YaST::HTTPDData::GetErrorLogFiles( [currenthost] ), 0, "/var/log/apache2/error_log" );
+	
+	// strip the log format, if present
+	string log = "";
+//	log = select( splitstring( log, " " ), 0, "/var/log/apache2/error_log" );
+	log = splitstring( log, " " )[0]:"/var/log/apache2/error_log";
+
+	LogView::Display ($[
+	    "command" : sformat( "tail -f %1 -n 100 | /usr/sbin/logresolve2", log ),
+	    "save" : true,
+	    "actions" : [
+		// menubutton entry, try to keep short
+		[ _("&Reload HTTP Server"), ReloadServer ],
+		// menubutton entry, try to keep short
+		[ _("Save Settings and Re&start HTTP Server"),
+		    HttpServer::Write, true ],
+	    ],
+	]);
+	return nil;
+    }
+//symbol showAccessLogPopup (any key, map event);
+//symbol showErrorLogPopup (any key, map event);
 
 list <string> host_ids = nil;
 
@@ -311,7 +381,7 @@ symbol OverviewHandle (string table, map event)
 
 map<string, any> overview_widget = $[
     "widget"		: `custom,
-    "custom_widget"	: 
+    "custom_widget"	:
 	`VBox(
 		Mode::config () ? `VSpacing(0) : (
 		// menu button label
@@ -329,41 +399,10 @@ map<string, any> overview_widget = $[
 
 /******************************************************************************************/
 
+
 global void HostsInit (string widget);
 global symbol HostsHandle (string table, map event);
-global list HostsContents (map descr);
-global boolean HostsDelete (any opt_id, string opt_key);
-global boolean HostIsDefault (any widget, string opt_key);
-global string HostsMapId2Key( map desc, any id );
-global string HostDocumentRootSummary( any key, string id );
-global string HostName (any key, string id);
-map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
-	$["add_delete_buttons" : true, 
-	      "up_down_buttons" : false, 
-	      "unique_keys" : true,
-	      "changed_column" : true]
-	, $[
-	    "init" : HostsInit,
-	    "handle" : HostsHandle,
-	    "ids" : HostsContents,
-	    "option_delete" : HostsDelete,
-	    "help" : HELPS["hosts"]:"",
-	    "fallback": $[
-		"summary" : HostDocumentRootSummary,
-		"changed" : HostIsDefault,
-		"label_func" : HostName,
-	    ],
-	]);
 
-  /**
-   * Initialize hosts table widget
-   * @param widget string
-   */
-global void HostsInit (string widget)
-{
-    init_tab = "hosts";
-    TablePopup::TableInit(hosts_widget, widget);
-}
 
   /**
    *
@@ -373,7 +412,6 @@ global void HostsInit (string widget)
    */
 map<string,string> AskNewInfo (string servername, string ip)
 {
-y2internal("Using DNS !!! %1", servername);
     if (size (servername) == 0)
     {
 	import "DNS";
@@ -445,74 +483,6 @@ the default host.
     return ret != `cancel ? $[ "name": servername, "ip" : ip ] : (map<string,string>)nil;
 }
 
-  /**
-   * Handle host widget
-   * @param table string
-   * @param event map
-   * @return symbol (`add, `edit)
-   */
-global symbol HostsHandle (string table, map event)
-{
-    if ( event["ID"]:nil == `_tp_add )
-    {
-	return `add;
-    }
-
-    else if (event["ID"]:nil == `_tp_edit)
-    {
-	currenthost = (string)UI::QueryWidget (`_tp_table, `CurrentItem);
-	return `edit;
-    }
-    
-    else if (event["ID"]:nil == `set_default)
-    {
-	string host = (string)UI::QueryWidget (`_tp_table, `CurrentItem);
-	if (host == "default")
-	{
-	    // popup - it is already the default host
-	    Popup::Message (_("The host is already default.") );
-	    return nil;
-	}
-
-	y2milestone ("Changing default host to '%1'", host);
-	
-	list< map<string,any> > defhost_options = YaST::HTTPDData::GetHost("default");
-	string servername = (string) get_host_value( "ServerName", defhost_options, "");
-	string ip = (string) get_host_value( "HostIP", defhost_options, "");
-	if (ip == "" || servername != "")
-	{
-	    // we must set a new server name and ip for the old default host
-	    map res = AskNewInfo (servername, ip);
-	    if (res == nil)
-	    {
-		// cancel the change
-		return nil;
-	    }
-
-	ip =res["ip"]:ip;
-	servername = res["name"]:ip;
-	    defhost_options = set_host_value( "HostIP", defhost_options, ip);
-	    defhost_options = set_host_value( "ServerName", defhost_options, servername);
-	}
-	
-	// move the old default host elsewhere
-	YaST::HTTPDData::CreateHost ( ip+"/"+servername, defhost_options );
-	// replace the values of the default host by the new one
-	YaST::HTTPDData::ModifyHost ("default", YaST::HTTPDData::GetHost(host) );
-	// remove the old non-default host
-	YaST::HTTPDData::DeleteHost (host);
-	
-	HttpServer::modified = true;
-
-	TablePopup::TableInit(hosts_widget, table);
-    }
-    else 
-    {
-	return TablePopup::TableHandle(hosts_widget, table, event);
-    }
-    
-    return nil;
-}
 
   /**
    * Hosts contents
@@ -520,7 +490,7 @@ global symbol HostsHandle (string table, map event)
    * @return list host list
    */
 global list HostsContents (map descr) {
-    return YaST::HTTPDData::GetHostsList ();
+    return filter(string row, YaST::HTTPDData::GetHostsList (), { return (row !="main"); });
 }
 
   /**
@@ -580,9 +550,104 @@ global boolean HostIsDefault( any widget, string key )
     return key == "default";
 }
 
+map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
+	$["add_delete_buttons" : true,
+	      "up_down_buttons" : false,
+	      "unique_keys" : true,
+	      "changed_column" : true]
+	, $[
+	    "init" : HostsInit,
+	    "handle" : HostsHandle,
+	    "ids" : HostsContents,
+	    "option_delete" : HostsDelete,
+	    "help" : HELPS["hosts"]:"",
+	    "fallback": $[
+		"summary" : HostDocumentRootSummary,
+		"changed" : HostIsDefault,
+		"label_func" : HostName,
+	    ],
+	]);
+
+  /**
+   * Handle host widget
+   * @param table string
+   * @param event map
+   * @return symbol (`add, `edit)
+   */
+global symbol HostsHandle (string table, map event)
+{
+    if ( event["ID"]:nil == `_tp_add )
+    {
+	return `add;
+    }
+
+    else if (event["ID"]:nil == `_tp_edit)
+    {
+	currenthost = (string)UI::QueryWidget (`_tp_table, `CurrentItem);
+	return `edit;
+    }
+    
+    else if (event["ID"]:nil == `set_default)
+    {
+	string host = (string)UI::QueryWidget (`_tp_table, `CurrentItem);
+	if (host == "default")
+	{
+	    // popup - it is already the default host
+	    Popup::Message (_("The host is already default.") );
+	    return nil;
+	}
+
+	y2milestone ("Changing default host to '%1'", host);
+
+	list< map<string,any> > defhost_options = YaST::HTTPDData::GetHost("default");
+	string servername = (string) get_host_value( "ServerName", defhost_options, "");
+	string ip = (string) get_host_value( "HostIP", defhost_options, "");
+	if (ip == "" || servername != "")
+	{
+	    // we must set a new server name and ip for the old default host
+	    map res = AskNewInfo (servername, ip);
+	    if (res == nil)
+	    {
+		// cancel the change
+		return nil;
+	    }
+
+	ip =res["ip"]:ip;
+	servername = res["name"]:ip;
+	    defhost_options = set_host_value( "HostIP", defhost_options, ip);
+	    defhost_options = set_host_value( "ServerName", defhost_options, servername);
+	}
+	// move the old default host elsewhere
+	YaST::HTTPDData::CreateHost ( ip+"/"+servername, defhost_options );
+	// replace the values of the default host by the new one
+	YaST::HTTPDData::ModifyHost ("default", YaST::HTTPDData::GetHost(host) );
+	// remove the old non-default host
+	YaST::HTTPDData::DeleteHost (host);
+
+	HttpServer::modified = true;
+
+	TablePopup::TableInit(hosts_widget, table);
+    }
+    else
+    {
+	return TablePopup::TableHandle(hosts_widget, table, event);
+    }
+    
+    return nil;
+}
+
+  /**
+   * Initialize hosts table widget
+   * @param widget string
+   */
+global void HostsInit (string widget)
+{
+    init_tab = "hosts";
+    TablePopup::TableInit(hosts_widget, widget);
+}
 /******************************************************************************************/
 
-global string summaryGenericList(string key, any id );
+//global string summaryGenericList(string key, any id );
 global symbol handleHostTable(string key, map event );
 global void HostStore (string key, map event);
 global list HostTableContents (map descr);
@@ -617,12 +682,12 @@ global symbol handleExpertConf (string key, map event);
 void initScriptModules(string key);
 void initSummaryText(string key); 
 global symbol handleBooting (string key, map event);
-global map getHostOptions();
+global map getHostOptions(boolean is_main_server);
 boolean getServiceAutoStart();
 void setServiceAutoStart(boolean enable);
 void checkLoadedModuleFor(string new);
 
-    global void setHostOptions(map < integer, map <string,any> > host_options);
+global void setHostOptions(map < integer, map <string,any> > host_options);
 
 
 string mode_replace_point_key = "replace_point";
@@ -721,7 +786,7 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	    "store" : HostStore,
 	    "validate_type" : `function,
 	    "validate_function" : validate_server_fnc,
-	    "options" : union( getHostOptions(), popups ),
+	    "options" : getHostOptions(false),
 	    "ids" : HostTableContents,
 	    "id2key" : HostId2Key,
 	    "fallback" : $[
@@ -731,7 +796,7 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
 	    ],
 	    "option_delete" : HostTableEntryDelete,
 	    "add_items" : 
-		maplist( string key, any value, (map<string,any>)union( getHostOptions(), popups ), ``(key) ),
+		maplist( string key, any value, (map<string,any>) getHostOptions(false), ``(key) ),
 	    "help" : HELPS["global_table"]:"",
 	]);
 
@@ -740,7 +805,10 @@ global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDe
    * @param key string
    */
 global define void HostInit (string key) ``{
-    if (key == "DEF_HOST") init_tab = "default_host";
+    if (key == "MAIN_HOST") {
+			     init_tab = "main_host";
+			     currenthost="main";
+			    }
     TablePopup::TableInit (hostwidget, key);
 }
 
@@ -748,7 +816,7 @@ global define void HostInit (string key) ``{
    * Get host options
    * @return map host options
    */
-global define map getHostOptions()
+global define map getHostOptions(boolean mainhost)
 {
  map used = $[];
  list <string> directives = [];
@@ -761,6 +829,10 @@ global define map getHostOptions()
 					else used[option["option"]:""]=$[];
 			});
 	});
+
+y2internal("%1", mainhost);
+ if (mainhost) used = union(used, filter(string key,map val, popups, { return(key!="SSL"); }));
+	else used = union(used, popups);
  return used;
 }
   /**
@@ -920,7 +992,36 @@ global void DirStore (string key, map event)
 	HttpServer::modified = true;
  }
 
+global void initVhostRest(string key){
+	if (vhost_descr!=[]){
+//                string ip = ""; foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "HostIP") ip = row["VALUE"]:"";});
+		boolean namebased = false;
+		foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "VirtualByName" && row["VALUE"]:"" == "1") namebased=true;});
+//		if (size(ip)>0) UI::ChangeWidget(`id( "ipaddress" ), `Value, ip);
+		if (namebased) UI::ChangeWidget(`resolution, `CurrentButton, `name_based);
+			else UI::ChangeWidget(`resolution, `CurrentButton, `ip_based);
+	}
+	UI::ChangeWidget(`id( "ipaddress" ), `Items, maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) );
+}
 
+global void initVhostId(string key){
+	if (vhost_descr!=[]){
+                string servername = ""; foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "ServerName") servername = row["VALUE"]:"";});
+                string documentroot = ""; foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "DocumentRoot") documentroot = row["VALUE"]:"";});
+                string admin = ""; foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "ServerAdmin") admin = row["VALUE"]:"";});
+		if (size(servername)>0) UI::ChangeWidget(`id("servername"), `Value, servername);
+		if (size(documentroot)>0) UI::ChangeWidget(`documentroot, `Value, documentroot);
+		if (size(admin)>0) UI::ChangeWidget(`admin, `Value, admin);
+	}
+
+	UI::SetFocus (`id("servername"));
+}
+
+global define symbol handleVhostRest (string key, map event){
+ if ( UI::QueryWidget(`resolution, `CurrentButton)==`name_based ) UI::ChangeWidget(`id("ipaddress"), `Enabled, false);
+      else UI::ChangeWidget(`id("ipaddress"), `Enabled, true);
+ return nil;
+}
 
 /**
  * Map of widgets for CWM
@@ -1009,7 +1110,7 @@ global map<string, map <string, any> > widgets = $[
 
          ],
 
-        "DEF_HOST" :
+        "MAIN_HOST" :
            TablePopup::CreateTableDescr (
             $["add_delete_buttons" : true, "up_down_buttons" : false, "unique_keys" : false],
              $[
@@ -1018,7 +1119,7 @@ global map<string, map <string, any> > widgets = $[
               "store" : HostStore,
               "validate_type" : `function,
               "validate_function" : validate_server_fnc,
-              "options" : union( getHostOptions(), popups ),
+              "options" : getHostOptions(true),
               "ids" : HostTableContents,
               "id2key" : HostId2Key,
               "fallback" : $[
@@ -1027,7 +1128,7 @@ global map<string, map <string, any> > widgets = $[
                 "summary" : HostTableEntrySummary,
                         ],
               "option_delete" : HostTableEntryDelete,
-              "add_items" : maplist( string key, any value, (map<string,any>)union( getHostOptions(), popups ), ``(key) ),
+              "add_items" : maplist( string key, any value, (map<string,any>) getHostOptions(true), ``(key) ),
               "help" : HELPS["global_table"]:""
              ]
             ),
@@ -1099,11 +1200,56 @@ global map<string, map <string, any> > widgets = $[
 		],
 	  "script_modules" : $[
 		"widget" : `custom,
-			"custom_widget" : `ReplacePoint(`id(`scr_mod_replace), 
+		"custom_widget" : `ReplacePoint(`id(`scr_mod_replace), 
 			`Label("") 
 	                ),
 		"init"   : initScriptModules,
 		"help"	 : HELPS["script_modules"]:""
+		],
+	   "vhost_id" : $[
+		"widget" : `custom,
+                "custom_widget" :
+	    `Frame(
+		// translators: frame title for new hsot identification details
+		_("Server Identification"),
+		`VBox(
+		    // translators: textentry, new host server name
+		    `TextEntry( `id( "servername" ), _("Server &Name:") ),
+		    `HBox(
+			// translators: textentry, document root for the new host
+			`TextEntry( `id( `documentroot ), _("Server &Contents Root:") ),
+			`VBox(
+                	    `Label(""),
+			    `PushButton( `id( `browse ), Label::BrowseButton () )
+			)
+		    ),
+		    // translators: textentry, administrator's e-mail for the new host
+		    `TextEntry( `id( `admin ), _("&Administrator E-Mail:") )
+		)),
+		"help" : HELPS["vhost_id"]:"",
+		"init" : initVhostId
+			],
+	   "vhost_res" : $[
+		"widget" : `custom,
+                "custom_widget" :
+	    `Frame(
+		// translators: frame title for method of incoming request resolution
+		_("Server Resolution"),
+		`VBox(
+		// translators: IP address for the new host
+		`Left( `ComboBox( `id( "ipaddress" ), `opt(`editable), _("&IP Address:"), [] ) ),
+		`RadioButtonGroup(
+		    `id ( `resolution ),
+		    `VBox (
+			// translators: radio button for name-based virtual hosts
+			`Left(`RadioButton ( `id ( `name_based ), `opt(`notify), _("Determine Request Server by HTTP &Headers"), true ) ),
+			// translators: radio button for IP-based virtual hosts
+			`Left(`RadioButton ( `id ( `ip_based ),`opt(`notify), _("Determine Request Server by Server IP &Address") ) )
+		    )
+		))),
+		"init" : initVhostRest,
+		"handle" : handleVhostRest,
+		"help" : HELPS["vhost_res"]:""
 		],
 	   "summary_text" : $[
 		"widget"  : `custom,
@@ -1371,71 +1517,7 @@ define string item2listen( string network, string port ) ``{
     }
 
 // *************************************** log popups **************************
-  /**
-   * Reload server
-   */
-    global void ReloadServer ()
-    {
-	SCR::Execute (.target.bash, "rcapache2 reload");
-    }
 
-    /**
-      * Handle function of the access log button (the first defined access log file)
-      * @param key any key of the widget
-      * @param event map event that occured
-      * @return value for wizard sequencer, always nil
-      */
-    define symbol showAccessLogPopup (any key, map event) {
-	// FIXME: log files needs to be done via HTTPDData
-	// string log = (string) select( YaST::HTTPDData::GetAccessLogFiles( [currenthost] ), 0, "/var/log/apache2/access_log" );
-
-	// strip the log format, if present
-	string log = "";
-//	log = select( splitstring( log, " " ), 0, "/var/log/apache2/access_log" );
-	log = splitstring( log, " " )[0]:"/var/log/apache2/access_log" ;
-
-	LogView::Display ($[
-	    "command" : sformat( "tail -f %1 -n 100 | /usr/sbin/logresolve2", log ),
-	    "save" : true,
-	    "actions" : [
-		// menubutton entry, try to keep short
-		[ _("&Reload HTTP Server"), ReloadServer ],
-		// menubutton entry, try to keep short
-		[ _("Save Settings and Re&start HTTP Server"),
-		    HttpServer::Write, true ],
-	    ],
-	]);
-	return nil;
-    }
-
-    /**
-      * Handle function of the error log button
-      * @param key any key of the widget
-      * @param event map event that occured
-      * @return value for wizard sequencer, always nil
-      */
-    define symbol showErrorLogPopup (any key, map event) ``{
-	// FIXME: log files needs to be done via HTTPDData
-	// string log = (string) select( YaST::HTTPDData::GetErrorLogFiles( [currenthost] ), 0, "/var/log/apache2/error_log" );
-	
-	// strip the log format, if present
-	string log = "";
-//	log = select( splitstring( log, " " ), 0, "/var/log/apache2/error_log" );
-	log = splitstring( log, " " )[0]:"/var/log/apache2/error_log";
-
-	LogView::Display ($[
-	    "command" : sformat( "tail -f %1 -n 100 | /usr/sbin/logresolve2", log ),
-	    "save" : true,
-	    "actions" : [
-		// menubutton entry, try to keep short
-		[ _("&Reload HTTP Server"), ReloadServer ],
-		// menubutton entry, try to keep short
-		[ _("Save Settings and Re&start HTTP Server"),
-		    HttpServer::Write, true ],
-	    ],
-	]);
-	return nil;
-    }
 
 // ************************************ default host table ********************
 
@@ -1497,6 +1579,9 @@ define string item2listen( string network, string port ) ``{
         ``{
 	   if (haskey(values, "DATA"))
 	    {
+
+		//In main host SSL can't be used
+/*
 	     if (values["KEY"]:"" == "SSL") 
 		{
 		 options = add(options, $[
@@ -1507,6 +1592,7 @@ define string item2listen( string network, string port ) ``{
                     "OVERHEAD" : values["OVERHEAD"]:""]);
 		 y2milestone("SSL section - %1", options);
 		}
+*/
 
              if (values["KEY"]:"" == "Directory") 
 		{
@@ -1528,10 +1614,9 @@ define string item2listen( string network, string port ) ``{
 	options = filter (map <string,any> option, options, ``( option != nil ));
 
 	// for all host options check whether module from directive is loaded
-        foreach (map<string, any> values, options,
-        ``{
-	   checkLoadedModuleFor(values["KEY"]:"");
-	  });
+        foreach (map<string, any> values, options, ``{
+							checkLoadedModuleFor(values["KEY"]:"");
+							});
 	YaST::HTTPDData::ModifyHost (currenthost, options );
 
 	setHostOptions(nil);
@@ -1607,7 +1692,7 @@ define string item2listen( string network, string port ) ``{
 		    continue;
 		}
 		// skip HostIP for default host
-		else if (currenthost == "default" && key == "HostIP")
+		else if (currenthost == "main" && key == "HostIP")
 		{
 		    host_options[option_counter] = option;
 		    option_counter = option_counter + 1;
@@ -1757,13 +1842,14 @@ define string item2listen( string network, string port ) ``{
 	dir_value = host_options[(integer)UI::QueryWidget (`_tp_table, `CurrentItem), "VALUE"]:"";
 
 	// handle menu button entries
+/*
 	if( event["ID"]:nil == `show_access_log ) {
 	    return showAccessLogPopup( key, event );
 	}
 	else if( event["ID"]:nil == `show_error_log ) {
 	    return showErrorLogPopup( key, event );
 	}
-
+*/
 	symbol res = TablePopup::TableHandle( hostwidget, key, event );
 	if (update_contents)
 	{

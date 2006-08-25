@@ -111,6 +111,7 @@ sub addDir {
 BEGIN { $TYPEINFO{ReadHosts} = ["function", "boolean" ]; }
 sub ReadHosts {
     my $self = shift;
+
     foreach my $hostid ( @{YaPI::HTTPD->GetHostsList()} ) {
     	$hosts{$hostid} = YaPI::HTTPD->GetHost($hostid) if( $hostid );
         if( not $self->FetchHostKey($hostid, 'SSLCACertificateFile') ) {
@@ -204,11 +205,13 @@ sub ModifyHost {
         }
     }
     $hosts{$hostid} = $hostdata;
+
     foreach my $h ( @{$hosts{$hostid}} ) {
         if( $h->{KEY} eq 'DocumentRoot' ) {
             if( $dr ne $h->{VALUE} ) {
-                $self->delDir( $dr );
-                $self->addDir( $h->{VALUE} );
+#                $self->delDir( $dr );
+#print FILE Dumper( $h->{VALUE} );
+#                $self->addDir( $h->{VALUE} );
             }
         } elsif( $h->{KEY} eq 'VirtualByName' ) {
             if( $vbn ne $h->{VALUE} ) {
@@ -233,6 +236,8 @@ sub ModifyHost {
         }
     }
 
+#print FILE Dumper($hosts{$hostid});
+#close(FILE);
     $dirty{MODIFIED}->{$hostid} = 1 unless( exists($dirty{NEW}->{$hostid}) );
     return 1;
 }
@@ -258,14 +263,29 @@ sub CreateHost {
                 push( @{$hosts{'default'}}, { KEY => 'NameVirtualHost', VALUE => $v } );
                 $dirty{MODIFIED}->{'default'} = 1;
             }
-        }
+        } 
     }
+
+ # don't create Directory for DocumentRoot, if already exists
+ if ($dir ne ""){
+  foreach my $row (@$hostdata) {
+   if ($row->{KEY} eq '_SECTION'){
+ 	$dir="" if ($row->{'SECTIONPARAM'} eq $dir->{'SECTIONPARAM'});
+    }
+   }
+  }
+
+#print FILE Dumper($dir);
+#print FILE Dumper($hostdata);
+
 push(@$hostdata, $dir) if ($dir);
     $hosts{$hostid} = $hostdata;
     $dirty{NEW}->{$hostid} = 1;
     delete($dirty{DEL}->{$hostid});
     delete($dirty{MODIFIED}->{$hostid});
+#close(FILE);
     return 1;
+
 }
 
 sub getNVH {
@@ -286,11 +306,8 @@ BEGIN { $TYPEINFO{DeleteHost} = ["function", "boolean", "string"]; }
 sub DeleteHost {
     my $self = shift;
     my $hostid = shift;
-
     foreach my $h ( @{$hosts{$hostid}} ) {
-        if( $h->{KEY} eq 'DocumentRoot' ) {
-            $self->delDir($h->{VALUE});
-        } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
+	if( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
             $hostid =~ /^([^\/]+)/;
             my $vhost = $1;
             # Am I the last one who uses this NameVirtualHost entry?
@@ -317,6 +334,7 @@ sub DeleteHost {
 
 BEGIN { $TYPEINFO{WriteHosts} = ["function", "boolean" ]; }
 sub WriteHosts {
+
     my $self = shift;
     foreach my $hostid( keys( %{$dirty{DEL}} ) ) {
         delete($certs{$hostid});

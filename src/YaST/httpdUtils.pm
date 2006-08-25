@@ -82,18 +82,21 @@ sub readHosts {
     # this is a hack.
     # yast will put some directives in define sections
     # automatically and here we remove them
-    if( ref($data[0]) eq 'HASH' ) {
-        foreach my $file ( keys %{$data[0]} ) {
-            foreach my $host ( @{$data[0]->{$file}} ) {
-                foreach my $data ( @{$host->{DATA}} ) {
-                    if( exists($data->{OVERHEAD}) and
-                        $data->{OVERHEAD} =~ /# YaST auto define section/ ) {
-                        $data = $data->{VALUE}->[0]; # delete the "auto define" section
-                    }
-                }
-            }
-        }
-    }
+
+#    if( ref($data[0]) eq 'HASH' ) {
+#        foreach my $file ( keys %{$data[0]} ) {
+#            foreach my $host ( @{$data[0]->{$file}} ) {
+#                foreach my $data ( @{$host->{DATA}} ) {
+#                    if( exists($data->{OVERHEAD}) and
+#                        $data->{OVERHEAD} =~ /# YaST auto define section/ ) {
+#                        $data = $data->{VALUE}->[0]; # delete the "auto define" section
+#                    }
+#                }
+#            }
+#        }
+#    }
+
+
     return @data;
 }
 
