@@ -21,7 +21,6 @@ desktop_DATA =			\
 
 module_DATA =			\
 	HttpServerWidgets.ycp	\
-	DnsServerPunycode.ycp	\
 	HttpServer.ycp		
 
 http-server:
