@@ -55,14 +55,14 @@ sub delDir {
 
     $dir =~ s/\/+/\//g;
 
-    foreach my $e ( @{$hosts{'default'}} ) {
+    foreach my $e ( @{$hosts{'main'}} ) {
         next if( $e->{KEY} eq '_SECTION' and
                  $e->{SECTIONNAME} eq 'Directory' and
                  $e->{SECTIONPARAM} =~ /^"*$dir\/*"*/ );
         push( @newData, $e );
     }
-    $hosts{'default'} = \@newData;
-    $dirty{MODIFIED}->{'default'} = 1;
+    $hosts{'main'} = \@newData;
+    $dirty{MODIFIED}->{'main'} = 1;
     return;
 }
 
@@ -218,20 +218,20 @@ sub ModifyHost {
                 $hostid =~ /^([^\/]+)/;
                 my $vhost = $1;
                 if( $h->{VALUE} == 1 and $self->getNVH( $vhost ) == 0 ) {
-                    push( @{$hosts{'default'}}, { KEY => 'NameVirtualHost', VALUE => $1 } );
+                    push( @{$hosts{'main'}}, { KEY => 'NameVirtualHost', VALUE => $1 } );
                 } elsif( $h->{VALUE} == 0 and $self->getNVH( $vhost ) == 1 ) {
                     my @newData = ();
-                    while( my $e = shift(@{$hosts{'default'}}) ) {
+                    while( my $e = shift(@{$hosts{'main'}}) ) {
                         if( $e->{KEY} eq 'NameVirtualHost' and
                             $e->{VALUE} eq $vhost ) {
-                            push( @newData, @{$hosts{'default'}} );
+                            push( @newData, @{$hosts{'main'}} );
                             last;
                         }
                         push( @newData, $e );
                     }
-                    $hosts{'default'} = \@newData;
+                    $hosts{'main'} = \@newData;
                 }
-                $dirty{MODIFIED}->{'default'} = 1;
+                $dirty{MODIFIED}->{'main'} = 1;
             }
         }
     }
@@ -252,7 +252,8 @@ sub CreateHost {
     if( ! $self->checkHostmap( $hostdata ) ) {
         return undef;
     }
-
+#use Data::Dumper;
+#open(FILE, ">>/tmp/yast.log");
     foreach my $h ( @$hostdata ) {
         if( $h->{KEY} eq 'DocumentRoot' ) {
             $dir=$self->addDir($h->{VALUE});
@@ -260,12 +261,13 @@ sub CreateHost {
             $hostid =~ /^([^\/]+)/;
             my $v = $1;
             if( $self->getNVH( $v ) == 0 ) {
-                push( @{$hosts{'default'}}, { KEY => 'NameVirtualHost', VALUE => $v } );
-                $dirty{MODIFIED}->{'default'} = 1;
+                push( @{$hosts{'main'}}, { KEY => 'NameVirtualHost', VALUE => $v } );
+                $dirty{MODIFIED}->{'main'} = 1;
             }
         } 
     }
 
+#print FILE Dumper(\%hosts);
  # don't create Directory for DocumentRoot, if already exists
  if ($dir ne ""){
   foreach my $row (@$hostdata) {
@@ -275,15 +277,14 @@ sub CreateHost {
    }
   }
 
-#print FILE Dumper($dir);
-#print FILE Dumper($hostdata);
 
 push(@$hostdata, $dir) if ($dir);
     $hosts{$hostid} = $hostdata;
     $dirty{NEW}->{$hostid} = 1;
     delete($dirty{DEL}->{$hostid});
     delete($dirty{MODIFIED}->{$hostid});
-#close(FILE);
+#print FILE Dumper(YaPI::HTTPD->GetHostsList());
+close(FILE);
     return 1;
 
 }
