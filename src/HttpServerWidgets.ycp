@@ -32,6 +32,7 @@
     import "Punycode";
     import "Package";
     import "DnsServerAPI";
+    import "FileUtils";
 
     include "http-server/helps.ycp";
 
@@ -151,30 +152,20 @@ global boolean validate_serverip (any id, any key, map event)
 {
     import "IP";
     string value = (string)UI::QueryWidget (`id (id), `Value);
-    
+
     // check, if there is also a port, if yes, skip it
     integer pos = search (value, ":");
-    if (pos != nil)
-    {
-	value = substring (value, 0, pos);
-    }
-    
+    if (pos != nil) value = substring (value, 0, pos);
+
     // validate wildcard
-    if (value == "*")
-    {
-	return true;
-    }
-    
+    if (value == "*") return true;
+
     if (!IP::Check (value))
     {
         //translators: popup error message when validate server ip
 	Popup::Error (_("Invalid IP address."));
 	return false;
-    }
-    else 
-    {
-	return true;
-    }
+    } else return true;
 }
 
   /**
@@ -210,13 +201,19 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	// for apache2.2 ServerName is not forced (if not - hostname will be used)
     if ( size ( servername ) == 0 )
     {
-        //translators: popup error message when validate server
-//	Report::Error ( _("Server name cannot be empty.") );
-//	return false;
-	Report::Warning(_("When no Server name is defined, hostname will be used instead."));
-	return true;
+     if (hostid == "main") {
+	 Report::Warning(_("When no Server name is defined, hostname will be used instead."));
+         return true;
+	} else {
+           //translators: popup error message when validate server
+	   Report::Error ( _("Server name cannot be empty.") );
+	   return false;
+	}
     }
 
+    if (! FileUtils::CheckAndCreatePath( documentroot )) {
+		return false;
+	}
     boolean res = true;
 
     foreach (string host, hosts, ``{
@@ -240,19 +237,27 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	}
 
 	value = (string)get_host_value ("HostIP", desc, nil);
-
+/*
 	if (size(documentroot)<1){
 	 // error message - the entered document root is empty
 	 Report::Error (_("The root directory cannot be empty."));
          res = false;
          break;
-	} else {
+	} else 
+*/
+{
+/*
 		if ( SCR::Execute(.target.bash, "test -d " + documentroot) != 0){
 			// error message - the entered root directory is not valid directory
 	            Report::Error (_("The root directory must be an existing directory."));
 	            res = false;
 	            break;
 		 }
+*/
+		if (! FileUtils::CheckAndCreatePath( documentroot )){
+                    res = false;
+                    break;
+		  }
 		}
 
 	if (value == ip)
@@ -456,23 +461,14 @@ the default host.
     do
     {
 	ret = (symbol)UI::UserInput ();
-	if (ret == `cancel)
-	{
-	    break;
-	}
+	if (ret == `cancel) break;
 
 	// it must be `ok
-	if (! validate_servername("servername","", nil))
-	{
-	    continue;
-	}
+	if (! validate_servername("servername","", nil)) continue;
 
 	servername = (string)UI::QueryWidget (`id("servername"), `Value);
 
-	if (! validate_serverip("ip",nil,nil))
-	{
-	    continue;
-	}
+	if (! validate_serverip("ip",nil,nil)) continue;
 	ip = (string)UI::QueryWidget (`id("ip"), `Value);
 
 	break;
@@ -991,16 +987,12 @@ global void DirStore (string key, map event)
 	HttpServer::modified = true;
  }
 
-global void initVhostRest(string key){
-	if (vhost_descr!=[]){
-//                string ip = ""; foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "HostIP") ip = row["VALUE"]:"";});
-		boolean namebased = false;
-		foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "VirtualByName" && row["VALUE"]:"" == "1") namebased=true;});
-//		if (size(ip)>0) UI::ChangeWidget(`id( "ipaddress" ), `Value, ip);
-		if (namebased) UI::ChangeWidget(`resolution, `CurrentButton, `name_based);
-			else UI::ChangeWidget(`resolution, `CurrentButton, `ip_based);
-	}
-	UI::ChangeWidget(`id( "ipaddress" ), `Items, maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) );
+global void initVhostRes(string key){
+  map<string, any> vhost = YaST::HTTPDData::GetVhostType(currenthost);
+  if (vhost["type"]:""=="ip-based") UI::ChangeWidget(`resolution, `CurrentButton, `ip_based);
+	else UI::ChangeWidget(`resolution, `CurrentButton, `name_based);
+  UI::ChangeWidget(`virtual_host, `Value, vhost["id"]:"");
+  UI::ChangeWidget(`virtual_host, `Enabled, false);
 }
 
 global void initVhostId(string key){
@@ -1019,19 +1011,14 @@ global void initVhostId(string key){
 global define symbol handleVhostId (string key, map event){
  if (event["EventType"]:""=="WidgetEvent" && event["WidgetID"]:nil==`browse){
    string dir = UI::AskForExistingDirectory ("/srv", _("Choose Document Root") );
-   if (dir != nil) UI::ChangeWidget (`documentroot, `Value, dir );
- } 
-/*
-else if (event["EventType"]:""=="MenuEvent" && event["ID"]:nil==`next) {
-			return `next;
-		}
-*/
+   if (dir != nil ) UI::ChangeWidget (`documentroot, `Value, dir );
+ }
  return nil;
 }
 
 global boolean validateVhostId(string key, map event) ``{
  // FIXME: Do checks about the IP address availability
- string ip = (string) UI::QueryWidget ( `id("ipaddress"), `Value );
+ string ip = (string) UI::QueryWidget ( `id("virtual_host"), `Value );
  string servername = Punycode::EncodeDomainName( (string) UI::QueryWidget( `id("servername"), `Value ) );
  string documentroot = (string) UI::QueryWidget( `documentroot, `Value );
  string admin = (string) UI::QueryWidget( `admin, `Value );
@@ -1055,8 +1042,6 @@ global boolean validateVhostId(string key, map event) ``{
              $[ "KEY": "VirtualByName", "VALUE" : virtualbyname ? "1" : "0" ],
              $[ "KEY": "HostIP", "VALUE" : ip ]
          ];
-
-//y2internal("vhost_descr %1", vhost_descr);
      if ( !validate_server (nil, vhost_descr) ) return false;
  return true;
 }
@@ -1064,9 +1049,59 @@ global boolean validateVhostId(string key, map event) ``{
 global define void storeVhostId (string opt_id, map event) ``{
 }
 
+define string changeVHostPopup(){
+ string vhost="";
+ string servername = ""; foreach(integer num, map<string,any> row, host_options, {if (row["KEY"]:"" == "ServerName") servername = row["VALUE"]:"";});
+ list items = maplist( string ip, string dev, HttpServer::ip2device, ``(ip) );
+ UI::OpenDialog(
+  `RadioButtonGroup(`id(`rb),
+	 `VBox(
+		`Left(`RadioButton(`id(`ms),`opt(`notify), "", true)),
+		  `MultiSelectionBox( `id(`ipaddress),
+			_("IP Adresses"), items )
+			,
+		`Left(`RadioButton(`id(`sn),`opt(`notify), "")),
+		  `TextEntry(`id(`serv_name), _("ServerName"), servername)
+			,
+		    `VSpacing(),
+		    `HBox(
+			`PushButton( `id(`ok),     Label::OKButton() ),
+			`PushButton( `id(`cancel), Label::CancelButton() )
+		     )
+	      )
+	     )
+ );
+
+ symbol ret = nil;
+ do{
+	if(UI::QueryWidget(`id(`rb), `CurrentButton)==`ms){
+	  UI::ChangeWidget(`id(`ipaddress), `Enabled, true);
+	  UI::ChangeWidget(`id(`serv_name), `Enabled, false);
+	}else{
+	  UI::ChangeWidget(`id(`ipaddress), `Enabled, false);
+	  UI::ChangeWidget(`id(`serv_name), `Enabled, true);
+	 }
+    ret = (symbol) UI::UserInput();
+   } while( ret != `ok && ret != `cancel );
+  if( ret == `ok ) {
+    if(UI::QueryWidget(`id(`rb), `CurrentButton)==`ms){
+	list<string> selected=(list<string>)UI::QueryWidget(`id(`ipaddress), `SelectedItems);
+	if (size(selected)==size(items)) vhost="*";
+	  else vhost = mergestring(selected, " ");
+     } else {
+	     vhost=(string)UI::QueryWidget(`id(`serv_name), `Value);
+	    }
+	} else vhost="";
+  UI::CloseDialog();
+ return vhost;
+}
+
+
 global define symbol handleVhostRest (string key, map event){
- if ( UI::QueryWidget(`resolution, `CurrentButton)==`name_based ) UI::ChangeWidget(`id("ipaddress"), `Enabled, false);
-      else UI::ChangeWidget(`id("ipaddress"), `Enabled, true);
+ if (event["EventReason"]:""=="Activated" && event["ID"]:nil ==`change_vhost){
+  string vhost = changeVHostPopup();
+  if (size(vhost)>0) UI::ChangeWidget(`id(`virtual_host), `Value, vhost);
+ }
  return nil;
 }
 
@@ -1244,10 +1279,8 @@ global define void storeVhostDetails (string key, map events) ``{
 
   if (size(ssl_values)>0) vhost_descr = add(vhost_descr, ssl_values);
 
-y2internal("contents %1", YaST::HTTPDData::GetHostsList() );
   any result = YaST::HTTPDData::CreateHost ( ip["VALUE"]:""+"/"+servername["VALUE"]:"", vhost_descr );
 
-y2internal("contents %1", YaST::HTTPDData::GetHostsList() );
   y2milestone ("%1", result);
   if ( result == nil)
 	{
@@ -1496,9 +1529,12 @@ global map<string, map <string, any> > widgets = $[
 	    `Frame(
 		// translators: frame title for method of incoming request resolution
 		_("Server Resolution"),
-		`VBox(
-		// translators: IP address for the new host
-		`Left( `ComboBox( `id( "ipaddress" ), `opt(`editable), _("&IP Address:"), [] ) ),
+		`HBox(
+		  `VBox(
+			// translators: IP address for the new host
+			`Left( `TextEntry( `id( `virtual_host ), _("VirtualHost") ) ),
+			`Left(`PushButton(`id(`change_vhost), _("Change VirtualHost ID")))
+		     ),
 		`RadioButtonGroup(
 		    `id ( `resolution ),
 		    `VBox (
@@ -1508,7 +1544,7 @@ global map<string, map <string, any> > widgets = $[
 			`Left(`RadioButton ( `id ( `ip_based ),`opt(`notify), _("Determine Request Server by Server IP &Address") ) )
 		    )
 		))),
-		"init" : initVhostRest,
+		"init" : initVhostRes,
 		"handle" : handleVhostRest,
 		"help" : HELPS["vhost_res"]:""
 		],

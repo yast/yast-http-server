@@ -417,10 +417,7 @@ sub GetHost {
 
     if( ref($data[0]) eq 'HASH' ) { $vhost_files = $data[0]; } 
 	else { return $self->SetError( %{SCR->Error(".http_server.vhosts")} ); }
-#    my $filename = $self->getFileByHostid( $hostid, $vhost_files );
     my $ret="";
-    my $vbnHash = {};#{ KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
-    my $ipHash = {}; #{ KEY => 'HostIP', VALUE => $hostHash->{HostIP} };
     foreach my $key ( keys( %{$data[0]} ) ){
 	switch($key)
 	 {
@@ -445,54 +442,36 @@ sub GetHost {
 		 }
 	 }	
       }
+   return [ @{$ret->{'DATA'}} ];
+}
 
+BEGIN { $TYPEINFO{getVhType} = ["function", [ "map", "string", "any" ], "string"]; }
+sub getVhType {
+    my $self = shift;
+    my $hostid = shift;
 
-   return [ @{$ret->{'DATA'}}, $vbnHash , $ipHash ];
-
-
-
-
-
-#my $filename = "";
-#    return $self->SetError( summary => __('hostid not found'),code => 'HOSTID_NOT_FOUND' ) unless( $filename );
-#    foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
-#        if( $hostHash->{HOSTID} eq $hostid ) {
-#            my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
-#            my $sslHash = { KEY => 'SSL', VALUE => 0 };
-#            my $overheadHash = { KEY => 'OVERHEAD', VALUE => $hostHash->{'OVERHEAD'} };
-#            my $ipHash = { KEY => 'HostIP', VALUE => $hostHash->{HostIP} };
-#            my $sslEngine = 'off';
-#            my @newHH = ();
-#            foreach my $h ( @{$hostHash->{'DATA'}} ) {
-#                if( $h->{'KEY'} eq 'SSLEngine' ) {
-#                    $sslEngine = $h->{'VALUE'};
-#                } else {
-#                    push( @newHH, $h );
-#                }
-#            }
-#            $hostHash->{'DATA'} = \@newHH;
-
-
-	    # set sslHash to 1, if there are SSLRequire option set it to 2 
-#            if( $sslEngine eq 'on' ) {
-#		foreach my $tmp ( @{$hostHash->{'DATA'}})
-#                 {
-#		  if (exists($tmp->{SECTIONNAME}) && $tmp->{SECTIONNAME} eq 'Directory')
-#                   {  
-#		    my $ssl_require=0;
-#		    foreach my $newData (@{$tmp->{VALUE}})
-#		     {
-#		      $ssl_require=1 if (ref($newData->{VALUE}) eq 'ARRAY'&& grep{$_->{KEY} eq 'SSLRequireSSL'}@{$newData->{VALUE}});
-#                    }
-#			if ($ssl_require) {$sslHash->{'VALUE'} = 2;}
-#				else { $sslHash->{'VALUE'} = 1; }
-#		   }
-#                 }
-#            } 
-#            return [ @{$hostHash->{'DATA'}}, $vbnHash, $ipHash ];
-#        }
-#    }
-#    return $self->SetError( summary => __('hostid not found'),code => 'HOSTID_NOT_FOUND' );
+    my %ret= ();
+    foreach my $key ( keys( %{$vhost_files} ) ){
+	switch($key)
+	 {
+	 case "ip-based" {
+	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)) { %ret = (type => 'ip-based', id => $hostentryHash->{HostIP}); }
+	          }
+		 }
+		}
+	 case "main" { if (( defined($vhost_files->{'main'}{HOSTID}) ) && ($vhost_files->{'main'}{HOSTID} eq $hostid)) { %ret = (type => 'main');  } }
+	 else { 
+	       foreach my $hostList ( $vhost_files->{$key} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)){ %ret = (type => 'name-based',id => $hostentryHash->{HostIP}); }
+	           }
+		  }
+		 }
+	 }	
+      }
+   return \%ret;
 }
 
 =item *

@@ -184,6 +184,22 @@ sub GetHost {
     return exists($hosts{$hostid})?($hosts{$hostid}):[];
 }
 
+
+BEGIN { $TYPEINFO{GetVhostType} = ["function", [ "map", "string", "any" ], "string"]; }
+sub GetVhostType {
+    my $self = shift;
+    my $hostid = shift;
+
+ return YaPI::HTTPD->getVhType($hostid);
+}
+
+
+BEGIN { $TYPEINFO{GetHost} = ["function", ["list", [ "map", "string", "any" ] ], "string"]; }
+sub getVhostType {
+    my $self = shift;
+
+}
+
 #boolean ModifyHost( string hostid, list hostdata );
 BEGIN { $TYPEINFO{ModifyHost} = ["function", "boolean", "string", ["list", [ "map", "string", "any" ] ] ]; }
 sub ModifyHost {

@@ -53,8 +53,7 @@ sub parse_vhost_files {
         close(FILE);
     } else {
         return $class->SetError(summary => sprintf( _("opening /etc/apache2/default-server.conf failed: %s"),$!),
-                                code    => "OPEN_FAILED"
-        );
+                                code    => "OPEN_FAILED");
     }
 
     for my $file ( </etc/apache2/vhosts.d/*.conf> ) {
@@ -133,12 +132,6 @@ sub parse_vhost_files {
       }
      }
    }
-
-#use Data::Dumper;
-#open(FILE2, '>>/tmp/yast.log');
-#print FILE2 "here I am\n";
-#print FILE2 Dumper(\%hash_table);
-#close(FILE2);
     return 1;
 }
 
