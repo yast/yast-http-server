@@ -207,9 +207,7 @@ sub ModifyHost {
     my $hostid = shift;
     my $hostdata = shift;
 
-    if( ! $self->checkHostmap( $hostdata ) ) {
-        return undef;
-    }
+    return undef if( ! $self->checkHostmap( $hostdata ) );
 
     my $dr;
     my $vbn;
@@ -340,7 +338,7 @@ sub DeleteHost {
                     }
                     push( @newData, $e );
                 }
-                $hosts{'default'} = \@newData;
+                $hosts{'main'} = \@newData;
             }
         }
     }
