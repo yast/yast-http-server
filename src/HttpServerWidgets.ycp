@@ -37,14 +37,12 @@
     include "http-server/helps.ycp";
 
 global string currenthost = "main";
-string directory_param_regexp = "Directory \"?([^\"]+)\"?";
 string dir_value = "";
 map getSSLOptions();
 global string init_tab = "listen";
 
 boolean update_contents = false;
 list< map<string,any> > vhost_descr = [];
-string item2listen( string network, string port );
 
   /**
    * Validate certificate
@@ -52,13 +50,9 @@ string item2listen( string network, string port );
    */
 boolean CheckCommonServerCertificate () {
     integer s = (integer)SCR::Read(.target.size, "/etc/ssl/servercerts/servercert.pem");
-    if (s <= 0) {
-        return false;
-    }
+    if (s <= 0) return false;
     s = (integer)SCR::Read(.target.size, "/etc/ssl/servercerts/serverkey.pem");
-    if (s <= 0) {
-        return false;
-    }
+    if (s <= 0) return false;
     return true;
 }
 
@@ -81,11 +75,8 @@ global any get_host_value ( string keyword, list< map<string, any> > host, any d
 	}
     });
     
-    if ( is( res, string) )
-    {
 	// drop quotes, if exist
-	res = regexpsub ( (string)res, "\"?([^\"]*)\"?", "\\1");
-    }
+    if ( is( res, string) ) res = regexpsub ( (string)res, "\"?([^\"]*)\"?", "\\1");
     
     return res;
 }
@@ -101,22 +92,13 @@ global list< map<string,any> > set_host_value ( string keyword, list< map<string
 {
     integer index = 0;
     foreach( map<string, any> option, host, ``{
-	if (option["KEY"]:nil == keyword)
-	{
-	    break;
-	}
+	if (option["KEY"]:nil == keyword) break;
 	index = index + 1;
     });
     
-    if (index >= size(host))
-    {
 	// adding a new option
-	host[index] = $[ "KEY" : keyword , "VALUE" : value ];
-    }
-    else
-    {
-	host[index, "VALUE"] = value;
-    }
+    if (index >= size(host)) host[index] = $[ "KEY" : keyword , "VALUE" : value ];
+	else host[index, "VALUE"] = value;
 
     return host;
 }
@@ -211,22 +193,16 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	}
     }
 
-    if (! FileUtils::CheckAndCreatePath( documentroot )) {
-		return false;
-	}
+    if (! FileUtils::CheckAndCreatePath( documentroot )) return false;
     boolean res = true;
 
     foreach (string host, hosts, ``{
-	if (( host == hostid ) || (hostid == "main"))
-	{
 	    // skip ourself also when this is main server
-	    continue;
-	}
-	list< map<string,any> > desc = YaST::HTTPDData::GetHost (host);
-
+	if (( host == hostid ) || (hostid == "main")) continue;
+	if (host == "main") continue;
+//	list< map<string,any> > desc = YaST::HTTPDData::GetHost (host);
 	// find out the server name
-	string value = (string)get_host_value ( "ServerName", desc, nil );
-
+	string value = (string)get_host_value ( "ServerName", YaST::HTTPDData::GetHost (host), nil );
 	if (value == servername)
 	{
 	    // error message - the entered server name is already configured 
@@ -236,39 +212,23 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	    break;
 	}
 
-	value = (string)get_host_value ("HostIP", desc, nil);
-/*
-	if (size(documentroot)<1){
-	 // error message - the entered document root is empty
-	 Report::Error (_("The root directory cannot be empty."));
-         res = false;
-         break;
-	} else 
-*/
-{
-/*
-		if ( SCR::Execute(.target.bash, "test -d " + documentroot) != 0){
-			// error message - the entered root directory is not valid directory
-	            Report::Error (_("The root directory must be an existing directory."));
-	            res = false;
-	            break;
-		 }
-*/
+//	value = (string)get_host_value ("HostIP", desc, nil);
+	map<string, any> vhost = YaST::HTTPDData::GetVhostType(host);
+
 		if (! FileUtils::CheckAndCreatePath( documentroot )){
                     res = false;
                     break;
 		  }
-		}
-
-	if (value == ip)
+//y2internal("ip1 - %1\nip2 - %2\n%3", ip, vhost["id"]:"", vhost);
+	if (vhost["id"]:"" == ip)
 	{
 	    // this is valid only if both of them are name-based, not ip-based
-	    boolean based = ((string)get_host_value ( "VirtualByName", desc, nil )) == "1";
-	    if ( ! (based && namebased) )
+//y2internal("%1\n%2", YaST::HTTPDData::GetVhostType(host)["type"]:"",  namebased);
+	    if ( YaST::HTTPDData::GetVhostType(host)["type"]:""=="name-based" && namebased )
 	    {
 		// error message - the entered ip address is already 
 		// configured for another virtual host
-		string error_msg = _("The IP address is already configured on another virtual host (")+ (string) get_host_value ( "ServerName", desc, nil ) + ")";
+		string error_msg = _("The IP address is already configured on another virtual host (")+ host + ")";
 		Report::Error (error_msg);
 		res = false;
 		break;
@@ -519,6 +479,7 @@ global boolean HostsDelete (any opt_id, string opt_key) {
 global string HostName (any key, string id)
 {
     string res = (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost((string)key), (string)key );
+    res = Punycode::DecodeDomainName(res);
     // translators: human-readable "default host"
     if (key == "default" && res == "default" ) res = _("Default Host");
     return res;
@@ -1017,6 +978,7 @@ global define symbol handleVhostId (string key, map event){
 }
 
 global boolean validateVhostId(string key, map event) ``{
+y2internal("validateVhostId");
  // FIXME: Do checks about the IP address availability
  string ip = (string) UI::QueryWidget ( `id("virtual_host"), `Value );
  string servername = Punycode::EncodeDomainName( (string) UI::QueryWidget( `id("servername"), `Value ) );
@@ -1777,23 +1739,6 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
     return `item( `id(id), address, port );
 }
 
-/**
- * Convert a Listen string to an item for table. Splits by the colon.
- *
- * @param network	network address
- * @param port		port number
- * @return string 	Listen value
- */
-define string item2listen( string network, string port ) ``{
-
-        //translators: all network addresses Listen type
-    if( network == _("All Addresses") ) network = "";
-    
-    if( size(network) > 0 ) port = network +":"+ port ;
-    
-    return port;
-}
-
     /**
      * Show a popup for editing Listen statement.
      *
@@ -1888,6 +1833,10 @@ define string item2listen( string network, string port ) ``{
 	// convert the map to list
 	list< map<string, any> > val = maplist (integer index, map<string, any> data
 	    , host_options, ``(data));
+ if (currenthost!="main"){
+  val=add(val, $["KEY":"HostIP", "VALUE":(string)UI::QueryWidget(`id(`virtual_host), `Value)] );
+  val=add(val, $["KEY":"VirtualByName", "VALUE": (UI::QueryWidget(`id(`resolution), `Value)==`ip_based)?"0":"1" ] );
+ }
 	return validate_server ( currenthost, val );
     }
 
@@ -1967,9 +1916,13 @@ define string item2listen( string network, string port ) ``{
 	options = filter (map <string,any> option, options, ``( option != nil ));
 
 	// for all host options check whether module from directive is loaded
-        foreach (map<string, any> values, options, ``{
-							checkLoadedModuleFor(values["KEY"]:"");
-							});
+        foreach (map<string, any> values, options, ``{ checkLoadedModuleFor(values["KEY"]:""); });
+
+       if (currenthost!="main")
+        {
+	 options=add(options, $["KEY":"HostIP", "VALUE":(string)UI::QueryWidget(`id(`virtual_host), `Value)] );
+	 options=add(options, $["KEY":"VirtualByName", "VALUE": (UI::QueryWidget(`id(`resolution), `Value)==`ip_based)?"0":"1" ] );
+	}
 	YaST::HTTPDData::ModifyHost (currenthost, options );
 
 	setHostOptions(nil);
@@ -2223,7 +2176,9 @@ define string item2listen( string network, string port ) ``{
 	if (option_type == "VirtualByName")
 	{
 	    UI::ChangeWidget (`id (option_type), `CurrentButton, value);
-	}
+	} else if (option_type == "ServerName"){
+                 UI::ChangeWidget (`id (option_type), `Value, Punycode::DecodeDomainName((string)value) );
+		}
 	else
 	{
 	    UI::ChangeWidget (`id (option_type), `Value, value);
@@ -2247,9 +2202,10 @@ define string item2listen( string network, string port ) ``{
 	    option_id = option_counter;
 	    option_counter = option_counter + 1;
 	}
-	
-	host_options[ (integer)option_id, "VALUE" ] = (string)UI::QueryWidget (`id (option_type), property);
-	HttpServer::modified = true;
+        string value = (string)UI::QueryWidget (`id (option_type), property);
+        if (option_type=="ServerName") value = Punycode::EncodeDomainName(value);
+        host_options[ (integer)option_id, "VALUE" ] = value;
+        HttpServer::modified = true;
     }
 
     /**
@@ -2266,7 +2222,7 @@ define string item2listen( string network, string port ) ``{
 		// translators: table entry text for name-based vhosts
 		return _("Resolution via HTTP Headers");
 	    }
-	    else 
+	    else
 	    {
 		// translators: table entry text for IP-based vhosts
 		return _("Resolution via IP Address Used");
@@ -2275,8 +2231,10 @@ define string item2listen( string network, string port ) ``{
 	else if (option_type == "Directory")
 	{
 	    return host_options[ (integer)option_id, "VALUE" ]:"" + "...";
-	}
-	else 
+	} else if (option_type == "ServerName"){
+                return Punycode::DecodeDomainName(host_options[ (integer)option_id, "VALUE" ]: "");
+		}
+	else
 	{
 	    return host_options[ (integer)option_id, "VALUE" ]: "";
 	}

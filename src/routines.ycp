@@ -92,21 +92,6 @@ global define map listen2map( string arg ) ``{
     return $[ "port": port, "address": address ];
 }
 
-/**
- * Convert a Listen string to an item for table. Splits by the colon.
- *
- * @param network	network address
- * @param port		port number
- * @return string 	Listen value
- */
-global define string item2listen( string network, string port ) ``{
-
-    if( network == _("All Addresses") ) network = "";
-    
-    if( size(network) > 0 ) port = network +":"+ port ;
-    
-    return port;
-}
 
 /* EOF */
 }
