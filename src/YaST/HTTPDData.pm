@@ -220,16 +220,19 @@ sub ModifyHost {
             $vbn = $h->{VALUE};
         }
     }
-    $hosts{$hostid} = $hostdata;
+#    $hosts{$hostid} = $hostdata;
+if ($hostid ne 'main')
+ {
+    YaPI::HTTPD->modifyVH($hostid, $hostdata);
 
     foreach my $h ( @{$hosts{$hostid}} ) {
-        if( $h->{KEY} eq 'DocumentRoot' ) {
-            if( $dr ne $h->{VALUE} ) {
+#        if( $h->{KEY} eq 'DocumentRoot' ) {
+#            if( $dr ne $h->{VALUE} ) {
 #                $self->delDir( $dr );
-#print FILE Dumper( $h->{VALUE} );
 #                $self->addDir( $h->{VALUE} );
-            }
-        } elsif( $h->{KEY} eq 'VirtualByName' ) {
+#            }
+#        } els
+	if( $h->{KEY} eq 'VirtualByName' ) {
             if( $vbn ne $h->{VALUE} ) {
                 $hostid =~ /^([^\/]+)/;
                 my $vhost = $1;
@@ -252,9 +255,8 @@ sub ModifyHost {
         }
     }
 
-#print FILE Dumper($hosts{$hostid});
-#close(FILE);
     $dirty{MODIFIED}->{$hostid} = 1 unless( exists($dirty{NEW}->{$hostid}) );
+ }
     return 1;
 }
 

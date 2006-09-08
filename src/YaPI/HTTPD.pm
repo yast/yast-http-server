@@ -457,15 +457,25 @@ sub getVhType {
 	 case "ip-based" {
 	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
 	           foreach my $hostentryHash ( @$hostList ) {
-	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)) { %ret = (type => 'ip-based', id => $hostentryHash->{HostIP}); }
+	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)) 
+			{
+			 %ret = (type => 'ip-based', id => $hostentryHash->{HostIP});
+			}
 	          }
 		 }
 		}
-	 case "main" { if (( defined($vhost_files->{'main'}{HOSTID}) ) && ($vhost_files->{'main'}{HOSTID} eq $hostid)) { %ret = (type => 'main');  } }
+	 case "main" { if (( defined($vhost_files->{'main'}{HOSTID}) ) && ($vhost_files->{'main'}{HOSTID} eq $hostid)) 
+			{
+			 %ret = (type => 'main');
+			}
+		     }
 	 else { 
 	       foreach my $hostList ( $vhost_files->{$key} ) {
 	           foreach my $hostentryHash ( @$hostList ) {
-	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)){ %ret = (type => 'name-based',id => $hostentryHash->{HostIP}); }
+	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid))
+			{
+			 %ret = (type => 'name-based',id => $hostentryHash->{HostIP});
+			}
 	           }
 		  }
 		 }
@@ -473,6 +483,40 @@ sub getVhType {
       }
    return \%ret;
 }
+
+
+
+sub modifyVH {
+    my $self = shift;
+    my $hostid = shift;
+    my $data = shift;
+    my $type = "";
+    my $ip = "";
+
+open(FILE, ">>/tmp/yast.log");
+
+ my @newdata = ();
+ foreach my $row (@{$data}){
+  if ($row->{KEY} eq 'HostIP' ) {
+    $ip = $row->{VALUE};
+   } elsif ($row->{KEY} eq 'VirtualByName' ) {
+	 $type = $row->{VALUE};		
+	}else {
+	 	push(@newdata, $row);
+	}
+ }
+
+
+print FILE Dumper($self->getVhType($hostid));
+print FILE Dumper(\@newdata);
+print FILE Dumper($ip, $type);
+print FILE "-----------------\n";
+close(FILE);
+
+}
+
+
+
 
 =item *
 C<ModifyHost($hostid,$hostdata)>
