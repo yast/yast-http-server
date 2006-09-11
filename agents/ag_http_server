@@ -153,24 +153,24 @@ sub parse_listen_conf {
     }
 }
 
-sub parse_module_selection() {
-    my $class = shift;
+#sub parse_module_selection() {
+#    my $class = shift;
 #    my $dir = Directory::vardir();
-    my $dir = "/var/lib/YaST2/"; # FIXME: calling Directory::vardir later
-    my @ret = ();
+#    my $dir = "/var/lib/YaST2/"; # FIXME: calling Directory::vardir later
+#    my @ret = ();
 
-    if( open(FILE, "< $dir/httpd_active_module_selections.conf") ) {
-        @ret = <FILE>;
-        chomp(@ret);
-        close(FILE);
-    } else {
-        return $class->SetError( summary => sprintf(_("unable to open file %s/httpd_active_module_selections.conf for reading: %s"),$dir,$!),
-                                 code    => "OPEN_FAILED"
-        );
-    }
+#    if( open(FILE, "< $dir/httpd_active_module_selections.conf") ) {
+#        @ret = <FILE>;
+#        chomp(@ret);
+#       close(FILE);
+#    } ELse {
+#        return $class->SetError( summary => sprintf(_("unable to open file %s/httpd_active_module_selections.conf for reading: %s"),$dir,$!),
+#                                 code    => "OPEN_FAILED"
+#        );
+#    }
 
-    return \@ret;
-}
+#    return \@ret;
+#}
 
 sub write_module_selection {
     my $class = shift;
@@ -330,9 +330,10 @@ sub Read {
     } elsif( $path eq '.listen' )  {
         $class->parse_listen_conf();
         return [ keys(%listen) ];
-    } elsif( $path eq '.moduleselection' ) {
-        return [ $class->parse_module_selection() ];
-    }
+    } 
+#elsif( $path eq '.moduleselection' ) {
+#        return [ $class->parse_module_selection() ];
+#    }
 }
 
 sub Write {

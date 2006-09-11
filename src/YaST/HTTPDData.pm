@@ -1,6 +1,5 @@
 package YaST::HTTPDData;
 use YaST::YCP;
-BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
 use YaPI::HTTPDModules;
 use YaPI::HTTPD;
 use YaST::httpdUtils;
@@ -172,7 +171,7 @@ sub ReadService {
 BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
     my $self = shift;
-    return [keys(%hosts)];
+    return YaPI::HTTPD->GetHostsList(); #[keys(%hosts)];
 }
 
 #map GetHost( string hostid );
@@ -221,6 +220,7 @@ sub ModifyHost {
 #    $hosts{$hostid} = $hostdata;
 if ($hostid ne 'main')
  {
+    
     YaPI::HTTPD->modifyVH($hostid, $hostdata);
 
     foreach my $h ( @{$hosts{$hostid}} ) {
@@ -295,7 +295,8 @@ sub CreateHost {
 
 
 push(@$hostdata, $dir) if ($dir);
-    $hosts{$hostid} = $hostdata;
+#    $hosts{$hostid} = $hostdata;
+    YaPI::HTTPD->createVH($hostid, $hostdata);
     $dirty{NEW}->{$hostid} = 1;
     delete($dirty{DEL}->{$hostid});
     delete($dirty{MODIFIED}->{$hostid});

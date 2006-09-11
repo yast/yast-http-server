@@ -114,7 +114,7 @@ global boolean validate_servername (any id, string key, map event)
 {
     import "Hostname";
     import "Punycode";
-    string value = Punycode::EncodeDomainName( (string)UI::QueryWidget (`id (key), `Value) );
+    string value = Punycode::EncodeDomainName( (string)UI::QueryWidget (`servername, `Value) );
     if (!Hostname::CheckFQ (value))
     {
 	//translators: popup error message when validate servername
@@ -405,7 +405,7 @@ switch. Otherwise click Cancel not to change
 the default host.
 ")),
 	    // translators: textentry to set the host name
-	    `TextEntry (`id ("servername"), _("Server &Name:"), servername),
+	    `TextEntry (`servername, _("Server &Name:"), servername),
 	    // translators: textentry to set the host IP address
 	    `Left( `ComboBox( `id("ip"), `opt(`editable), _("Server &IP Address:"), ips ) ),
 	    `VSpacing(0.5),
@@ -413,7 +413,7 @@ the default host.
 		`PushButton (`id(`cancel), Label::CancelButton ()) )
 	));
 
-    UI::SetFocus (`id("servername"));
+    UI::SetFocus (`servername);
     UI::ChangeWidget (`id("ip"), `Value, ip);
 
     symbol ret = nil;
@@ -426,7 +426,7 @@ the default host.
 	// it must be `ok
 	if (! validate_servername("servername","", nil)) continue;
 
-	servername = (string)UI::QueryWidget (`id("servername"), `Value);
+	servername = (string)UI::QueryWidget (`servername, `Value);
 
 	if (! validate_serverip("ip",nil,nil)) continue;
 	ip = (string)UI::QueryWidget (`id("ip"), `Value);
@@ -961,12 +961,12 @@ global void initVhostId(string key){
                 string servername = ""; foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "ServerName") servername = row["VALUE"]:"";});
                 string documentroot = ""; foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "DocumentRoot") documentroot = row["VALUE"]:"";});
                 string admin = ""; foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "ServerAdmin") admin = row["VALUE"]:"";});
-		if (size(servername)>0) UI::ChangeWidget(`id("servername"), `Value, Punycode::DecodeDomainName(servername));
+		if (size(servername)>0) UI::ChangeWidget(`servername, `Value, Punycode::DecodeDomainName(servername));
 		if (size(documentroot)>0) UI::ChangeWidget(`documentroot, `Value, documentroot);
 		if (size(admin)>0) UI::ChangeWidget(`admin, `Value, admin);
 	}
 
-	UI::SetFocus (`id("servername"));
+	UI::SetFocus (`servername);
 }
 
 global define symbol handleVhostId (string key, map event){
@@ -978,17 +978,16 @@ global define symbol handleVhostId (string key, map event){
 }
 
 global boolean validateVhostId(string key, map event) ``{
-y2internal("validateVhostId");
  // FIXME: Do checks about the IP address availability
- string ip = (string) UI::QueryWidget ( `id("virtual_host"), `Value );
- string servername = Punycode::EncodeDomainName( (string) UI::QueryWidget( `id("servername"), `Value ) );
+ string ip = (string) UI::QueryWidget ( `virtual_host, `Value );
+ string servername = Punycode::EncodeDomainName( (string) UI::QueryWidget( `servername, `Value ) );
  string documentroot = (string) UI::QueryWidget( `documentroot, `Value );
  string admin = (string) UI::QueryWidget( `admin, `Value );
  boolean virtualbyname = (boolean) UI::QueryWidget( `name_based, `Value );
 
     if (! validate_servername("", "servername", nil)) return false;
 
-     if (! validate_serverip("ipaddress",nil,nil)) return false;
+//     if (! validate_serverip("", "ipaddress", nil)) return false;
 
      if ( size(admin) == 0 )
      {
@@ -1241,7 +1240,9 @@ global define void storeVhostDetails (string key, map events) ``{
 
   if (size(ssl_values)>0) vhost_descr = add(vhost_descr, ssl_values);
 
+y2internal("%1", vhost_descr);
   any result = YaST::HTTPDData::CreateHost ( ip["VALUE"]:""+"/"+servername["VALUE"]:"", vhost_descr );
+
 
   y2milestone ("%1", result);
   if ( result == nil)
@@ -1269,6 +1270,7 @@ global define void storeVhostDetails (string key, map events) ``{
 
 //				YaST::HTTPDData::ModifyHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"", tmp_descr);
 			}
+y2internal("host values %1", YaST::HTTPDData::GetHost(ip["VALUE"]:""+"/"+servername["VALUE"]:""));
 			HttpServer::modified = true;
 			vhost_descr = [];
 		 }
@@ -1466,7 +1468,7 @@ global map<string, map <string, any> > widgets = $[
 		_("Server Identification"),
 		`VBox(
 		    // translators: textentry, new host server name
-		    `TextEntry( `id( "servername" ), _("Server &Name:") ),
+		    `TextEntry( `id( `servername ), _("Server &Name:") ),
 		    `HBox(
 			// translators: textentry, document root for the new host
 			`TextEntry( `id( `documentroot ), _("Server &Contents Root:") ),

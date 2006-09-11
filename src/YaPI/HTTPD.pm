@@ -261,7 +261,6 @@ B<Example Code using the API>
 
  use strict;
  # add YaST2 module path to the perl module path
- BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
 
  # load the HTTPD API
  use YaPI::HTTPD;
@@ -297,7 +296,6 @@ B<Example Code using the API>
 =cut
 
 package YaPI::HTTPD;
-BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
 use Switch;
 use Data::Dumper;
 use YaPI;
@@ -350,22 +348,24 @@ BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
     my $self = shift;
     my @ret = ();
-    my @data = $self->readHosts();
+#    my @data = @{$vhost_files}; #$self->readHosts();
+if ($vhost_files eq 0){
+ $vhost_files = $self->readHosts()->[0];
+}
 
-   if( ref($data[0]) eq 'HASH' ) {
-     foreach my $key ( keys(%{$data[0]}) ) {
+     foreach my $key ( keys(%{$vhost_files}) ) {
 	switch($key)
 	 {
 	 case "ip-based" {
-	       foreach my $hostList ( $data[0]->{'ip-based'} ) {
+	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
 	           foreach my $hostentryHash ( @$hostList ) {
 	               push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
 	          }
 		 }
 		}
-	 case "main" { push( @ret, $data[0]->{'main'}{HOSTID} ) if( defined($data[0]->{'main'}{HOSTID}) ); }
+	 case "main" { push( @ret, $vhost_files->{'main'}{HOSTID} ) if( defined($vhost_files->{'main'}{HOSTID}) ); }
 	 else { 
-	       foreach my $hostList ( $data[0]->{$key} ) {
+	       foreach my $hostList ( $vhost_files->{$key} ) {
 	           foreach my $hostentryHash ( @$hostList ) {
 	               push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
 	           }
@@ -373,9 +373,6 @@ sub GetHostsList {
 		 }
 	 }	
      }
-   } else {
-            return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
-          }
     return \@ret;
 }
 
@@ -417,7 +414,7 @@ sub GetHost {
 
     if( ref($data[0]) eq 'HASH' ) { $vhost_files = $data[0]; } 
 	else { return $self->SetError( %{SCR->Error(".http_server.vhosts")} ); }
-    my $ret="";
+    my $ret=undef;
     foreach my $key ( keys( %{$data[0]} ) ){
 	switch($key)
 	 {
@@ -442,7 +439,11 @@ sub GetHost {
 		 }
 	 }	
       }
-   return [ @{$ret->{'DATA'}} ];
+  if (defined $ret){
+    return [ @{$ret->{'DATA'}} ];
+   } else {
+	return [];
+	}
 }
 
 BEGIN { $TYPEINFO{getVhType} = ["function", [ "map", "string", "any" ], "string"]; }
@@ -483,6 +484,34 @@ sub getVhType {
       }
    return \%ret;
 }
+
+sub createVH(){
+    my $self = shift;
+    my $hostid = shift;
+    my $data = shift;
+
+    my $type = "";
+    my $ip = "";
+
+ my @newdata = ();
+ foreach my $row (@{$data}){
+  if ($row->{KEY} eq 'HostIP' ) {
+    $ip = $row->{VALUE};
+   } elsif ($row->{KEY} eq 'VirtualByName' ) {
+	 $type = $row->{VALUE};		
+	}else {
+	 	push(@newdata, $row);
+	}
+ }
+
+#  deleteVH() if (@{$self->GetHost($hostid)} ne 0);
+ 
+# if ($type eq "0"){
+#   $vhost_files->{$ip} = @newdata;
+#  }
+
+}
+
 
 sub deleteVH(){
     my $self = shift;
@@ -1029,11 +1058,11 @@ EXAMPLE
 
 =cut
 
-BEGIN { $TYPEINFO{GetModuleSelectionsList} = ["function", ["list","string"] ]; }
-sub GetModuleSelectionsList {
-    my $self = shift;
-    return (SCR->Read('.http_server.moduleselection'))[0];
-}
+#BEGIN { $TYPEINFO{GetModuleSelectionsList} = ["function", ["list","string"] ]; }
+#sub GetModuleSelectionsList {
+#    my $self = shift;
+#    return (SCR->Read('.http_server.moduleselection'))[0];
+#}
 
 =item *
 C<ModifyModuleSelectionList($selList, $status)>
@@ -1051,30 +1080,30 @@ EXAMPLE
 
 =cut
 
-BEGIN { $TYPEINFO{ModifyModuleSelectionList} = ["function", "boolean", ["list","string"], "boolean" ]; }
-sub ModifyModuleSelectionList {
-    my $self = shift;
-    my $newSelection = shift;
-    my $enable = shift;
-    my %uniq = ();
+#BEGIN { $TYPEINFO{ModifyModuleSelectionList} = ["function", "boolean", ["list","string"], "boolean" ]; }
+#sub ModifyModuleSelectionList {
+#    my $self = shift;
+#    my $newSelection = shift;
+#    my $enable = shift;
+#    my %uniq = ();
 
-    @uniq{@{$self->GetModuleSelectionsList()}} = ();
-    if( $enable ) {
-        @uniq{@$newSelection} = ();
-        foreach my $ns ( @$newSelection ) {
-            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 1 );
-            $self->ModifyModuleList( [], 1 );
-        }
-    } else {
-        delete(@uniq{@$newSelection});
-        foreach my $ns ( @$newSelection ) {
-            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 0 );
-            $self->ModifyModuleList( [], 1 );
-        }
-    }
+#    @uniq{@{$self->GetModuleSelectionsList()}} = ();
+#    if( $enable ) {
+#        @uniq{@$newSelection} = ();
+#        foreach my $ns ( @$newSelection ) {
+#            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 1 );
+#            $self->ModifyModuleList( [], 1 );
+#        }
+#    } else {
+#        delete(@uniq{@$newSelection});
+#        foreach my $ns ( @$newSelection ) {
+#            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 0 );
+#            $self->ModifyModuleList( [], 1 );
+#        }
+#    }
 
-    SCR->Write('.http_server.moduleselection', [keys(%uniq)]);
-}
+#    SCR->Write('.http_server.moduleselection', [keys(%uniq)]);
+#}
 
 #######################################################
 # apache2 modules API end
