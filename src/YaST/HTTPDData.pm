@@ -180,7 +180,7 @@ sub GetHost {
     my $self = shift;
     my $hostid = shift;
 
-    return exists($hosts{$hostid})?($hosts{$hostid}):[];
+    return YaPI::HTTPD->GetHost($hostid); #exists($hosts{$hostid})?($hosts{$hostid}):[];
 }
 
 
@@ -208,50 +208,51 @@ sub ModifyHost {
 
     return undef if( ! $self->checkHostmap( $hostdata ) );
 
-    my $dr;
-    my $vbn;
-    foreach my $h ( @{$hosts{$hostid}} ) {
-        if( $h->{KEY} eq 'DocumentRoot' ) {
-            $dr = $h->{VALUE};
-        } elsif( $h->{KEY} eq 'VirtualByName' ) {
-            $vbn = $h->{VALUE};
-        }
-    }
+#    my $dr;
+#    my $vbn;
+#    foreach my $h ( @{$hosts{$hostid}} ) {
+#        if( $h->{KEY} eq 'DocumentRoot' ) {
+#            $dr = $h->{VALUE};
+#        } elsif( $h->{KEY} eq 'VirtualByName' ) {
+#            $vbn = $h->{VALUE};
+#        }
+#    }
 #    $hosts{$hostid} = $hostdata;
 if ($hostid ne 'main')
  {
-    
+
     YaPI::HTTPD->modifyVH($hostid, $hostdata);
 
-    foreach my $h ( @{$hosts{$hostid}} ) {
+
+#    foreach my $h ( @{$hosts{$hostid}} ) {
 #        if( $h->{KEY} eq 'DocumentRoot' ) {
 #            if( $dr ne $h->{VALUE} ) {
 #                $self->delDir( $dr );
 #                $self->addDir( $h->{VALUE} );
 #            }
 #        } els
-	if( $h->{KEY} eq 'VirtualByName' ) {
-            if( $vbn ne $h->{VALUE} ) {
-                $hostid =~ /^([^\/]+)/;
-                my $vhost = $1;
-                if( $h->{VALUE} == 1 and $self->getNVH( $vhost ) == 0 ) {
-                    push( @{$hosts{'main'}}, { KEY => 'NameVirtualHost', VALUE => $1 } );
-                } elsif( $h->{VALUE} == 0 and $self->getNVH( $vhost ) == 1 ) {
-                    my @newData = ();
-                    while( my $e = shift(@{$hosts{'main'}}) ) {
-                        if( $e->{KEY} eq 'NameVirtualHost' and
-                            $e->{VALUE} eq $vhost ) {
-                            push( @newData, @{$hosts{'main'}} );
-                            last;
-                        }
-                        push( @newData, $e );
-                    }
-                    $hosts{'main'} = \@newData;
-                }
-                $dirty{MODIFIED}->{'main'} = 1;
-            }
-        }
-    }
+#	if( $h->{KEY} eq 'VirtualByName' ) {
+#            if( $vbn ne $h->{VALUE} ) {
+#                $hostid =~ /^([^\/]+)/;
+#                my $vhost = $1;
+#                if( $h->{VALUE} == 1 and $self->getNVH( $vhost ) == 0 ) {
+#                    push( @{$hosts{'main'}}, { KEY => 'NameVirtualHost', VALUE => $1 } );
+#               } elsif( $h->{VALUE} == 0 and $self->getNVH( $vhost ) == 1 ) {
+#                    my @newData = ();
+#                    while( my $e = shift(@{$hosts{'main'}}) ) {
+#                        if( $e->{KEY} eq 'NameVirtualHost' and
+#                            $e->{VALUE} eq $vhost ) {
+#                            push( @newData, @{$hosts{'main'}} );
+#                            last;
+#                        }
+#                        push( @newData, $e );
+#                    }
+#                    $hosts{'main'} = \@newData;
+#                }
+#                $dirty{MODIFIED}->{'main'} = 1;
+#            }
+#        }
+#    }
 
     $dirty{MODIFIED}->{$hostid} = 1 unless( exists($dirty{NEW}->{$hostid}) );
  }
@@ -269,21 +270,19 @@ sub CreateHost {
         return undef;
     }
 #use Data::Dumper;
-#open(FILE, ">>/tmp/yast.log");
-    foreach my $h ( @$hostdata ) {
-        if( $h->{KEY} eq 'DocumentRoot' ) {
-            $dir=$self->addDir($h->{VALUE});
-        } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
-            $hostid =~ /^([^\/]+)/;
-            my $v = $1;
-            if( $self->getNVH( $v ) == 0 ) {
-                push( @{$hosts{'main'}}, { KEY => 'NameVirtualHost', VALUE => $v } );
-                $dirty{MODIFIED}->{'main'} = 1;
-            }
-        } 
-    }
+#    foreach my $h ( @$hostdata ) {
+#        if( $h->{KEY} eq 'DocumentRoot' ) {
+#            $dir=$self->addDir($h->{VALUE});
+#        } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
+#            $hostid =~ /^([^\/]+)/;
+#            my $v = $1;
+#            if( $self->getNVH( $v ) == 0 ) {
+#                push( @{$hosts{'main'}}, { KEY => 'NameVirtualHost', VALUE => $v } );
+#                $dirty{MODIFIED}->{'main'} = 1;
+#            }
+#        } 
+#    }
 
-#print FILE Dumper(\%hosts);
  # don't create Directory for DocumentRoot, if already exists
  if ($dir ne ""){
   foreach my $row (@$hostdata) {
@@ -300,8 +299,6 @@ push(@$hostdata, $dir) if ($dir);
     $dirty{NEW}->{$hostid} = 1;
     delete($dirty{DEL}->{$hostid});
     delete($dirty{MODIFIED}->{$hostid});
-#print FILE Dumper(YaPI::HTTPD->GetHostsList());
-close(FILE);
     return 1;
 
 }
@@ -344,6 +341,7 @@ sub DeleteHost {
         }
     }
     delete( $hosts{$hostid} );
+    YaPI::HTTPD->deleteVH($hostid);
     $dirty{DEL}->{$hostid} = 1 unless( exists( $dirty{NEW}->{$hostid} ) );
     delete($dirty{NEW}->{$hostid});
     delete($dirty{MODIFIED}->{$hostid});

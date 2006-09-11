@@ -1923,7 +1923,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
        if (currenthost!="main")
         {
 	 options=add(options, $["KEY":"HostIP", "VALUE":(string)UI::QueryWidget(`id(`virtual_host), `Value)] );
-	 options=add(options, $["KEY":"VirtualByName", "VALUE": (UI::QueryWidget(`id(`resolution), `Value)==`ip_based)?"0":"1" ] );
+	 options=add(options, $["KEY":"VirtualByName", "VALUE": (UI::QueryWidget(`id(`resolution), `Value)==`name_based)?"1":"0" ] );
 	}
 	YaST::HTTPDData::ModifyHost (currenthost, options );
 
