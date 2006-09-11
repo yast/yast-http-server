@@ -321,7 +321,7 @@ use Errno qw(ENOENT);
 #######################################################
 # default and vhost API start
 #######################################################
-my $vhost_files;
+my $vhost_files = undef;
 
 =item *
 C<$hostList = GetHostsList();>
@@ -348,9 +348,9 @@ BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
     my $self = shift;
     my @ret = ();
-#    my @data = @{$vhost_files}; #$self->readHosts();
-if ($vhost_files eq 0){
- $vhost_files = $self->readHosts()->[0];
+ if (!defined $vhost_files ){
+ my @data = $self->readHosts();
+ $vhost_files = $data[0];
 }
 
      foreach my $key ( keys(%{$vhost_files}) ) {
@@ -410,16 +410,21 @@ sub GetHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = $self->readHosts();
 
-    if( ref($data[0]) eq 'HASH' ) { $vhost_files = $data[0]; } 
-	else { return $self->SetError( %{SCR->Error(".http_server.vhosts")} ); }
+ if (!defined $vhost_files ){
+ my @data = $self->readHosts();
+ $vhost_files = $data[0];
+}
+#    my @data = $self->readHosts();
+
+#    if( ref($vhost_files) eq 'HASH' ) { $vhost_files = $data[0]; } 
+#	else { return $self->SetError( %{SCR->Error(".http_server.vhosts")} ); }
     my $ret=undef;
-    foreach my $key ( keys( %{$data[0]} ) ){
+    foreach my $key ( keys( %{$vhost_files} ) ){
 	switch($key)
 	 {
 	 case "ip-based" {
-	       foreach my $hostList ( $data[0]->{'ip-based'} ) {
+	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
 	           foreach my $hostentryHash ( @$hostList ) {
 	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)){
 				$ret = $hostentryHash;
@@ -427,9 +432,9 @@ sub GetHost {
 	          }
 		 }
 		}
-	 case "main" { if (( defined($data[0]->{'main'}{HOSTID}) ) && ($data[0]->{'main'}{HOSTID} eq $hostid)) {$ret = $data[0]->{'main'};  } }
+	 case "main" { if (( defined($vhost_files->{'main'}{HOSTID}) ) && ($vhost_files->{'main'}{HOSTID} eq $hostid)) {$ret = $vhost_files->{'main'};  } }
 	 else { 
-	       foreach my $hostList ( $data[0]->{$key} ) {
+	       foreach my $hostList ( $vhost_files->{$key} ) {
 	           foreach my $hostentryHash ( @$hostList ) {
 	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)){
 				$ret = $hostentryHash;
@@ -490,20 +495,32 @@ sub createVH(){
     my $hostid = shift;
     my $data = shift;
 
-    my $type = "";
+    my $byname = "";
     my $ip = "";
+    my $servername = "";
 
  my @newdata = ();
  foreach my $row (@{$data}){
   if ($row->{KEY} eq 'HostIP' ) {
     $ip = $row->{VALUE};
    } elsif ($row->{KEY} eq 'VirtualByName' ) {
-	 $type = $row->{VALUE};		
+	 $byname = $row->{VALUE};		
 	}else {
+		$servername = $row->{VALUE} if ($row->{KEY} eq 'ServerName');
 	 	push(@newdata, $row);
 	}
  }
 
+
+ if ($byname eq 0){
+	 push(@{$vhost_files->{'ip-based'}},  {HOSTID => "$ip/$servername", HostIP => $ip, DATA => \@newdata});
+	} else {
+		 $vhost_files->{$ip} =  [{HOSTID => "$ip/$servername", HostIP => $ip, DATA => \@newdata}];
+		}
+
+
+
+#$vhost_files->{$ip} = \@newdata;
 #  deleteVH() if (@{$self->GetHost($hostid)} ne 0);
  
 # if ($type eq "0"){
@@ -517,82 +534,71 @@ sub deleteVH(){
     my $self = shift;
     my $hostid = shift;
 
-open(FILE, ">>/tmp/yast.log");
-
     foreach my $key ( keys( %{$vhost_files} ) ){
 	switch($key)
 	 {
 	 case "ip-based" {
 	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
-print FILE Dumper("-----------");
-print FILE Dumper($vhost_files->{'ip-based'}, $hostList);
-print FILE Dumper("-----------");
-		   my $tmp_list = ();
-	           foreach my $hostentryHash ( @$hostList ) {
-	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)) 
-			{
-#			 %ret = (type => 'ip-based', id => $hostentryHash->{HostIP});
-			} else {
-				push(@{$tmp_list}, $hostList);
-				}
-#			$vhost_files->{'ip-based'} = $tmp_list;
-	          }
+		   my @tmp_list = ();
+	           foreach my $hostentryHash ( @$hostList ) { push(@tmp_list, $hostentryHash) if ($hostid ne $hostentryHash->{HOSTID}); }
+			$vhost_files->{'ip-based'} = \@tmp_list;
 		 }
 		}
-	 case "main" { if (( defined($vhost_files->{'main'}{HOSTID}) ) && ($vhost_files->{'main'}{HOSTID} eq $hostid)) 
-			{
-#			 %ret = (type => 'main');
-			 delete $vhost_files->{'main'};
-			}
-		     }
+	 case "main" { delete $vhost_files->{'main'} if ($hostid eq 'main'); }
 	 else { 
 	       foreach my $hostList ( $vhost_files->{$key} ) {
-	           foreach my $hostentryHash ( @$hostList ) {
-	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid))
-			{
-#			 %ret = (type => 'name-based',id => $hostentryHash->{HostIP});
-			}
-	           }
+	           foreach my $hostentryHash ( @$hostList ) { delete ($vhost_files->{$key}) if ($hostentryHash->{HOSTID} eq $hostid); }
 		  }
-		 }
+	      }
 	 }	
       }
-close(FILE);
-
 }
 
 sub modifyVH {
     my $self = shift;
     my $hostid = shift;
     my $data = shift;
-    my $type = "";
-    my $ip = "";
+#    my $type = "";
+#    my $ip = "";
 
-open(FILE, ">>/tmp/yast.log");
 
- my @newdata = ();
- foreach my $row (@{$data}){
-  if ($row->{KEY} eq 'HostIP' ) {
-    $ip = $row->{VALUE};
-   } elsif ($row->{KEY} eq 'VirtualByName' ) {
-	 $type = $row->{VALUE};		
-	}else {
-	 	push(@newdata, $row);
-	}
- }
+# my @newdata = ();
+# foreach my $row (@{$data}){
+#  if ($row->{KEY} eq 'HostIP' ) {
+#    $ip = $row->{VALUE};
+#   } elsif ($row->{KEY} eq 'VirtualByName' ) {
+#	 $type = $row->{VALUE};		
+#	}else {
+#	 	push(@newdata, $row);
+#	}
+# }
 
  $self->deleteVH($hostid);
-
-#print FILE Dumper($self->getVhType($hostid));
-#print FILE Dumper(\@newdata);
-#print FILE Dumper($ip, $type);
-#print FILE Dumper($vhost_files);
-print FILE "-----------------\n";
-close(FILE);
+ $self->createVH($hostid, $data);
+ $self->validateNVH();
 
 }
 
+sub validateNVH(){
 
+    my @nb = ();
+    foreach my $key ( keys( %{$vhost_files} ) ){
+     if(($key ne 'ip-based') && ($key ne 'main')){
+	push(@nb, $key);
+       }
+      }
+ my @tmp_data=();
+ foreach my $row (@{$vhost_files->{main}{DATA}}){
+  push(@tmp_data, $row) if ($row->{KEY} ne 'NameVirtualHost');
+ }
+ $vhost_files->{main}{DATA} = \@tmp_data;
+
+
+foreach my $ip (@nb){
+ push(@{$vhost_files->{main}{DATA}}, {KEY=>'NameVirtualHost', VALUE=>$ip} );
+}
+
+}
 
 
 =item *
