@@ -490,7 +490,7 @@ sub getVhType {
    return \%ret;
 }
 
-sub createVH(){
+sub createVH (){
     my $self = shift;
     my $hostid = shift;
     my $data = shift;
@@ -530,7 +530,7 @@ sub createVH(){
 }
 
 
-sub deleteVH(){
+sub deleteVH (){
     my $self = shift;
     my $hostid = shift;
 
@@ -579,7 +579,7 @@ sub modifyVH {
 
 }
 
-sub validateNVH(){
+sub validateNVH (){
 
     my @nb = ();
     foreach my $key ( keys( %{$vhost_files} ) ){
@@ -877,6 +877,120 @@ sub DeleteHost {
         delete($vhost_files->{$filename}); # drop empty file
     }
     return $self->writeHost( $filename, $vhost_files );
+}
+
+sub writeHosts (){
+    my $self = shift;
+
+my %data = ( 'default-server.conf' => [
+                                     {
+                                       'VirtualByName' => 0,
+                                       'HOSTID' => 'main',
+                                       'DATA' => [
+                                                   { 'KEY' => 'DocumentRoot', 'VALUE' => '/tmp/default/' },
+                                                   { 'KEY' => 'ServerName', 'VALUE' => 'xn--mj-8ja' },
+                                                   { 'KEY' => 'ServerAdmin', 'VALUE' => 'admin@sdf.sdf' },
+                                                   { 'KEY' => 'NameVirtualHost', 'VALUE' => '*:80' },
+                                                   { 'KEY' => 'NameVirtualHost', 'VALUE' => '10.20.1.28' }
+                                                 ]
+                                     }
+                                   ],
+         'yast2_vhosts.conf' => [
+                                   {
+                                     'VirtualByName' => 0,
+                                     'HOSTID' => '127.0.0.1/_default_',
+                                     'HostIP' => '127.0.0.1',
+                                     'DATA' => [
+                                                 { 'KEY' => 'DocumentRoot', 'VALUE' => '/tmp/web/first/' },
+                                                 { 'KEY' => 'ServerName', 'VALUE' => '_default_', 'OVERHEAD' => '# ServerName localhost ' },
+                                                 { 'KEY' => 'ServerAdmin', 'VALUE' => 'second@adf.sd' },
+                                                 {
+                                                   'SECTIONNAME' => 'Directory',
+                                                   'KEY' => '_SECTION',
+                                                   'VALUE' => [
+                                                                { 'KEY' => 'Options', 'VALUE' => 'None' },
+                                                                { 'KEY' => 'AllowOverride', 'VALUE' => 'None' },
+                                                                { 'KEY' => 'Order', 'VALUE' => 'allow,deny' },
+                                                                { 'KEY' => 'Allow', 'VALUE' => 'from all' }
+                                                              ],
+                                                   'OVERHEAD' => '# YaST created entry
+',
+                                                   'SECTIONPARAM' => '"/tmp/web/first/"'
+                                                 }
+                                               ]
+                                   },
+                                  {
+                                     'VirtualByName' => 1,
+                                     'HOSTID' => '*:80/urchin',
+                                     'HostIP' => '*:80',
+                                     'DATA' => [
+                                                 { 'KEY' => 'DocumentRoot', 'VALUE' => '/tmp/web/second/' },
+                                                 { 'KEY' => 'ServerName', 'VALUE' => 'urchin' },
+                                                 { 'KEY' => 'ServerAdmin', 'VALUE' => 'second@adf.sd' },
+                                                 { 'SECTIONNAME' => 'Directory', 'KEY' => '_SECTION',
+                                                   'VALUE' => [
+                                                                { 'KEY' => 'Options', 'VALUE' => 'None' },
+                                                                { 'KEY' => 'AllowOverride', 'VALUE' => 'None' },
+                                                                { 'KEY' => 'Order', 'VALUE' => 'allow,deny' },
+                                                                { 'KEY' => 'Allow', 'VALUE' => 'from all' }
+                                                              ],
+                                                   'OVERHEAD' => '# YaST created entry
+',
+                                                   'SECTIONPARAM' => '"/tmp/web/second/"'
+                                                 }
+                                               ]
+                                   },
+                                   {
+                                     'VirtualByName' => 0,
+                                     'HOSTID' => '"svrName"/svrName',
+                                     'HostIP' => '"svrName"',
+                                     'DATA' => [
+                                                 { 'KEY' => 'DocumentRoot', 'VALUE' => '/tmp/web/third/' },
+                                                 { 'KEY' => 'ServerName', 'VALUE' => 'svrName' },
+                                                 { 'KEY' => 'ServerAdmin', 'VALUE' => 'second@adf.sd' },
+                                                 { 'SECTIONNAME' => 'Directory', 'KEY' => '_SECTION',
+                                                   'VALUE' => [
+                                                                { 'KEY' => 'Options', 'VALUE' => 'None' },
+                                                                { 'KEY' => 'AllowOverride', 'VALUE' => 'None' },
+                                                                { 'KEY' => 'Order', 'VALUE' => 'allow,deny' },
+                                                                { 'KEY' => 'Allow', 'VALUE' => 'from all' }
+                                                              ],
+                                                   'OVERHEAD' => '# YaST created entry
+',
+                                                   'SECTIONPARAM' => '"/tmp/web/third"'
+                                                 }
+                                               ]
+                                   },
+                                   {
+                                     'VirtualByName' => 1,
+                                     'HOSTID' => '10.20.1.28/svrName2',
+                                     'HostIP' => '10.20.1.28',
+                                     'DATA' => [
+                                                 { 'KEY' => 'DocumentRoot', 'VALUE' => '/tmp/web/four/' },
+                                                 { 'KEY' => 'ServerName', 'VALUE' => 'svrName2' },
+                                                 { 'KEY' => 'ServerAdmin', 'VALUE' => 'second@adf.sd' },
+                                                 {
+                                                   'SECTIONNAME' => 'Directory',
+                                                   'KEY' => '_SECTION',
+                                                   'VALUE' => [
+                                                                { 'KEY' => 'Options', 'VALUE' => 'None' },
+                                                                { 'KEY' => 'AllowOverride', 'VALUE' => 'None' },
+                                                                { 'KEY' => 'Order', 'VALUE' => 'allow,deny' },
+                                                                { 'KEY' => 'Allow', 'VALUE' => 'from all' }
+                                                              ],
+                                                   'OVERHEAD' => '# YaST created entry
+',
+                                                   'SECTIONPARAM' => '"/tmp/web/four"'
+                                                 }
+                                               ]
+                                   },
+                                   {
+                                     'OVERHEAD' => ''
+                                   }
+                                 ]
+        );
+
+ SCR->Write(".http_server.vhosts", \%data);
 }
 
 #######################################################

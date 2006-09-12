@@ -29,7 +29,6 @@ my %vhost_files = ();
 # %vhost_by_name is just a uniq array
 
 # IP-address hash - virtual hosts map 
-my %hash_table = ();
 
 
 # %listen ist just a uniq array
@@ -39,6 +38,7 @@ my %listen;
 sub parse_vhost_files {
     my $class = shift;
     my %vhost_by_name = ();
+    my %hash_table = ();
 
     # you don't need it read twice
     return 1 if (keys(%hash_table));    
@@ -132,7 +132,11 @@ sub parse_vhost_files {
       }
      }
    }
-    return 1;
+#open(FFILE, ">/tmp/yast.log");
+#use Data::Dumper;
+#print FFILE Dumper(\%vhost_files);
+#close(FFILE);
+    return \%hash_table;
 }
 
 sub parse_listen_conf {
@@ -241,6 +245,50 @@ sub section2string {
 }
 
 
+sub writeVH {
+    my $class = shift;
+    my $data = shift;
+
+    foreach my $file ( keys(%{$data}) ) {
+        next if( $file eq 'default-server.conf' ); # skip the default server here
+        open( FILE, "> /etc/apache2/vhosts.d/$file" ) or do {
+            return $class->SetError( summary => sprintf(_("open file /etc/apache2/vhosts.d/%s for writing failed with: %s"),$file,$!),
+                                     code    => 'OPEN_FAILED'
+            );
+        };
+        foreach my $entry ( @{$data->{$file}} ) {
+            print FILE $entry->{OVERHEAD} if($entry->{OVERHEAD});
+            print FILE "<VirtualHost $entry->{HostIP}>\n" if( $entry->{HostIP} );
+            foreach my $data ( @{$entry->{DATA}} ) {
+                next if( $data->{KEY} eq 'HostIP' ); # just for internal use
+                if( $data->{KEY} eq '_SECTION' ) {
+                    print FILE section2string( [ $data ], 1 ); # ??? lost in my own data structures
+                } else {
+                    print FILE $data->{OVERHEAD} if( $data->{OVERHEAD} );
+                    print FILE " ".$data->{KEY}." ".$data->{VALUE}."\n" if( $data->{KEY} );
+                }
+            }
+            print FILE "</VirtualHost>\n" if( $entry->{HostIP} );
+        }
+        close(FILE);
+    }
+
+    # save the default-server.conf
+    open( FILE, "> /etc/apache2/default-server.conf" ) or do {
+        return $class->SetError( summary => sprintf(_("open file /etc/apache2/default-server.conf for writing failed with %s"),$!),
+                                 code    => 'OPEN_FAILED'
+        );
+    };
+    foreach my $entry ( @{$data->{'default-server.conf'}} ) {
+        print FILE section2string( $entry->{DATA} );
+    }
+    close(FILE);
+open(FF, ">>/tmp/yast.log");
+use Data::Dumper;
+print FF Dumper( $data);
+close(FF);
+    return 1;
+}
 sub write_vhost_files {
     my $class = shift;
 
@@ -278,7 +326,6 @@ sub write_vhost_files {
         print FILE section2string( $entry->{DATA} );
     }
     close(FILE);
-
     return 1;
 }
 
@@ -325,8 +372,8 @@ sub Read {
     my ($path, @args) = @_;
 
     if( $path eq '.vhosts' ) {
-        $class->parse_vhost_files();
-        return \%hash_table; #\%vhost_files;
+        return $class->parse_vhost_files();
+#        return \%hash_table; #\%vhost_files;
     } elsif( $path eq '.listen' )  {
         $class->parse_listen_conf();
         return [ keys(%listen) ];
@@ -341,6 +388,7 @@ sub Write {
     my ($path, @args) = @_;
 
     if( $path eq '.vhosts' ) {
+     $class->writeVH($args[0]);
     } elsif( $path =~ /\.vhosts\.setFile\.(.*)/ ) {
         # args[0] = array ref (structure explained above)
         $class->parse_vhost_files();
