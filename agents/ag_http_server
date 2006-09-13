@@ -132,10 +132,6 @@ sub parse_vhost_files {
       }
      }
    }
-#open(FFILE, ">/tmp/yast.log");
-#use Data::Dumper;
-#print FFILE Dumper(\%vhost_files);
-#close(FFILE);
     return \%hash_table;
 }
 
@@ -279,14 +275,11 @@ sub writeVH {
                                  code    => 'OPEN_FAILED'
         );
     };
-    foreach my $entry ( @{$data->{'default-server.conf'}} ) {
-        print FILE section2string( $entry->{DATA} );
-    }
+#    foreach my $entry ( @{$data->{'default-server.conf'}} ) {
+#        print FILE section2string( $entry->{DATA} );
+#    }
+print FILE section2string($data->{'default-server.conf'}{DATA});
     close(FILE);
-open(FF, ">>/tmp/yast.log");
-use Data::Dumper;
-print FF Dumper( $data);
-close(FF);
     return 1;
 }
 sub write_vhost_files {
