@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Sep 13 14:54:51 CEST 2006 - mzugec@suse.cz
+
+- 2.14.1 - #180776 - change work with virtual hosts for better ssl support for future
+
+-------------------------------------------------------------------
 Mon Jun 12 09:51:16 CEST 2006 - mzugec@suse.cz
 
 - fixed reopened bug #177797 - assigning to firewall zones using 'any' string
