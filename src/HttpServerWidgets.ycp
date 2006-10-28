@@ -1071,10 +1071,10 @@ global define symbol handleVhostRest (string key, map event){
 string dns_zone = "";
 global void initVhostDetails(string key){
 
-map <string, any> servername = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "ServerName"));
-dns_zone="";
+  map <string, any> servername = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "ServerName"));
+  dns_zone="";
 
-if (Package::Installed("bind"))
+  if (Package::Installed("bind"))
         {
 	 if ( Service::Status("named") == 0 ){
 		foreach(string key, map<string, any> value, (map<string, map<string, any> >) DnsServerAPI::GetZones(), {
@@ -1130,6 +1130,12 @@ if (Package::Installed("bind"))
 			}
 	 } else y2milestone(_("There is no DNS server running on this machine."));
         }
+
+ // disable using SSL for name-based virtual host
+ foreach(map<string, any> row, vhost_descr, {
+  if (row["KEY"]:"" == "VirtualByName" && row["VALUE"]:"0" =="1") UI::ChangeWidget(`ssl_support, `Enabled, false);
+ });
+
 }
 
 global define symbol handleVhostDetails (string key, map event){
@@ -1149,9 +1155,13 @@ global define symbol handleVhostDetails (string key, map event){
   {
    UI::ChangeWidget(`certfile, `Enabled, true);
    UI::ChangeWidget(`browse_cert, `Enabled, true);
+   UI::ChangeWidget(`keyfile, `Enabled, true);
+   UI::ChangeWidget(`browse_key, `Enabled, true);
   } else {
 	  UI::ChangeWidget(`certfile, `Enabled, false);
 	  UI::ChangeWidget(`browse_cert, `Enabled, false);
+	  UI::ChangeWidget(`keyfile, `Enabled, false);
+	  UI::ChangeWidget(`browse_key, `Enabled, false);
 	}
 
 
@@ -1185,17 +1195,30 @@ global define symbol handleVhostDetails (string key, map event){
 
   case `browse_cert :
     {
-	string ssl_dir = UI::AskForExistingFile("/etc/apache2/ssl.crt", "*.crt *.pem", _("Choose Certificate File") );
-        if (ssl_dir != nil) UI::ChangeWidget (`certfile, `Value, ssl_dir );
-		 //TODO - validate certificate
-		 if (size((string) UI::QueryWidget(`certfile, `Value)) == 0)
-		  {
+	string cert_file = UI::AskForExistingFile("/etc/apache2/ssl.crt", "*.crt *.pem", _("Choose Certificate File") );
+        if (cert_file != nil && SCR::Execute(.target.bash, sformat("openssl x509 -in %1", cert_file))==0) UI::ChangeWidget (`certfile, `Value, cert_file );
+		else
+		 {
+		    UI::ChangeWidget (`certfile, `Value, "");
                     // translators: error popup
                     Popup::Error ( _("Enter the certificate file.") );
-		  }
+		 }
 	break;
     }
 
+  case `browse_key :
+    {
+	string key_file = UI::AskForExistingFile("/etc/apache2/ssl.key", "*.key *.pem", _("Choose Certificate Key File") );
+//   boolean keyfile = (SCR::Execute(.target.bash, sformat("openssl rsa -in %1", cert_file))==0)?true:false;
+        if (key_file != nil && SCR::Execute(.target.bash, sformat("openssl rsa -in %1", key_file))==0) UI::ChangeWidget (`keyfile, `Value, key_file );
+		else
+		 {
+		    UI::ChangeWidget (`keyfile, `Value, "");
+                    // translators: error popup
+                    Popup::Error ( _("Enter the key file.") );
+		 }
+	break;
+    }
   }
 
  return nil;
@@ -1228,15 +1251,21 @@ global define void storeVhostDetails (string key, map events) ``{
  map <string, any> ssl_values = $[];
  if (UI::QueryWidget(`ssl_support, `Value) == true)
   {
-   YaST::HTTPDData::ModifyModuleList ([ "ssl" ], true);
-   ssl_values = $[
-	"KEY":"_SECTION",
-	"SECTIONNAME":"IfDefine",
-	"SECTIONPARAM":"SSL",
-	"VALUE":[ $["KEY":"SSLCertificateFile", "VALUE":UI::QueryWidget(`certfile, `Value)],
-							$["KEY":"SSLEngine", "VALUE":"on"] ]
-					];
-		}
+   string cert_file = tostring(UI::QueryWidget(`certfile, `Value));
+   string key_file = tostring(UI::QueryWidget(`keyfile, `Value));
+
+   if (size(cert_file)>0 && size(key_file)>0){
+	YaST::HTTPDData::ModifyModuleList ([ "ssl" ], true);
+	ssl_values = $[
+	 "KEY":"_SECTION",
+	 "SECTIONNAME":"IfDefine",
+	 "SECTIONPARAM":"SSL",
+	 "VALUE":[ 	$["KEY":"SSLCertificateFile", "VALUE":cert_file],
+			$["KEY":"SSLCertificateKeyFile", "VALUE":key_file],
+			$["KEY":"SSLEngine", "VALUE":"on"] ]
+		];
+	} else y2error("%1 is not valid Certificate File!", cert_file);
+  }
 
   if (size(ssl_values)>0) vhost_descr = add(vhost_descr, ssl_values);
 
@@ -1244,7 +1273,6 @@ y2internal("%1", vhost_descr);
   any result = YaST::HTTPDData::CreateHost ( ip["VALUE"]:""+"/"+servername["VALUE"]:"", vhost_descr );
 
 
-  y2milestone ("%1", result);
   if ( result == nil)
 	{
          map<string,string> error = (map<string,string>) YaST::HTTPDData::Error ();
@@ -1268,9 +1296,7 @@ y2internal("%1", vhost_descr);
 			 });
 			if (UI::QueryWidget(`pub_html, `Value)==true) tmp_descr=add(tmp_descr, 	$["KEY":"UserDir", "VALUE":"public_html"]);
 
-//				YaST::HTTPDData::ModifyHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"", tmp_descr);
 			}
-y2internal("host values %1", YaST::HTTPDData::GetHost(ip["VALUE"]:""+"/"+servername["VALUE"]:""));
 			HttpServer::modified = true;
 			vhost_descr = [];
 		 }
@@ -1540,13 +1566,19 @@ global map<string, map <string, any> > widgets = $[
                  `VBox(
                   `Left(
                    `CheckBox(`id(`ssl_support), `opt(`notify), _("Enable &SSL Support for This Virtual Host"))),
-                    `HBox(
+                    `VBox(
                         // translators: textentry, certificate file path
+                        `HBox(
+			`Label(""),
                         `TextEntry( `id( `certfile ), _("&Certificate File Path") ),
-                        `VBox(
-                            `Label(""),
                             `PushButton(`id(`browse_cert ), Label::BrowseButton () )
-                        ))
+                        ),
+                        `HBox(
+			`Label(""),
+                        `TextEntry( `id( `keyfile ), _("&Certificate Key File Path") ),
+                            `PushButton(`id(`browse_key ), Label::BrowseButton () )
+                         )
+			)
 
                 )),
                 `VSpacing (1),
