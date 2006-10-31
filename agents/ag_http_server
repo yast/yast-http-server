@@ -114,15 +114,16 @@ sub parse_vhost_files {
     $entry->{VirtualByName} = 0;
     $vhost_files{'default-server.conf'} = [ $entry ];
 
+
     #new hash - map sorted by virtual hosts
    foreach my $file (keys (%vhost_files))  {
     foreach my $conf ($vhost_files{$file}){
      foreach my $vhost ( @$conf )        {
      if ($file eq 'default-server.conf'){
       $hash_table{'main'} = $vhost;
-      foreach my $data ( @{$vhost->{'DATA'}} )
-       { if ($data->{'KEY'} eq 'NameVirtualHost'){ $hash_table{ $data->{'VALUE'} } = []; }
-       }
+#      foreach my $data ( @{$vhost->{'DATA'}} )
+#       { if ($data->{'KEY'} eq 'NameVirtualHost'){ $hash_table{ $data->{'VALUE'} } = []; }
+#       }
       } else {
 	   if (exists $vhost->{'HostIP'}){
              if ( exists $hash_table{  $vhost->{'HostIP'}} ){ push(@{$hash_table{  $vhost->{'HostIP'}}}, $vhost); }

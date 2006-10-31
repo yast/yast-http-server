@@ -319,7 +319,7 @@ global define boolean Write() ``{
     /* HttpServer read dialog caption */
     string caption = _("Saving HTTP Server Configuration");
 
-    integer steps = 3;
+    integer steps = 2;
 
     // We do not set help text here, because it was set outside
     Progress::New(caption, " ", steps, [
@@ -359,7 +359,7 @@ Install them now?
 
     // write hosts
     YaST::HTTPDData::WriteHosts();
-    
+   Progress::NextStage(); 
     import "SuSEFirewall";
 	Progress::set(false);//    Progress::off ();
 
