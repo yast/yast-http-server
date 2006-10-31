@@ -554,6 +554,14 @@ sub deleteVH (){
       }
 }
 
+
+sub modifyMain {
+    my $self = shift;
+    my $data = shift;
+
+   $vhost_files->{'main'}{'DATA'} = $data;
+}
+
 sub modifyVH {
     my $self = shift;
     my $hostid = shift;
@@ -580,7 +588,6 @@ sub modifyVH {
 }
 
 sub validateNVH (){
-
     my @nb = ();
     foreach my $key ( keys( %{$vhost_files} ) ){
      if(($key ne 'ip-based') && ($key ne 'main')){
@@ -594,9 +601,9 @@ sub validateNVH (){
  $vhost_files->{main}{DATA} = \@tmp_data;
 
 
-foreach my $ip (@nb){
- push(@{$vhost_files->{main}{DATA}}, {KEY=>'NameVirtualHost', VALUE=>$ip} );
-}
+ foreach my $ip (@nb){
+  push(@{$vhost_files->{main}{DATA}}, {KEY=>'NameVirtualHost', VALUE=>$ip} );
+ }
 
 }
 
@@ -882,9 +889,26 @@ sub DeleteHost {
 sub writeHosts (){
     my $self = shift;
     my @vhosts = @{$vhost_files->{'ip-based'}};
+
+     foreach my $key ( keys(%{$vhost_files}) ) {
+	switch($key)
+	 {
+	 case "ip-based" {
+		}
+	 case "main" {}
+	 else { 
+	       foreach my $hostList ( $vhost_files->{$key} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               push( @vhosts, $hostentryHash ) ;
+	           }
+		  }
+	      }
+	 }	
+     }
+
  my %data = ( 'default-server.conf' =>$vhost_files->{'main'},
 		'yast2_vhosts.conf'=>\@vhosts );
-# SCR->Write(".http_server.vhosts", \%data);
+ SCR->Write(".http_server.vhosts", \%data);
 }
 
 #######################################################

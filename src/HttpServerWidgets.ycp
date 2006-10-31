@@ -219,11 +219,9 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
                     res = false;
                     break;
 		  }
-//y2internal("ip1 - %1\nip2 - %2\n%3", ip, vhost["id"]:"", vhost);
 	if (vhost["id"]:"" == ip)
 	{
 	    // this is valid only if both of them are name-based, not ip-based
-//y2internal("%1\n%2", YaST::HTTPDData::GetVhostType(host)["type"]:"",  namebased);
 	    if ( YaST::HTTPDData::GetVhostType(host)["type"]:""=="name-based" && namebased )
 	    {
 		// error message - the entered ip address is already 
@@ -1269,7 +1267,6 @@ global define void storeVhostDetails (string key, map events) ``{
 
   if (size(ssl_values)>0) vhost_descr = add(vhost_descr, ssl_values);
 
-y2internal("%1", vhost_descr);
   any result = YaST::HTTPDData::CreateHost ( ip["VALUE"]:""+"/"+servername["VALUE"]:"", vhost_descr );
 
 
@@ -1719,6 +1716,12 @@ global void SSLStore (string key, map event)
 	});
 
         list< map<string,any> > options = [];
+
+  map<string, any> vhost = YaST::HTTPDData::GetVhostType(currenthost);
+  if (vhost["type"]:""=="ip-based") options = add(options, $["KEY":"VirtualByName", "VALUE":"0"]);
+		else options = add(options, $["KEY":"VirtualByName", "VALUE":"1"]);
+  options = add(options, $["KEY":"HostIP", "VALUE": vhost["id"]:""]);
+
             foreach (map<string, any> option, YaST::HTTPDData::GetHost(currenthost), ``{
                 if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONPARAM"]:"unknown" == "SSL")
                 {
@@ -1748,7 +1751,6 @@ global void SSLStore (string key, map event)
 		 } else options = add(options, option);
             });
 	if (found == false) { options = add(options, $["KEY":"_SECTION", "SECTIONNAME":"IfDefine", "SECTIONPARAM":"SSL", "VALUE":forssl]); }
-        YaST::HTTPDData::ModifyHost (currenthost, options );
         setHostOptions(nil);
         HttpServer::modified = true;
  }
@@ -1909,7 +1911,6 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
    */
     global void HostStore (string key, map event)
     {
-
 	list< map<string,any> > options = []; 
        foreach (integer key, map<string,any> values, host_options,
         ``{
@@ -1917,7 +1918,6 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	    {
 
 		//In main host SSL can't be used
-/*
 	     if (values["KEY"]:"" == "SSL") 
 		{
 		 options = add(options, $[
@@ -1928,7 +1928,6 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
                     "OVERHEAD" : values["OVERHEAD"]:""]);
 		 y2milestone("SSL section - %1", options);
 		}
-*/
 
              if (values["KEY"]:"" == "Directory") 
 		{
@@ -1977,7 +1976,6 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
       * @return list of items for the table
       */
     global define list HostTableContents (map descr) ``{
-    
 	if (host_options == nil)
 	{
 	    // fill the data
@@ -1992,7 +1990,6 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	    boolean documentroot = false;
     
 	    list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
-	   
 	    foreach (map<string, any> option, host, ``{
 		string key = option["KEY"]: "unknown";
 		
@@ -2019,7 +2016,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 				"VALUE" :  "", 
 				"DATA": option["VALUE"]:[],
 				"OVERHEAD" : option["OVERHEAD"]:""
-		    ];
+		 		];
 		    res = add (res, option_counter);
 		    option_counter = option_counter + 1;
 		}

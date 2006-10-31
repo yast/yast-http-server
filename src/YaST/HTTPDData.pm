@@ -255,7 +255,9 @@ if ($hostid ne 'main')
 #    }
 
     $dirty{MODIFIED}->{$hostid} = 1 unless( exists($dirty{NEW}->{$hostid}) );
- }
+ } else {
+	 YaPI::HTTPD->modifyMain($hostdata);
+	}
     return 1;
 }
 

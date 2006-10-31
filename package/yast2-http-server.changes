@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Oct 31 14:19:56 CET 2006 - mzugec@suse.cz
+
+- #180776 - missing option for SSL vhosts
+- 2.14.2 
+
+-------------------------------------------------------------------
 Wed Sep 13 14:54:51 CEST 2006 - mzugec@suse.cz
 
 - 2.14.1 - #180776 - change work with virtual hosts for better ssl support for future
