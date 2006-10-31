@@ -28,7 +28,7 @@
     import "Service";
     import "TablePopup";
     import "Package";
-    import "DnsServerPunycode";
+
 
 
 
@@ -82,23 +82,24 @@ map tabs_descr = $[
 			    ),
 	"widget_names" : [ "MODULES" ]
 	 ],
-	"default_host" : $[
+	"main_host" : $[
 
-	 "header" : _("Default Host"),
+	 "header" : _("Main Host"),
 	 "contents" : `HBox (`HSpacing (1), `VBox (
             `VSpacing (1),
-            "DEF_HOST",
+            "MAIN_HOST",
             `VSpacing (1)
         ), `HSpacing (1)),
-	"widget_names" : [ "DEF_HOST" ]
+	"widget_names" : [ "MAIN_HOST" ]
 	 ],
 	"hosts" : $[
 
 	 "header" : _("Hosts"),
 	 "contents" : `HBox (`HSpacing (1), `VBox (
             `VSpacing (1),
-            "HOSTS",
+            "HOSTS", `PushButton( `id( `set_default ), _("Set as De&fault") ),
             `VSpacing (1)
+//, `PushButton( `id( `set_default ), _("Set as De&fault") )
         ), `HSpacing (1)),
 	"widget_names" : [ "HOSTS" ]
 	 ]
@@ -113,7 +114,7 @@ map tabs_descr = $[
     if (HttpServer::firewall_first) tabs_descr["listen", "widget_names"]= [ "server_enable", "LISTEN", "logs" ];
     map widget_descr = $[
         "tab": CWMTab::CreateWidget($[
-            "tab_order": [ "listen", "modules", "default_host", "hosts"],
+            "tab_order": [ "listen", "modules", "main_host", "hosts"],
             "tabs": tabs_descr,
             "widget_descr": HttpServerWidgets::widgets,
             "initial_tab" : HttpServerWidgets::init_tab,
@@ -140,17 +141,17 @@ map tabs_descr = $[
       * @return symbol for wizard sequencer
       */
     symbol HostDialog () {
-	list< map<string,any> > w = CWM::CreateWidgets (["host" ],
-	    HttpServerWidgets::widgets);
+	list< map<string,any> > w = CWM::CreateWidgets (["host", "vhost_res" ], HttpServerWidgets::widgets);
 	term contents = `HBox (`HSpacing (1), `VBox (
 	    `VSpacing (1),
-	    w[0, "widget"]:`VSpacing (1)
+	    w[0, "widget"]:`VSpacing (1),
+	    w[1, "widget"]:`VSpacing (1)
 	), `HSpacing (1));
 
 	// translators: dialog caption
 	string caption = sformat(_("Host '%1' Configuration"), 
 	    // translators: human-readable "default host"
-	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") 
+	    HttpServerWidgets::currenthost == "main" ? _("Main Host") 
 		: HttpServerWidgets::get_host_value ( "ServerName"
 		, YaST::HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ));
 
@@ -194,47 +195,17 @@ map tabs_descr = $[
 	return CWM::Run (w, $[`abort : Abort]);
     }
 
-
  list< map<string,any> > descr = [];
 	/**
 	  * Return wizard for adding new virtual host	
 	  * @return symbol (`browse, `abort, `cancel, `next)
 	  */
     symbol AddHost () {
+	list< map<string,any> > w = CWM::CreateWidgets (["vhost_id", "vhost_res" ], HttpServerWidgets::widgets);
 	term contents = `HBox( `HSpacing(0.5), `VBox (
-	    `Frame(
-		// translators: frame title for new hsot identification details
-		_("Server Identification"),
-		`VBox(
-		    // translators: textentry, new host server name
-		    `TextEntry( `id( "servername" ), _("Server &Name:") ),
-		    `HBox(
-			// translators: textentry, document root for the new host
-			`TextEntry( `id( `documentroot ), _("Server &Contents Root:") ),
-			`VBox(
-                	    `Label(""),
-			    `PushButton( `id( `browse ), Label::BrowseButton () )
-			)
-		    ),
-		    // translators: textentry, administrator's e-mail for the new host
-		    `TextEntry( `id( `admin ), _("&Administrator E-Mail:") )
-		)),
+		w[0, "widget"]:`VSpacing (0),
 	    `VSpacing (1),
-	    `Frame(
-		// translators: frame title for method of incoming request resolution
-		_("Server Resolution"),
-		`VBox(
-		// translators: IP address for the new host
-		`Left( `ComboBox( `id( "ipaddress" ), `opt(`editable), _("&IP Address:"), maplist( string ip, string dev, HttpServer::ip2device, ``(ip) ) ) ),
-		`RadioButtonGroup(
-		    `id ( `resolution ),
-		    `VBox (
-			// translators: radio button for name-based virtual hosts
-			`Left(`RadioButton ( `id ( `name_based ), _("Determine Request Server by HTTP &Headers"), true ) ),
-			// translators: radio button for IP-based virtual hosts
-			`Left(`RadioButton ( `id ( `ip_based ), _("Determine Request Server by Server IP &Address") ) )
-		    )
-		))),
+		w[1, "widget"]:`VSpacing (0),
 		`HSpacing (0.5)
 	));
 
@@ -247,93 +218,7 @@ map tabs_descr = $[
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::NextButton ());
 	    
-		// remember values
-	if (descr!=[]){
-                string ip = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "HostIP") ip = row["VALUE"]:"";});
-                string servername = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "ServerName") servername = row["VALUE"]:"";});
-                string documentroot = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "DocumentRoot") documentroot = row["VALUE"]:"";});
-                string admin = ""; foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "ServerAdmin") admin = row["VALUE"]:"";});
-		boolean namebased = false;
-		foreach(map<string,any> row, descr,{if (row["KEY"]:"" == "VirtualByName" && row["VALUE"]:"" == "1") namebased=true;});
-		if (size(servername)>0) UI::ChangeWidget(`id("servername"), `Value, servername);
-		if (size(documentroot)>0) UI::ChangeWidget(`documentroot, `Value, documentroot);
-		if (size(admin)>0) UI::ChangeWidget(`admin, `Value, admin);
-		if (size(ip)>0) UI::ChangeWidget(`id( "ipaddress" ), `Value, ip);
-		if (namebased) UI::ChangeWidget(`resolution, `CurrentButton, `name_based);
-			else UI::ChangeWidget(`resolution, `CurrentButton, `ip_based);
-	}
-
-	UI::SetFocus (`id("servername"));
-
-	symbol ret = nil;
-
-	do {
-	    ret = (symbol)UI::UserInput ();
-
-	    if (ret == `browse)
-	    {
-		// Allow to choose a directory
-		string dir = UI::AskForExistingDirectory ("/srv", _("Choose Document Root") );
-		if (dir != nil) UI::ChangeWidget (`documentroot, `Value, dir );
-
-		ret = nil;
-	    }
-	    if (ret == `abort || ret == `cancel)
-	    {
-		if (ReallyAbort ()) break;
-	    }
-
-	    if (ret == `next )
-	    {
-		// FIXME: Do checks about the IP address availability
-		string ip = (string) UI::QueryWidget ( `id("ipaddress"), `Value );
-		string servername = (string) UI::QueryWidget( `id("servername"), `Value );
-		string documentroot = (string) UI::QueryWidget( `documentroot, `Value );
-		string admin = (string) UI::QueryWidget( `admin, `Value );
-		boolean virtualbyname = (boolean) UI::QueryWidget( `name_based, `Value );
-
-    		if (! HttpServerWidgets::validate_servername("servername","", nil))
-    		{
-		    ret = nil;
-        	    continue;
-    		}
-
-    		if (! HttpServerWidgets::validate_serverip("ipaddress",nil,nil))
-    		{
-		    ret = nil;
-        	    continue;
-    		}
-		
-		if ( size(admin) == 0 )
-		{
-		
-		    // translators: error popup
-		    string invalid = _("Administrator E-Mail is invalid.");
-		    
-		    // translators: error popup
-		    Popup::Error ( _("Administrator E-Mail cannot be empty.") );
-		    ret = nil;
-        	    continue;
-		}
-
-		descr = [
-			$[ "KEY": "DocumentRoot", "VALUE" : documentroot ],
-			$[ "KEY": "ServerName", "VALUE" : servername ],
-			$[ "KEY": "ServerAdmin", "VALUE" : admin ],
-			$[ "KEY": "VirtualByName", "VALUE" : virtualbyname ? "1" : "0" ],
-			$[ "KEY": "HostIP", "VALUE" : ip ]
-		    ];
-		    
-		if ( !HttpServerWidgets::validate_server (nil, descr) )
-		{
-		    ret = nil;
-		    continue;
-		}
-		
-	    }
-	} while (ret == nil);
-
-	return ret;
+	return CWM::Run (w, $[`abort : Abort]);
     };
 
   /**
@@ -341,259 +226,22 @@ map tabs_descr = $[
    * @return symbol from host widget
    */
 symbol  SetVHostOptions() {
-        term contents = `HBox( `HSpacing(0.5), `VBox (
-	   `ReplacePoint(`id(`replace), `Empty()
-		),
-		`VSpacing(1), 
-            `Frame(
-                // translators: frame title for virtual host identification details
-                _("CGI Options"),
-                `VBox(
-                 `Left(
-                   `CheckBox(`id(`cgi_support), _("Enable &CGI for This Virtual Host"))),
-                   `HBox(
-                        // translators: textentry, certificate file path
-                        `TextEntry( `id( `cgi_dir ), _("CGI &Directory Path") ),
-                        `VBox(
-                            `Label(""),
-                            `PushButton(`id(`browse_cgi_dir ), Label::BrowseButton () )
-                        ))
+	list< map<string,any> > w = CWM::CreateWidgets (["vhost_details" ], HttpServerWidgets::widgets);
+	term contents = `HBox( `HSpacing(0.5), `VBox (
+		w[0, "widget"]:`VSpacing (0),
+		`HSpacing (0.5)
+	));
 
-                )),
-		`VSpacing (1),
-               `Frame(
-                _("SSL Support"),
-                 `VBox(
-                  `Left(
-                   `CheckBox(`id(`ssl_support), _("Enable &SSL Support for This Virtual Host"))),
-                    `HBox(
-                        // translators: textentry, certificate file path
-                        `TextEntry( `id( `certfile ), _("&Certificate File Path") ),
-                        `VBox(
-                            `Label(""),
-                            `PushButton(`id(`browse_cert ), Label::BrowseButton () )
-                        ))
-
-                )),
-		`VSpacing (1),
-		`Frame(
-		 _("Directory Options"),
-		 `Left(
-		       `TextEntry( `id( `dir_index ), _("&Directory Index") )
-                      )),
-               `VSpacing (1),
-                `Frame(
-                 _("Public HTML"),
-                 `Left(
-                       `CheckBox( `id( `pub_html ), _("Enable &Public HTML") )
-                      ))
-		)
-        );
-
+	// translators: dialog caption
         string caption = _("Virtual Host Details");
 
         string help = HELPS ["set_vhost"]:"";
 
-        Wizard::SetContentsButtons (caption, contents, help,
-            Label::BackButton (), Label::OKButton ());
 
-
-map <string, any> documentroot = find(map<string,any> row, descr,``(row["KEY"]:"" == "DocumentRoot"));
-map <string, any> ip = find(map<string,any> row, descr,``(row["KEY"]:"" == "HostIP"));
-map <string, any> servername = find(map<string,any> row, descr,``(row["KEY"]:"" == "ServerName"));
-string zone="";
-
-// --- D N S ---
-if (Package::Installed("bind"))
-        {
-	 if ( Service::Status("named") == 0 ){
-		foreach(string key, map<string, any> value, (map<string, map<string, any> >) DnsServerAPI::GetZones(), {
-		 if ( (value["type"]:"" == "master") 
-			&& (regexpmatch(servername["VALUE"]:"", "\\."+key+"$" ))
-				&& (size(key)>size(zone)) ) zone=key;
-			   y2milestone(_("Master Zone %1"), key);
-		});
-		if (size(zone)>0)
-		 {
-		  y2milestone("Matching zone %1", zone);
-		boolean exists=false;
-		foreach(map<string, any> records, DnsServerAPI::GetZoneRRs(zone), {
-		 if (records["key"]:"" == servername["VALUE"]:"" || records["key"]:"" == servername["VALUE"]:""+".") exists=true;
-		});
-		if (exists == true) 
-			{
-			 y2milestone(_("Record %1 already exists in zone %2."), servername["VALUE"]:"", zone);
-			} else {
-                   UI::ReplaceWidget(`replace, `Frame(_("DNS Settings"),
-                                              `Left(
-                                                `HBox(
-                                                 `Label(servername["VALUE"]:""),
-                                                 `PushButton(`id(`dns_add_rec), _("Add to Zone"))
-                                                    ))));
-
-				}
-
-		 } else {
-		   list <string> opts = splitstring(servername["VALUE"]:"", ".");
-			                       opts[0] = nil;
-                        list <string> newList=[];
-                        foreach(string it, opts, {
-                         if (it !=nil){
-                        list <string> tmpList=[];
-                          foreach(string itzone, newList, {
-                           tmpList = add(tmpList, itzone+"."+it);
-                           });
-                           newList=tmpList;
-                          newList = add(newList, it);
-                        }
-                        });
-
-		   if (size(opts)>0)
-	                   UI::ReplaceWidget(`replace, `Frame(_("DNS Settings"),
-                                              `Left(
-                                                `HBox(
-                                                 `Label(servername["VALUE"]:""),
-						 `ComboBox(`id(`new_zone), _("Zone Name"), newList),
-                                                 `PushButton(`id(`dns_create_zone), _("Create New Zone"))
-                                                    ))));
-
-			}
-	 } else y2milestone(_("There is no DNS server running on this machine."));
-        }
-
-// --- D N S ---
-
-   symbol ret = nil;
-   do{
-	ret = (symbol)UI::UserInput (); 
-if (Package::Installed("bind"))
-       {
-	if (ret == `dns_add_rec)
-	 {
-	  y2milestone("Add record %1 to zone %2", servername["VALUE"]:"", zone);
-	  UI::ChangeWidget(`dns_add_rec, `Enabled, false);
-	  DnsServerAPI::AddZoneRR(zone, "A", servername["VALUE"]:""+".", ip["VALUE"]:"");
-	  ret = nil;
-	 }
-
-	if (ret == `dns_create_zone)
-	 {
-	  y2milestone("Create new zone ... %1", UI::QueryWidget(`new_zone, `Value));
-	  UI::ChangeWidget(`dns_create_zone, `Enabled, false);
-	  UI::ChangeWidget(`new_zone, `Enabled, false);
-	   zone = (string)UI::QueryWidget(`new_zone, `Value);
-	  DnsServerAPI::AddZone(zone, "master", $[]);
-          DnsServerAPI::AddZoneRR(zone, "A", servername["VALUE"]:""+".", ip["VALUE"]:"");
-	  ret = nil;
-	 }
-        }
-
-        if (ret == `browse_cgi_dir)
-         {
-          string cgi_dir = UI::AskForExistingDirectory("/srv/www/cgi-bin", _("CGI Directory") );
-          if (cgi_dir != nil) UI::ChangeWidget (`cgi_dir, `Value, cgi_dir );
-
-          ret=nil;
-         }
-
-
-	    if (ret == `browse_cert)
-	    {
-		string ssl_dir = UI::AskForExistingFile("/etc/apache2/ssl.crt", "*.crt *.pem", _("Choose Certificate File") );
-                if (ssl_dir != nil) UI::ChangeWidget (`certfile, `Value, ssl_dir );
-
-		ret=nil;
-	    }
-
-
-	if (ret == `next)
-	 {
-
-		if (UI::QueryWidget(`cgi_support, `Value) == true) 
-		 {
-		  string alias = "/cgi-bin/ " + (string) UI::QueryWidget(`cgi_dir, `Value);
-		  descr = add(descr, $["KEY":"ScriptAlias", "VALUE":alias]);
-		  descr = add(descr,  $[
-                   "KEY"       : "_SECTION",
-                    "SECTIONNAME": "Directory",
-                    "SECTIONPARAM": UI::QueryWidget(`cgi_dir, `Value),
-                    "VALUE" : [ 
-				$["KEY":"AllowOverride", "VALUE":"None"], 
-				$["KEY":"Options", "VALUE":"+ExecCGI -Includes"],
-				$["KEY":"Order", "VALUE":"allow,deny"],
-				$["KEY":"Allow", "VALUE":"from all"]
-			      ],
-                    "OVERHEAD" : ""]);
-		y2milestone("CGI support for virtual host added");
-		 }
-   		map <string, any> ssl_values = $[];
-
-		if (UI::QueryWidget(`ssl_support, `Value) == true)
-		{
-		 //TODO - validate certificate
-		 if (size((string) UI::QueryWidget(`certfile, `Value)) == 0)
-		  {
-                    // translators: error popup
-                    Popup::Error ( _("Enter the certificate file.") );
-                    ret = nil;
-                    continue;
-
-		  } else {
-				YaST::HTTPDData::ModifyModuleList ([ "ssl" ], true);
-				ssl_values = $[
-					"KEY":"_SECTION", 
-					"SECTIONNAME":"IfDefine", 
-					"SECTIONPARAM":"SSL", 
-					"VALUE":[ $["KEY":"SSLCertificateFile", "VALUE":UI::QueryWidget(`certfile, `Value)], 
-							$["KEY":"SSLEngine", "VALUE":"on"] ]
-					];
-			}
-		}
-
-		if (size(ssl_values)>0) descr = add(descr, ssl_values);
-
-
-		any result = YaST::HTTPDData::CreateHost ( ip["VALUE"]:""+"/"+servername["VALUE"]:"", descr );
-
-		y2milestone ("%1", result);
-		if ( result == nil)
-		{
-		    map<string,string> error = (map<string,string>) YaST::HTTPDData::Error ();
-		    Popup::Error ( error["summary"]:"" );
-		    ret = nil;
-		    continue;
-		}
-		descr = YaST::HTTPDData::GetHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"");
-		string directory_index=(string)UI::QueryWidget(`dir_index, `Value);
-		
-		if ( size(directory_index)>0 ){
-		  list< map<string, any> > tmp_descr = [];
-
-		 foreach(map<string, any>value, descr, {
-			if (value["KEY"]:"" == "_SECTION" && 
-				value["SECTIONNAME"]:"" == "Directory" && 
-				(search(value["SECTIONPARAM"]:"", documentroot["VALUE"]:""))!=nil) 
-				 {
-				  if (size(directory_index)>0)	
-						value["VALUE"]=add(value["VALUE"]:[], $["KEY":"DirectoryIndex", "VALUE":directory_index]);
-				 }
-			tmp_descr  = add(tmp_descr, value);
-			});
-if (UI::QueryWidget(`pub_html, `Value)==true) tmp_descr=add(tmp_descr, 	$["KEY":"UserDir", "VALUE":"public_html"]);
-
-			YaST::HTTPDData::ModifyHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"", tmp_descr);
-		}
-
-		    
-		HttpServer::modified = true;
-		descr = [];
-	}
-
-
-
-     }while(ret == nil);
-//	descr=[];
-   return ret;
+	Wizard::SetContentsButtons (caption, contents, help,
+	    Label::BackButton (), Label::NextButton ());
+	    
+	return CWM::Run (w, $[`abort : Abort]);
   }
 
     /**

@@ -28,7 +28,7 @@ sub isVirtualByName {
     my $addr = shift;
     my $vhost_files = shift;
 
-    my $filename = $self->getFileByHostid( 'default', $vhost_files );
+    my $filename = $self->getFileByHostid( 'main', $vhost_files );
     return 0 if( not ref($vhost_files->{$filename}) or
                  not ref($vhost_files->{$filename}->[0]) );
     foreach my $e ( @{$vhost_files->{$filename}->[0]->{DATA}} ) {
@@ -47,15 +47,15 @@ sub checkHostmap {
 
     my %checkMap = (
         ServerAdmin  => qr/^[^@]+@[^@]+$/,
-        ServerName   => qr/^[a-zA-Z\d.-]+$/,
+        ServerName   => qr/^[\w\d.-]+$/,
 #        SSL          => qr/^[012]$/,
         # more to go
     );
 
-    my $ssl = 0;
-    my $nb_vh = 0;
-    my $dr = 0;
-    my $sn = 0;
+#    my $ssl = 0;
+#    my $nb_vh = 0;
+#    my $dr = 0;
+#    my $sn = 0;
     foreach my $entry ( @$host ) {
         next unless( exists($checkMap{$entry->{KEY}}) );
         my $re = $checkMap{$entry->{KEY}};
@@ -64,9 +64,9 @@ sub checkHostmap {
                                     code    => "PARAM_CHECK_FAILED" );
         }
 #        $ssl = $entry->{VALUE} if( $entry->{KEY} eq 'SSL' );
-        $nb_vh = $entry->{VALUE} if( $entry->{KEY} eq 'VirtualByName' );
-        $dr = 1 if(  $entry->{KEY} eq 'DocumentRoot' );
-        $sn = 1 if(  $entry->{KEY} eq 'ServerName' );
+#        $nb_vh = $entry->{VALUE} if( $entry->{KEY} eq 'VirtualByName' );
+#        $dr = 1 if(  $entry->{KEY} eq 'DocumentRoot' );
+#        $sn = 1 if(  $entry->{KEY} eq 'ServerName' );
     }
     return $self->SetError( summary => __('ssl together with "virtual by name" is not possible'),
                             code    => 'PARAM_CHECK_FAILED' ) if( $ssl and $nb_vh );
@@ -82,18 +82,21 @@ sub readHosts {
     # this is a hack.
     # yast will put some directives in define sections
     # automatically and here we remove them
-    if( ref($data[0]) eq 'HASH' ) {
-        foreach my $file ( keys %{$data[0]} ) {
-            foreach my $host ( @{$data[0]->{$file}} ) {
-                foreach my $data ( @{$host->{DATA}} ) {
-                    if( exists($data->{OVERHEAD}) and
-                        $data->{OVERHEAD} =~ /# YaST auto define section/ ) {
-                        $data = $data->{VALUE}->[0]; # delete the "auto define" section
-                    }
-                }
-            }
-        }
-    }
+
+#    if( ref($data[0]) eq 'HASH' ) {
+#        foreach my $file ( keys %{$data[0]} ) {
+#            foreach my $host ( @{$data[0]->{$file}} ) {
+#                foreach my $data ( @{$host->{DATA}} ) {
+#                    if( exists($data->{OVERHEAD}) and
+#                        $data->{OVERHEAD} =~ /# YaST auto define section/ ) {
+#                        $data = $data->{VALUE}->[0]; # delete the "auto define" section
+#                    }
+#                }
+#            }
+#        }
+#    }
+
+
     return @data;
 }
 
