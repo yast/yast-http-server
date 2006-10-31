@@ -79,7 +79,7 @@ global map<string,string> ip2device = $[];
 
 
 global boolean getFirewallStatus(){
- y2milestone("get firewall status %1", firewall);
+ y2internal("get firewall status %1", firewall);
  return firewall;
 }
 
@@ -197,13 +197,13 @@ without installing the package."), "apache2" ) );
 
     // read current settings from httpd.conf and sysconfig
     Progress::NextStage();
-    
+
     // read hosts
     YaST::HTTPDData::ReadHosts();
     YaST::HTTPDData::ReadListen();
     YaST::HTTPDData::ReadModules();
     YaST::HTTPDData::ReadService();
-    
+
     // check the modules RPMs
     list<string> modules = YaST::HTTPDData::GetModuleList();
     y2milestone ("Testing packages for %1", modules);
@@ -214,19 +214,19 @@ without installing the package."), "apache2" ) );
 	{
 	    import "Package";
 	    y2milestone ("Checking packages %1 for module %2", pkgs, mod);
-	    
-	    string res = find (string pkg, pkgs, { 
+
+	    string res = find (string pkg, pkgs, {
 		return ! Package::Installed (pkg);
 	    });
-	    
+
 	    if (res != nil)
-	    {	
+	    {
 		y2milestone ("Packages not installed (missing %1), setting %2 as disabled", res, mod);
 		YaST::HTTPDData::ModifyModuleList ([mod], false);
 	    }
 	}
     });
-    
+
     Progress::NextStage();
 
     // read current settings for firewall and network
@@ -319,7 +319,7 @@ global define boolean Write() ``{
     /* HttpServer read dialog caption */
     string caption = _("Saving HTTP Server Configuration");
 
-    integer steps = 3;
+    integer steps = 2;
 
     // We do not set help text here, because it was set outside
     Progress::New(caption, " ", steps, [
@@ -359,7 +359,7 @@ Install them now?
 
     // write hosts
     YaST::HTTPDData::WriteHosts();
-    
+   Progress::NextStage(); 
     import "SuSEFirewall";
 	Progress::set(false);//    Progress::off ();
 
@@ -371,15 +371,22 @@ Install them now?
 	y2error ("Writing listen failed, firewall problems?");
     }
 
-    YaST::HTTPDData::WriteModuleList ();
-    Progress::set(true);
-
     // firewall should not be open, close all ports still open
     // the ones from deleted Listen statements were closed in WriteListen    
   if (firewall_first)
    {
-    list<string> zones = SuSEFirewall::GetZonesOfInterfacesWithAnyFeatureSupported( SuSEFirewall::GetListOfKnownInterfaces() );
-    y2milestone("Firewall zones %1", zones);
+// list<string> zones = [];
+/*
+foreach(map<string, any> ifc, SuSEFirewall::GetAllKnownInterfaces(), {
+ if (!contains(zones, ifc["zone"]:"")) zones = add(zones, ifc["zone"]:"");
+y2internal("%1", ifc);
+});
+*/
+//list <string> interfaces=[];
+//foreach(map<string, any> row, SuSEFirewall::GetAllKnownInterfaces(), { interfaces = add(interfaces, row["id"]:""); });
+//y2internal("interfaces %1", interfaces);
+list<string> zones = SuSEFirewall::GetZonesOfInterfacesWithAnyFeatureSupported( SuSEFirewall::GetListOfKnownInterfaces() );
+y2milestone("Firewall zones %1", zones);
 
 
     foreach (map<string,any> listen, YaST::HTTPDData::GetCurrentListen (),
@@ -387,7 +394,6 @@ Install them now?
 	// find out the port and host
 	string port = listen["PORT"]:"";
 	string ip = listen["ADDRESS"]:"";
-	string sslport = "443";
 	// fixed #176722 - assigned loopback for firewall
         if(ip == "127.0.0.1") continue;
 	if (!firewall)
@@ -395,12 +401,8 @@ Install them now?
 	    y2milestone ("Removing service %1:%2", ip, port);
 	 if (ip2device[ip]:""=="") foreach(string zone, zones, {
 				SuSEFirewall::RemoveService ( port, "TCP", zone);
-				SuSEFirewall::RemoveService ( sslport, "TCP", zone);
 				});
-		else  {
-			SuSEFirewall::RemoveService ( port, "TCP", ip2device[ip]:"all");
-			SuSEFirewall::RemoveService ( sslport, "TCP", ip2device[ip]:"all");
-			}
+		else  SuSEFirewall::RemoveService ( port, "TCP", ip2device[ip]:"all");
 	}
 	else
 	{
@@ -408,27 +410,15 @@ Install them now?
 
 	 if (ip2device[ip]:""=="") foreach(string zone, zones, {
 				SuSEFirewall::AddService ( port, "TCP", zone);
-				if ( contains(YaPI::HTTPD::GetModuleList(), "ssl") ) SuSEFirewall::AddService ( sslport, "TCP", zone);
 				});
-		else  {
-			SuSEFirewall::AddService ( port, "TCP", ip2device[ip]:"all");
-			if ( contains(YaPI::HTTPD::GetModuleList(), "ssl") )  SuSEFirewall::AddService ( sslport, "TCP", ip2device[ip]:"all");
-			}
+		else  SuSEFirewall::AddService ( port, "TCP", ip2device[ip]:"all");
 	}
     });
-   } else {
-	   boolean ssl_enable = contains(YaPI::HTTPD::GetModuleList(), "ssl"); 
-		map<string, any> serv_fw = SuSEFirewall::GetServices(["http", "https"]);
-		foreach(string zone, SuSEFirewall::GetKnownFirewallZones(), {
-		 if ( serv_fw["http", zone]:false==true ) {
-							 if (ssl_enable) SuSEFirewall::AddService ( "443", "TCP", zone);
-								else SuSEFirewall::RemoveService ( "443", "TCP", zone);
-							}
-			else SuSEFirewall::RemoveService ( "443", "TCP", zone);
-		});
-	  }
+   }
     SuSEFirewall::Write ();
     if (configured_dns) DnsServerAPI::Write ();
+	Progress::set(true);
+    YaST::HTTPDData::WriteModuleList ();
 //y2internal("selscted modules %1", YaST::HTTPDData::GetModuleSelectionsList());
     // in autoyast, quit here
     // Wrong, service still has to be enabled...
@@ -676,7 +666,7 @@ global define list Summary() ``{
 	    summary = Summary::AddLine(summary, interfaces + ", port " + port );
 
 		// "Default host" information 
-	    summary = Summary::AddLine(summary, sformat("<h3>%1</h3>", _("Default Host")) ); 
+	    summary = Summary::AddLine(summary, "<h3>Default Host</h3>" ); 
 	    string serv_name = "";
 	    string doc_root = "";
 	    boolean ssl = false;
@@ -691,14 +681,14 @@ global define list Summary() ``{
             summary = Summary::AddLine(summary, "SSL " + ((ssl)?_("enabled"):_("disabled")));
 
 		// the same information as in default host but for other virtual hosts
-            summary = Summary::AddLine(summary, sformat("<h3>%1</h3>", _("Virtual Hosts")) );
+            summary = Summary::AddLine(summary, "<h3>Virtual Hosts</h3>");
 
 	foreach(string host, YaST::HTTPDData::GetHostsList (), {
 		if (host == "default") continue;
              foreach(map<string, any> params, YaST::HTTPDData::GetHost(host), {
                 if ( params["KEY"]:"" == "ServerName" ) serv_name = params["VALUE"]:"";
                 if ( params["KEY"]:"" == "DocumentRoot" ) doc_root = params["VALUE"]:"";
-                if ( params["KEY"]:"" == "_SECTION" && params["SECTIONPARAM"]:""=="SSL") ssl = true;
+                if ( params["KEY"]:"" == "SSL" && params["VALUE"]:""!="0") ssl = true;
 
                         });
 		//translators: assiciation server name with document root

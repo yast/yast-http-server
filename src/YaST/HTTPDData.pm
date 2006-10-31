@@ -1,6 +1,5 @@
 package YaST::HTTPDData;
 use YaST::YCP;
-BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
 use YaPI::HTTPDModules;
 use YaPI::HTTPD;
 use YaST::httpdUtils;
@@ -55,14 +54,14 @@ sub delDir {
 
     $dir =~ s/\/+/\//g;
 
-    foreach my $e ( @{$hosts{'default'}} ) {
+    foreach my $e ( @{$hosts{'main'}} ) {
         next if( $e->{KEY} eq '_SECTION' and
                  $e->{SECTIONNAME} eq 'Directory' and
                  $e->{SECTIONPARAM} =~ /^"*$dir\/*"*/ );
         push( @newData, $e );
     }
-    $hosts{'default'} = \@newData;
-    $dirty{MODIFIED}->{'default'} = 1;
+    $hosts{'main'} = \@newData;
+    $dirty{MODIFIED}->{'main'} = 1;
     return;
 }
 
@@ -111,6 +110,7 @@ sub addDir {
 BEGIN { $TYPEINFO{ReadHosts} = ["function", "boolean" ]; }
 sub ReadHosts {
     my $self = shift;
+
     foreach my $hostid ( @{YaPI::HTTPD->GetHostsList()} ) {
     	$hosts{$hostid} = YaPI::HTTPD->GetHost($hostid) if( $hostid );
         if( not $self->FetchHostKey($hostid, 'SSLCACertificateFile') ) {
@@ -171,7 +171,7 @@ sub ReadService {
 BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
     my $self = shift;
-    return [keys(%hosts)];
+    return YaPI::HTTPD->GetHostsList(); #[keys(%hosts)];
 }
 
 #map GetHost( string hostid );
@@ -180,7 +180,23 @@ sub GetHost {
     my $self = shift;
     my $hostid = shift;
 
-    return exists($hosts{$hostid})?($hosts{$hostid}):[];
+    return YaPI::HTTPD->GetHost($hostid); #exists($hosts{$hostid})?($hosts{$hostid}):[];
+}
+
+
+BEGIN { $TYPEINFO{GetVhostType} = ["function", [ "map", "string", "any" ], "string"]; }
+sub GetVhostType {
+    my $self = shift;
+    my $hostid = shift;
+
+ return YaPI::HTTPD->getVhType($hostid);
+}
+
+
+BEGIN { $TYPEINFO{GetHost} = ["function", ["list", [ "map", "string", "any" ] ], "string"]; }
+sub getVhostType {
+    my $self = shift;
+
 }
 
 #boolean ModifyHost( string hostid, list hostdata );
@@ -190,50 +206,58 @@ sub ModifyHost {
     my $hostid = shift;
     my $hostdata = shift;
 
-    if( ! $self->checkHostmap( $hostdata ) ) {
-        return undef;
-    }
+    return undef if( ! $self->checkHostmap( $hostdata ) );
 
-    my $dr;
-    my $vbn;
-    foreach my $h ( @{$hosts{$hostid}} ) {
-        if( $h->{KEY} eq 'DocumentRoot' ) {
-            $dr = $h->{VALUE};
-        } elsif( $h->{KEY} eq 'VirtualByName' ) {
-            $vbn = $h->{VALUE};
-        }
-    }
-    $hosts{$hostid} = $hostdata;
-    foreach my $h ( @{$hosts{$hostid}} ) {
-        if( $h->{KEY} eq 'DocumentRoot' ) {
-            if( $dr ne $h->{VALUE} ) {
-                $self->delDir( $dr );
-                $self->addDir( $h->{VALUE} );
-            }
-        } elsif( $h->{KEY} eq 'VirtualByName' ) {
-            if( $vbn ne $h->{VALUE} ) {
-                $hostid =~ /^([^\/]+)/;
-                my $vhost = $1;
-                if( $h->{VALUE} == 1 and $self->getNVH( $vhost ) == 0 ) {
-                    push( @{$hosts{'default'}}, { KEY => 'NameVirtualHost', VALUE => $1 } );
-                } elsif( $h->{VALUE} == 0 and $self->getNVH( $vhost ) == 1 ) {
-                    my @newData = ();
-                    while( my $e = shift(@{$hosts{'default'}}) ) {
-                        if( $e->{KEY} eq 'NameVirtualHost' and
-                            $e->{VALUE} eq $vhost ) {
-                            push( @newData, @{$hosts{'default'}} );
-                            last;
-                        }
-                        push( @newData, $e );
-                    }
-                    $hosts{'default'} = \@newData;
-                }
-                $dirty{MODIFIED}->{'default'} = 1;
-            }
-        }
-    }
+#    my $dr;
+#    my $vbn;
+#    foreach my $h ( @{$hosts{$hostid}} ) {
+#        if( $h->{KEY} eq 'DocumentRoot' ) {
+#            $dr = $h->{VALUE};
+#        } elsif( $h->{KEY} eq 'VirtualByName' ) {
+#            $vbn = $h->{VALUE};
+#        }
+#    }
+#    $hosts{$hostid} = $hostdata;
+if ($hostid ne 'main')
+ {
+
+    YaPI::HTTPD->modifyVH($hostid, $hostdata);
+
+
+#    foreach my $h ( @{$hosts{$hostid}} ) {
+#        if( $h->{KEY} eq 'DocumentRoot' ) {
+#            if( $dr ne $h->{VALUE} ) {
+#                $self->delDir( $dr );
+#                $self->addDir( $h->{VALUE} );
+#            }
+#        } els
+#	if( $h->{KEY} eq 'VirtualByName' ) {
+#            if( $vbn ne $h->{VALUE} ) {
+#                $hostid =~ /^([^\/]+)/;
+#                my $vhost = $1;
+#                if( $h->{VALUE} == 1 and $self->getNVH( $vhost ) == 0 ) {
+#                    push( @{$hosts{'main'}}, { KEY => 'NameVirtualHost', VALUE => $1 } );
+#               } elsif( $h->{VALUE} == 0 and $self->getNVH( $vhost ) == 1 ) {
+#                    my @newData = ();
+#                    while( my $e = shift(@{$hosts{'main'}}) ) {
+#                        if( $e->{KEY} eq 'NameVirtualHost' and
+#                            $e->{VALUE} eq $vhost ) {
+#                            push( @newData, @{$hosts{'main'}} );
+#                            last;
+#                        }
+#                        push( @newData, $e );
+#                    }
+#                    $hosts{'main'} = \@newData;
+#                }
+#                $dirty{MODIFIED}->{'main'} = 1;
+#            }
+#        }
+#    }
 
     $dirty{MODIFIED}->{$hostid} = 1 unless( exists($dirty{NEW}->{$hostid}) );
+ } else {
+	 YaPI::HTTPD->modifyMain($hostdata);
+	}
     return 1;
 }
 
@@ -247,25 +271,38 @@ sub CreateHost {
     if( ! $self->checkHostmap( $hostdata ) ) {
         return undef;
     }
+#use Data::Dumper;
+#    foreach my $h ( @$hostdata ) {
+#        if( $h->{KEY} eq 'DocumentRoot' ) {
+#            $dir=$self->addDir($h->{VALUE});
+#        } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
+#            $hostid =~ /^([^\/]+)/;
+#            my $v = $1;
+#            if( $self->getNVH( $v ) == 0 ) {
+#                push( @{$hosts{'main'}}, { KEY => 'NameVirtualHost', VALUE => $v } );
+#                $dirty{MODIFIED}->{'main'} = 1;
+#            }
+#        } 
+#    }
 
-    foreach my $h ( @$hostdata ) {
-        if( $h->{KEY} eq 'DocumentRoot' ) {
-            $dir=$self->addDir($h->{VALUE});
-        } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
-            $hostid =~ /^([^\/]+)/;
-            my $v = $1;
-            if( $self->getNVH( $v ) == 0 ) {
-                push( @{$hosts{'default'}}, { KEY => 'NameVirtualHost', VALUE => $v } );
-                $dirty{MODIFIED}->{'default'} = 1;
-            }
-        }
+ # don't create Directory for DocumentRoot, if already exists
+ if ($dir ne ""){
+  foreach my $row (@$hostdata) {
+   if ($row->{KEY} eq '_SECTION'){
+ 	$dir="" if ($row->{'SECTIONPARAM'} eq $dir->{'SECTIONPARAM'});
     }
+   }
+  }
+
+
 push(@$hostdata, $dir) if ($dir);
-    $hosts{$hostid} = $hostdata;
+#    $hosts{$hostid} = $hostdata;
+    YaPI::HTTPD->createVH($hostid, $hostdata);
     $dirty{NEW}->{$hostid} = 1;
     delete($dirty{DEL}->{$hostid});
     delete($dirty{MODIFIED}->{$hostid});
     return 1;
+
 }
 
 sub getNVH {
@@ -286,11 +323,8 @@ BEGIN { $TYPEINFO{DeleteHost} = ["function", "boolean", "string"]; }
 sub DeleteHost {
     my $self = shift;
     my $hostid = shift;
-
     foreach my $h ( @{$hosts{$hostid}} ) {
-        if( $h->{KEY} eq 'DocumentRoot' ) {
-            $self->delDir($h->{VALUE});
-        } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
+	if( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
             $hostid =~ /^([^\/]+)/;
             my $vhost = $1;
             # Am I the last one who uses this NameVirtualHost entry?
@@ -304,11 +338,12 @@ sub DeleteHost {
                     }
                     push( @newData, $e );
                 }
-                $hosts{'default'} = \@newData;
+                $hosts{'main'} = \@newData;
             }
         }
     }
     delete( $hosts{$hostid} );
+    YaPI::HTTPD->deleteVH($hostid);
     $dirty{DEL}->{$hostid} = 1 unless( exists( $dirty{NEW}->{$hostid} ) );
     delete($dirty{NEW}->{$hostid});
     delete($dirty{MODIFIED}->{$hostid});
@@ -318,23 +353,26 @@ sub DeleteHost {
 BEGIN { $TYPEINFO{WriteHosts} = ["function", "boolean" ]; }
 sub WriteHosts {
     my $self = shift;
-    foreach my $hostid( keys( %{$dirty{DEL}} ) ) {
-        delete($certs{$hostid});
-        YaPI::HTTPD->DeleteHost( $hostid );
-    }
-    if( $dirty{MODIFIED}->{'default'} ) {
-        YaPI::HTTPD->ModifyHost('default', $hosts{'default'} );
-        $self->WriteCert( 'default' );
-    }
-    foreach my $hostid( keys( %{$dirty{MODIFIED}} ) ) {
-        next if( $hostid eq 'default' );
-        YaPI::HTTPD->ModifyHost( $hostid, $hosts{$hostid} );
-        $self->WriteCert( $hostid );
-    }
-    foreach my $hostid( keys( %{$dirty{NEW}} ) ) {
-        YaPI::HTTPD->CreateHost( $hostid, $hosts{$hostid} );
-        $self->WriteCert( $hostid );
-    }
+
+    YaPI::HTTPD->writeHosts();
+
+#    foreach my $hostid( keys( %{$dirty{DEL}} ) ) {
+#        delete($certs{$hostid});
+#        YaPI::HTTPD->DeleteHost( $hostid );
+#    }
+#    if( $dirty{MODIFIED}->{'default'} ) {
+#        YaPI::HTTPD->ModifyHost('default', $hosts{'default'} );
+#        $self->WriteCert( 'default' );
+#    }
+#    foreach my $hostid( keys( %{$dirty{MODIFIED}} ) ) {
+#        next if( $hostid eq 'default' );
+#        YaPI::HTTPD->ModifyHost( $hostid, $hosts{$hostid} );
+#        $self->WriteCert( $hostid );
+#    }
+#    foreach my $hostid( keys( %{$dirty{NEW}} ) ) {
+#        YaPI::HTTPD->CreateHost( $hostid, $hosts{$hostid} );
+#        $self->WriteCert( $hostid );
+#    }
 
     %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
     return 1;

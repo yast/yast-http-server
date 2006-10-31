@@ -261,7 +261,6 @@ B<Example Code using the API>
 
  use strict;
  # add YaST2 module path to the perl module path
- BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
 
  # load the HTTPD API
  use YaPI::HTTPD;
@@ -297,7 +296,8 @@ B<Example Code using the API>
 =cut
 
 package YaPI::HTTPD;
-BEGIN { push( @INC, '/usr/share/YaST2/modules/' ); }
+use Switch;
+use Data::Dumper;
 use YaPI;
 use YaST::YCP;
 use YaPI::HTTPDModules;
@@ -321,7 +321,7 @@ use Errno qw(ENOENT);
 #######################################################
 # default and vhost API start
 #######################################################
-my $vhost_files;
+my $vhost_files = undef;
 
 =item *
 C<$hostList = GetHostsList();>
@@ -348,16 +348,31 @@ BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
     my $self = shift;
     my @ret = ();
-    my @data = $self->readHosts();
-    if( ref($data[0]) eq 'HASH' ) {
-        foreach my $hostList ( values(%{$data[0]}) ) {
-            foreach my $hostentryHash ( @$hostList ) {
-                push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
-            }
-        }
-    } else {
-        return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
-    }
+ if (!defined $vhost_files ){
+ my @data = $self->readHosts();
+ $vhost_files = $data[0];
+}
+
+     foreach my $key ( keys(%{$vhost_files}) ) {
+	switch($key)
+	 {
+	 case "ip-based" {
+	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
+	          }
+		 }
+		}
+	 case "main" { push( @ret, $vhost_files->{'main'}{HOSTID} ) if( defined($vhost_files->{'main'}{HOSTID}) ); }
+	 else { 
+	       foreach my $hostList ( $vhost_files->{$key} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
+	           }
+		  }
+		 }
+	 }	
+     }
     return \@ret;
 }
 
@@ -395,53 +410,203 @@ sub GetHost {
     # FIXME
     # will read all vhost files, even if the vhost is found
     # in the first file.
-    my @data = $self->readHosts();
 
-    if( ref($data[0]) eq 'HASH' ) {
-        $vhost_files = $data[0];
-    } else {
-        return $self->SetError( %{SCR->Error(".http_server.vhosts")} );
-    }
-
-    my $filename = $self->getFileByHostid( $hostid, $vhost_files );
-    return $self->SetError( summary => __('hostid not found'),code => 'HOSTID_NOT_FOUND' ) unless( $filename );
-    foreach my $hostHash ( @{$vhost_files->{$filename}} ) {
-        if( $hostHash->{HOSTID} eq $hostid ) {
-            my $vbnHash = { KEY => 'VirtualByName', VALUE => $hostHash->{'VirtualByName'} };
-#            my $sslHash = { KEY => 'SSL', VALUE => 0 };
-            my $overheadHash = { KEY => 'OVERHEAD', VALUE => $hostHash->{'OVERHEAD'} };
-            my $ipHash = { KEY => 'HostIP', VALUE => $hostHash->{HostIP} };
-            my $sslEngine = 'off';
-            my @newHH = ();
-            foreach my $h ( @{$hostHash->{'DATA'}} ) {
-                if( $h->{'KEY'} eq 'SSLEngine' ) {
-                    $sslEngine = $h->{'VALUE'};
-                } else {
-                    push( @newHH, $h );
-                }
-            }
-            $hostHash->{'DATA'} = \@newHH;
-	    # set sslHash to 1, if there are SSLRequire option set it to 2 
-#            if( $sslEngine eq 'on' ) {
-#		foreach my $tmp ( @{$hostHash->{'DATA'}})
-#                 {
-#		  if (exists($tmp->{SECTIONNAME}) && $tmp->{SECTIONNAME} eq 'Directory')
-#                   {  
-#		    my $ssl_require=0;
-#		    foreach my $newData (@{$tmp->{VALUE}})
-#		     {
-#		      $ssl_require=1 if (ref($newData->{VALUE}) eq 'ARRAY'&& grep{$_->{KEY} eq 'SSLRequireSSL'}@{$newData->{VALUE}});
-#                    }
-#			if ($ssl_require) {$sslHash->{'VALUE'} = 2;}
-#				else { $sslHash->{'VALUE'} = 1; }
-#		   }
-#                 }
-#            } 
-            return [ @{$hostHash->{'DATA'}}, $vbnHash, $ipHash ];
-        }
-    }
-    return $self->SetError( summary => __('hostid not found'),code => 'HOSTID_NOT_FOUND' );
+ if (!defined $vhost_files ){
+ my @data = $self->readHosts();
+ $vhost_files = $data[0];
 }
+#    my @data = $self->readHosts();
+
+#    if( ref($vhost_files) eq 'HASH' ) { $vhost_files = $data[0]; } 
+#	else { return $self->SetError( %{SCR->Error(".http_server.vhosts")} ); }
+    my $ret=undef;
+    foreach my $key ( keys( %{$vhost_files} ) ){
+	switch($key)
+	 {
+	 case "ip-based" {
+	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)){
+				$ret = $hostentryHash;
+				}
+	          }
+		 }
+		}
+	 case "main" { if (( defined($vhost_files->{'main'}{HOSTID}) ) && ($vhost_files->{'main'}{HOSTID} eq $hostid)) {$ret = $vhost_files->{'main'};  } }
+	 else { 
+	       foreach my $hostList ( $vhost_files->{$key} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)){
+				$ret = $hostentryHash;
+				}
+	           }
+		  }
+		 }
+	 }	
+      }
+  if (defined $ret){
+    return [ @{$ret->{'DATA'}} ];
+   } else {
+	return [];
+	}
+}
+
+BEGIN { $TYPEINFO{getVhType} = ["function", [ "map", "string", "any" ], "string"]; }
+sub getVhType {
+    my $self = shift;
+    my $hostid = shift;
+
+    my %ret= ();
+    foreach my $key ( keys( %{$vhost_files} ) ){
+	switch($key)
+	 {
+	 case "ip-based" {
+	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)) 
+			{
+			 %ret = (type => 'ip-based', id => $hostentryHash->{HostIP});
+			}
+	          }
+		 }
+		}
+	 case "main" { if (( defined($vhost_files->{'main'}{HOSTID}) ) && ($vhost_files->{'main'}{HOSTID} eq $hostid)) 
+			{
+			 %ret = (type => 'main');
+			}
+		     }
+	 else { 
+	       foreach my $hostList ( $vhost_files->{$key} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid))
+			{
+			 %ret = (type => 'name-based',id => $hostentryHash->{HostIP});
+			}
+	           }
+		  }
+		 }
+	 }	
+      }
+   return \%ret;
+}
+
+sub createVH (){
+    my $self = shift;
+    my $hostid = shift;
+    my $data = shift;
+
+    my $byname = "";
+    my $ip = "";
+    my $servername = "";
+
+ my @newdata = ();
+ foreach my $row (@{$data}){
+  if ($row->{KEY} eq 'HostIP' ) {
+    $ip = $row->{VALUE};
+   } elsif ($row->{KEY} eq 'VirtualByName' ) {
+	 $byname = $row->{VALUE};		
+	}else {
+		$servername = $row->{VALUE} if ($row->{KEY} eq 'ServerName');
+	 	push(@newdata, $row);
+	}
+ }
+
+
+ if ($byname eq 0){
+	 push(@{$vhost_files->{'ip-based'}},  {HOSTID => "$ip/$servername", HostIP => $ip, DATA => \@newdata});
+	} else {
+		 $vhost_files->{$ip} =  [{HOSTID => "$ip/$servername", HostIP => $ip, DATA => \@newdata}];
+		}
+
+
+
+#$vhost_files->{$ip} = \@newdata;
+#  deleteVH() if (@{$self->GetHost($hostid)} ne 0);
+ 
+# if ($type eq "0"){
+#   $vhost_files->{$ip} = @newdata;
+#  }
+
+}
+
+
+sub deleteVH (){
+    my $self = shift;
+    my $hostid = shift;
+
+    foreach my $key ( keys( %{$vhost_files} ) ){
+	switch($key)
+	 {
+	 case "ip-based" {
+	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
+		   my @tmp_list = ();
+	           foreach my $hostentryHash ( @$hostList ) { push(@tmp_list, $hostentryHash) if ($hostid ne $hostentryHash->{HOSTID}); }
+			$vhost_files->{'ip-based'} = \@tmp_list;
+		 }
+		}
+	 case "main" { delete $vhost_files->{'main'} if ($hostid eq 'main'); }
+	 else { 
+	       foreach my $hostList ( $vhost_files->{$key} ) {
+	           foreach my $hostentryHash ( @$hostList ) { delete ($vhost_files->{$key}) if ($hostentryHash->{HOSTID} eq $hostid); }
+		  }
+	      }
+	 }	
+      }
+}
+
+
+sub modifyMain {
+    my $self = shift;
+    my $data = shift;
+
+   $vhost_files->{'main'}{'DATA'} = $data;
+}
+
+sub modifyVH {
+    my $self = shift;
+    my $hostid = shift;
+    my $data = shift;
+#    my $type = "";
+#    my $ip = "";
+
+
+# my @newdata = ();
+# foreach my $row (@{$data}){
+#  if ($row->{KEY} eq 'HostIP' ) {
+#    $ip = $row->{VALUE};
+#   } elsif ($row->{KEY} eq 'VirtualByName' ) {
+#	 $type = $row->{VALUE};		
+#	}else {
+#	 	push(@newdata, $row);
+#	}
+# }
+
+ $self->deleteVH($hostid);
+ $self->createVH($hostid, $data);
+ $self->validateNVH();
+
+}
+
+sub validateNVH (){
+    my @nb = ();
+    foreach my $key ( keys( %{$vhost_files} ) ){
+     if(($key ne 'ip-based') && ($key ne 'main')){
+	push(@nb, $key);
+       }
+      }
+ my @tmp_data=();
+ foreach my $row (@{$vhost_files->{main}{DATA}}){
+  push(@tmp_data, $row) if ($row->{KEY} ne 'NameVirtualHost');
+ }
+ $vhost_files->{main}{DATA} = \@tmp_data;
+
+
+ foreach my $ip (@nb){
+  push(@{$vhost_files->{main}{DATA}}, {KEY=>'NameVirtualHost', VALUE=>$ip} );
+ }
+
+}
+
 
 =item *
 C<ModifyHost($hostid,$hostdata)>
@@ -721,6 +886,31 @@ sub DeleteHost {
     return $self->writeHost( $filename, $vhost_files );
 }
 
+sub writeHosts (){
+    my $self = shift;
+    my @vhosts = @{$vhost_files->{'ip-based'}};
+
+     foreach my $key ( keys(%{$vhost_files}) ) {
+	switch($key)
+	 {
+	 case "ip-based" {
+		}
+	 case "main" {}
+	 else { 
+	       foreach my $hostList ( $vhost_files->{$key} ) {
+	           foreach my $hostentryHash ( @$hostList ) {
+	               push( @vhosts, $hostentryHash ) ;
+	           }
+		  }
+	      }
+	 }	
+     }
+
+ my %data = ( 'default-server.conf' =>$vhost_files->{'main'},
+		'yast2_vhosts.conf'=>\@vhosts );
+ SCR->Write(".http_server.vhosts", \%data);
+}
+
 #######################################################
 # default and vhost API end
 #######################################################
@@ -906,11 +1096,11 @@ EXAMPLE
 
 =cut
 
-BEGIN { $TYPEINFO{GetModuleSelectionsList} = ["function", ["list","string"] ]; }
-sub GetModuleSelectionsList {
-    my $self = shift;
-    return (SCR->Read('.http_server.moduleselection'))[0];
-}
+#BEGIN { $TYPEINFO{GetModuleSelectionsList} = ["function", ["list","string"] ]; }
+#sub GetModuleSelectionsList {
+#    my $self = shift;
+#    return (SCR->Read('.http_server.moduleselection'))[0];
+#}
 
 =item *
 C<ModifyModuleSelectionList($selList, $status)>
@@ -928,30 +1118,30 @@ EXAMPLE
 
 =cut
 
-BEGIN { $TYPEINFO{ModifyModuleSelectionList} = ["function", "boolean", ["list","string"], "boolean" ]; }
-sub ModifyModuleSelectionList {
-    my $self = shift;
-    my $newSelection = shift;
-    my $enable = shift;
-    my %uniq = ();
+#BEGIN { $TYPEINFO{ModifyModuleSelectionList} = ["function", "boolean", ["list","string"], "boolean" ]; }
+#sub ModifyModuleSelectionList {
+#    my $self = shift;
+#    my $newSelection = shift;
+#    my $enable = shift;
+#    my %uniq = ();
 
-    @uniq{@{$self->GetModuleSelectionsList()}} = ();
-    if( $enable ) {
-        @uniq{@$newSelection} = ();
-        foreach my $ns ( @$newSelection ) {
-            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 1 );
-            $self->ModifyModuleList( [], 1 );
-        }
-    } else {
-        delete(@uniq{@$newSelection});
-        foreach my $ns ( @$newSelection ) {
-            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 0 );
-            $self->ModifyModuleList( [], 1 );
-        }
-    }
+#    @uniq{@{$self->GetModuleSelectionsList()}} = ();
+#    if( $enable ) {
+#        @uniq{@$newSelection} = ();
+#        foreach my $ns ( @$newSelection ) {
+#            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 1 );
+#            $self->ModifyModuleList( [], 1 );
+#        }
+#    } else {
+#        delete(@uniq{@$newSelection});
+#        foreach my $ns ( @$newSelection ) {
+#            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 0 );
+#            $self->ModifyModuleList( [], 1 );
+#        }
+#    }
 
-    SCR->Write('.http_server.moduleselection', [keys(%uniq)]);
-}
+#    SCR->Write('.http_server.moduleselection', [keys(%uniq)]);
+#}
 
 #######################################################
 # apache2 modules API end
@@ -1041,9 +1231,11 @@ EXAMPLE
  print "apache2 is ".( (ReadService())?('on'):('off') )."\n";
 
 =cut
+
 BEGIN { $TYPEINFO{ReadService} = ["function", "boolean"]; }
 sub ReadService {
     my $self = shift;
+
     return Service->Enabled('apache2');
 }
 
