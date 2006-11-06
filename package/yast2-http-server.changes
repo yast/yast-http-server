@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Nov  6 14:28:32 CET 2006 - mzugec@suse.cz
+
+- add yast2-dns-server to requires
+- 2.14.3
+
+-------------------------------------------------------------------
 Tue Oct 31 14:19:56 CET 2006 - mzugec@suse.cz
 
 - #180776 - missing option for SSL vhosts
