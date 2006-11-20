@@ -29,9 +29,8 @@ symbol MainSequence() {
 
     map aliases = $[
 	"overview"	:   ``( OverviewDialog() ),
-	"hosts"		:   ``( HostsDialog()),
 	"host"		:   ``( HostDialog() ),
-	"host-default"	:   ``( HostDialog() ),			// different workflow
+	"main-host"	:   ``( HostDialog() ),			// different workflow
 	"addhost"	:   ``( AddHost() ),
 	"setvhost"	:   ``( SetVHostOptions() ),
 	"ssl"		:   ``( SSLDialog () ),
@@ -44,8 +43,8 @@ symbol MainSequence() {
 	"overview" : $[
 	    `abort	: `abort,
 	    `next	: `next,
-	    `default	: "host-default",
-	    `hosts	: "hosts",
+	    `default	: "main-host",
+//	    `hosts	: "hosts",
 	    `dir	: "dir",
 	    `ssl	: "ssl-default",
 	    `edit	: "host",
@@ -53,20 +52,13 @@ symbol MainSequence() {
 	],
 	"ssl-default" : $[
 	    `abort	: `abort,
-	    `next	: "host-default",
-	    `back	: "host-default",
-	],
-	"hosts" : $[
-	    `abort	: `abort,
-	    `next	: "overview",
-	    `back	: "overview",
-	    `add	: "addhost",
-	    `edit	: "host",
+	    `next	: "main-host",
+	    `back	: "main-host",
 	],
 	"host" : $[
 	    `abort	: `abort,
 	    `next	: "overview",
-	    `back	: "hosts",
+//	    `back	: "hosts",
 	    `ssl	: "ssl",
 	    `dir	: "dir"
 	],
@@ -74,7 +66,7 @@ symbol MainSequence() {
 	"addhost": $[
 	    `abort	: `abort,
 	    `next	: "setvhost",
-	    `back	: "hosts",
+//	    `back	: "hosts",
 	],
 	"setvhost": $[
 	    `abort	: `abort,

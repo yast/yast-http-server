@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Nov 20 10:50:15 CET 2006 - mzugec@suse.cz
+
+- #220756 - yast2 http-server does not accept any servername
+- 2.13.21 
+
+-------------------------------------------------------------------
 Tue Oct 31 16:32:04 CET 2006 - mzugec@suse.cz
 
 - #180776 - missing option for SSL vhosts
