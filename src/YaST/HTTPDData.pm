@@ -271,7 +271,6 @@ sub CreateHost {
     if( ! $self->checkHostmap( $hostdata ) ) {
         return undef;
     }
-#use Data::Dumper;
 #    foreach my $h ( @$hostdata ) {
 #        if( $h->{KEY} eq 'DocumentRoot' ) {
 #            $dir=$self->addDir($h->{VALUE});
