@@ -888,7 +888,9 @@ sub DeleteHost {
 
 sub writeHosts (){
     my $self = shift;
-    my @vhosts = @{$vhost_files->{'ip-based'}};
+    my @vhosts = ();
+
+    my @vhosts = @{$vhost_files->{'ip-based'}} if (defined $vhost_files->{'ip-based'}); 
 
      foreach my $key ( keys(%{$vhost_files}) ) {
 	switch($key)
@@ -906,8 +908,9 @@ sub writeHosts (){
 	 }	
      }
 
- my %data = ( 'default-server.conf' =>$vhost_files->{'main'},
-		'yast2_vhosts.conf'=>\@vhosts );
+ my %data = ( 'default-server.conf' =>$vhost_files->{'main'});
+ my $vh_size = @vhosts;
+ $data{'yast2_vhosts.conf'} = \@vhosts if ($vh_size>0);
  SCR->Write(".http_server.vhosts", \%data);
 }
 

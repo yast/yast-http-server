@@ -97,7 +97,8 @@ map tabs_descr = $[
 	 "header" : _("Hosts"),
 	 "contents" : `HBox (`HSpacing (1), `VBox (
             `VSpacing (1),
-            "HOSTS", `PushButton( `id( `set_default ), _("Set as De&fault") ),
+            "HOSTS", 
+//`PushButton( `id( `set_default ), _("Set as De&fault") ),
             `VSpacing (1)
 //, `PushButton( `id( `set_default ), _("Set as De&fault") )
         ), `HSpacing (1)),
@@ -187,10 +188,6 @@ map tabs_descr = $[
 
 	Wizard::SetContentsButtons (caption, contents, help,
 	    Label::BackButton (), Label::OKButton ());
-
-	UI::ReplaceWidget( `id(`_tp_table_repl),
-	    // menu button label
-	    `PushButton( `id( `set_default ), _("Set as De&fault") ) );
 
 	return CWM::Run (w, $[`abort : Abort]);
     }

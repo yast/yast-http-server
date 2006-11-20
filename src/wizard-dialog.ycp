@@ -152,7 +152,7 @@ symbol WizardSequence2(){
   */
 symbol WizardSequence3(){
         string caption=_("HTTP Server Wizard (3/5)--Default Host");
-       list< map<string,any> > w = CWM::CreateWidgets (["host"], HttpServerWidgets::widgets);
+       list< map<string,any> > w = CWM::CreateWidgets (["MAIN_HOST"], HttpServerWidgets::widgets);
         term contents = `HBox (`HSpacing (1), `VBox (
             `VSpacing (1),
             w[0, "widget"]:`VSpacing (0),
@@ -165,18 +165,18 @@ symbol WizardSequence3(){
         Wizard::SetContentsButtons (caption, contents, help, Label::BackButton (), Label::NextButton ());
         Wizard::SetAbortButton ( `abort, Label::CancelButton() );
 
-	string servername = (string) HttpServerWidgets::get_host_value("ServerName", YaST::HTTPDData::GetHost("default"), "");
+	string servername = (string) HttpServerWidgets::get_host_value("ServerName", YaST::HTTPDData::GetHost("main"), "");
 
-	string serveradmin = (string) HttpServerWidgets::get_host_value("ServerAdmin", YaST::HTTPDData::GetHost("default"), "");
+	string serveradmin = (string) HttpServerWidgets::get_host_value("ServerAdmin", YaST::HTTPDData::GetHost("main"), "");
 
 	map hostname = (map) SCR::Execute(.target.bash_output, "/bin/hostname");
 y2milestone("Hostname : %1", hostname["stdout"]:"");
 	// if no ServerName or ServerAdmin readed from configuration file, the values based on machine hostname are used
 	if (size(servername) ==0) 
-	       YaST::HTTPDData::ModifyHost ("default", HttpServerWidgets::set_host_value("ServerName", YaST::HTTPDData::GetHost("default"), 
+	       YaST::HTTPDData::ModifyHost ("main", HttpServerWidgets::set_host_value("ServerName", YaST::HTTPDData::GetHost("main"), 
 																hostname["stdout"]:""));
 	if (size(serveradmin) ==0) 
-	      YaST::HTTPDData::ModifyHost ("default", HttpServerWidgets::set_host_value("ServerAdmin", YaST::HTTPDData::GetHost("default"), 
+	      YaST::HTTPDData::ModifyHost ("main", HttpServerWidgets::set_host_value("ServerAdmin", YaST::HTTPDData::GetHost("main"), 
 															"root@"+hostname["stdout"]:""));
 
         return CWM::Run (w, $[`abort : Abort]);
@@ -204,10 +204,6 @@ symbol WizardSequence4(){
         Wizard::SetContentsButtons (caption, contents, help,
             Label::BackButton (), Label::NextButton ());
         Wizard::SetAbortButton ( `abort, Label::CancelButton() );
-
-        UI::ReplaceWidget( `id(`_tp_table_repl),
-            // menu button label
-            `PushButton( `id( `set_default ), _("Set as De&fault") ) );
 
         return CWM::Run (w, $[`abort : Abort]);
 }
