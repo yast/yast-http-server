@@ -822,10 +822,10 @@ if( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
     }
 
     if( $self->isVirtualByName($vhost, $vhost_files) and !$VirtualByName) {
-        return $self->SetError( summary => __('ip based host on virtual by name interface'), code => "CHECK_PARAM_FAILED");
+        return $self->SetError( summary => 'ip based host on virtual by name interface', code => "CHECK_PARAM_FAILED");
     }
     if( ! $self->isVirtualByName($vhost, $vhost_files) and $VirtualByName) {
-        return $self->SetError( summary => __('name based host on none name based interface'), code => "CHECK_PARAM_FAILED");
+        return $self->SetError( summary => 'name based host on none name based interface', code => "CHECK_PARAM_FAILED");
     }
 
     if( ref($vhost_files->{'yast2_vhosts.conf'}) eq 'ARRAY' ) {
