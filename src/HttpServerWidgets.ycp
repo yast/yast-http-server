@@ -33,6 +33,8 @@
     import "Package";
     import "DnsServerAPI";
     import "FileUtils";
+    import "Hostname";
+    import "DNS";
 
     include "http-server/helps.ycp";
 
@@ -110,11 +112,9 @@ global list< map<string,any> > set_host_value ( string keyword, list< map<string
    * @param event map
    * @return boolean valid servername
    */
-global boolean validate_servername (any id, string key, map event) 
+global boolean validate_servername (string value) 
 {
-    import "Hostname";
-    import "Punycode";
-    string value = Punycode::EncodeDomainName( (string)UI::QueryWidget (`servername, `Value) );
+//    string value = Punycode::EncodeDomainName( (string)UI::QueryWidget (`id(key), `Value) );
     if (!Hostname::CheckFQ (value))
     {
 	//translators: popup error message when validate servername
@@ -377,15 +377,12 @@ map<string,string> AskNewInfo (string servername, string ip)
 {
     if (size (servername) == 0)
     {
-	import "DNS";
-	import "Hostname";
 	// suggest reasonable value
 	servername = Hostname::MergeFQ (DNS::hostname, DNS::domain);
 	// maybe we should check, if there is such host already
     }
 
     list ips = maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) ;
-
     UI::OpenDialog (
 	`VBox(
 	    // translators: popup description on changing the default host
@@ -403,14 +400,14 @@ switch. Otherwise click Cancel not to change
 the default host.
 ")),
 	    // translators: textentry to set the host name
-	    `TextEntry (`servername, _("Server &Name:"), servername),
+	    `TextEntry (`id(`servername), _("Server &Name:"), servername),
 	    // translators: textentry to set the host IP address
 	    `Left( `ComboBox( `id("ip"), `opt(`editable), _("Server &IP Address:"), ips ) ),
 	    `VSpacing(0.5),
 	    `HBox( `PushButton (`id(`ok), `opt(`default), Label::ContinueButton ()),
 		`PushButton (`id(`cancel), Label::CancelButton ()) )
 	));
-
+y2internal("I am here");
     UI::SetFocus (`servername);
     UI::ChangeWidget (`id("ip"), `Value, ip);
 
@@ -421,10 +418,10 @@ the default host.
 	ret = (symbol)UI::UserInput ();
 	if (ret == `cancel) break;
 
+servername = Punycode::EncodeDomainName((string)UI::QueryWidget (`servername, `Value));
 	// it must be `ok
-	if (! validate_servername("servername","", nil)) continue;
+	if (! validate_servername(servername)) continue;
 
-	servername = (string)UI::QueryWidget (`servername, `Value);
 
 	if (! validate_serverip("ip",nil,nil)) continue;
 	ip = (string)UI::QueryWidget (`id("ip"), `Value);
@@ -447,6 +444,11 @@ global list HostsContents (map descr) {
     return filter(string row, YaST::HTTPDData::GetHostsList (), { return (row !="main"); });
 }
 
+void changeDelDefault(boolean stat){
+	UI::ChangeWidget(`set_default, `Enabled, stat);
+	UI::ChangeWidget(`_tp_delete, `Enabled, stat);
+}
+
   /**
    * Widget for delete host
    * @param opt_id any
@@ -454,6 +456,7 @@ global list HostsContents (map descr) {
    * @return boolean delete success
    */
 global boolean HostsDelete (any opt_id, string opt_key) {
+
     if (opt_id == "default")
     {
 	// translators: popup error message - default host cannot be deleted
@@ -465,7 +468,10 @@ global boolean HostsDelete (any opt_id, string opt_key) {
 	return false;
 	
     HttpServer::modified = true;
-    return YaST::HTTPDData::DeleteHost ((string)opt_id);
+    boolean ret = YaST::HTTPDData::DeleteHost ((string)opt_id);
+    if (size( HostsContents($[]) )==0) changeDelDefault(false);
+	else changeDelDefault(true);
+    return ret;
 }
 
   /**
@@ -531,6 +537,10 @@ map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
    */
 global symbol HostsHandle (string table, map event)
 {
+    if (size((list)UI::QueryWidget(`_tp_table, `Items))==0)
+						changeDelDefault(false);
+	else changeDelDefault(true);
+
     if ( event["ID"]:nil == `_tp_add )
     {
 	return `add;
@@ -554,9 +564,10 @@ global symbol HostsHandle (string table, map event)
 
 	y2milestone ("Changing default host to '%1'", host);
 
-	list< map<string,any> > defhost_options = YaST::HTTPDData::GetHost("default");
+	list< map<string,any> > defhost_options = YaST::HTTPDData::GetHost("main");
 	string servername = (string) get_host_value( "ServerName", defhost_options, "");
 	string ip = (string) get_host_value( "HostIP", defhost_options, "");
+y2internal("%1", ip);
 	if (ip == "" || servername != "")
 	{
 	    // we must set a new server name and ip for the old default host
@@ -575,7 +586,7 @@ global symbol HostsHandle (string table, map event)
 	// move the old default host elsewhere
 	YaST::HTTPDData::CreateHost ( ip+"/"+servername, defhost_options );
 	// replace the values of the default host by the new one
-	YaST::HTTPDData::ModifyHost ("default", YaST::HTTPDData::GetHost(host) );
+	YaST::HTTPDData::ModifyHost ("main", YaST::HTTPDData::GetHost(host) );
 	// remove the old non-default host
 	YaST::HTTPDData::DeleteHost (host);
 
@@ -587,7 +598,6 @@ global symbol HostsHandle (string table, map event)
     {
 	return TablePopup::TableHandle(hosts_widget, table, event);
     }
-    
     return nil;
 }
 
@@ -599,6 +609,10 @@ global void HostsInit (string widget)
 {
     init_tab = "hosts";
     TablePopup::TableInit(hosts_widget, widget);
+
+						    // menu button label
+    UI::ReplaceWidget( `id(`_tp_table_repl), `PushButton( `id( `set_default ), _("Set as De&fault") ) );
+
 }
 /******************************************************************************************/
 
@@ -662,8 +676,8 @@ global map<string,map> popups = $[
 		    // table cell description
 		    "label"  : _("Server Name"),
 		    "widget" : `textentry,
-		    "validate_type" : `function,
-		    "validate_function" : validate_servername,
+//		    "validate_type" : `function,
+//		    "validate_function" : validate_servername,
 		],
 	    ],
 	    "DocumentRoot" : $[
@@ -983,7 +997,7 @@ global boolean validateVhostId(string key, map event) ``{
  string admin = (string) UI::QueryWidget( `admin, `Value );
  boolean virtualbyname = (boolean) UI::QueryWidget( `name_based, `Value );
 
-    if (! validate_servername("", "servername", nil)) return false;
+    if (! validate_servername(servername)) return false;
 
 //     if (! validate_serverip("", "ipaddress", nil)) return false;
 
