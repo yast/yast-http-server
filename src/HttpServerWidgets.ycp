@@ -320,7 +320,7 @@ global boolean validate_server_fnc (string id, map key);
 //symbol showAccessLogPopup (any key, map event);
 //symbol showErrorLogPopup (any key, map event);
 
-list <string> host_ids = nil;
+//list <string> host_ids = nil;
 
 //void OverviewInit (string widget) { }
 
@@ -943,19 +943,32 @@ global symbol handleDirTable( string key, map event )
 global void DirStore (string key, map event)
  {
 	list< map<string,any> > options = [];
-
+	boolean dir_before=false;
             list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
             foreach (map<string, any> option, host, ``{
                 if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory" 
 								&& option["SECTIONPARAM"]:"unknown" == dir_value)
                 {
+		 dir_before = true;
 		   list < map<string,any> > newlist = [];
 		  foreach(integer key, map<string,any> value, host_options, {newlist = add(newlist, value);});
 		option["VALUE"] = newlist;
                 }
 		options = add(options, option);
             });
+ if (!dir_before){
+
+		   list < map<string,any> > newlist = [];
+		  foreach(integer key, map<string,any> value, host_options, {newlist = add(newlist, value);});
+//		options = add(options, $["VALUE":newlist]);
+  options = add(host, $["KEY":"_SECTION", 
+		"SECTIONNAME":"Directory",
+		"SECTIONPARAM":dir_value,
+		"VALUE":newlist]);
+ }
+y2internal("modify %1", options);
 	YaST::HTTPDData::ModifyHost (currenthost, options );
+y2internal("\n\nget %1", YaST::HTTPDData::GetHost(currenthost));
 	setHostOptions(nil);
 	HttpServer::modified = true;
  }
@@ -1013,7 +1026,17 @@ global boolean validateVhostId(string key, map event) ``{
              $[ "KEY": "ServerName", "VALUE" : servername ],
              $[ "KEY": "ServerAdmin", "VALUE" : admin ],
              $[ "KEY": "VirtualByName", "VALUE" : virtualbyname ? "1" : "0" ],
-             $[ "KEY": "HostIP", "VALUE" : ip ]
+             $[ "KEY": "HostIP", "VALUE" : ip ],
+		$[
+		   "KEY"       : "_SECTION",
+		    "SECTIONNAME": "Directory",
+		    "SECTIONPARAM": documentroot,
+		    "VALUE" : [
+				$["KEY":"AllowOverride", "VALUE":"None"],
+				$["KEY":"Order", "VALUE":"allow,deny"],
+				$["KEY":"Allow", "VALUE":"from all"]
+			      ],
+		    "OVERHEAD" : ""]
          ];
      if ( !validate_server (nil, vhost_descr) ) return false;
  return true;
@@ -1281,15 +1304,8 @@ global define void storeVhostDetails (string key, map events) ``{
 
   if (size(ssl_values)>0) vhost_descr = add(vhost_descr, ssl_values);
 
-  any result = YaST::HTTPDData::CreateHost ( ip["VALUE"]:""+"/"+servername["VALUE"]:"", vhost_descr );
 
-
-  if ( result == nil)
-	{
-         map<string,string> error = (map<string,string>) YaST::HTTPDData::Error ();
-	 Popup::Error ( error["summary"]:"" );
-	} else {
-		  vhost_descr = YaST::HTTPDData::GetHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"");
+//		  vhost_descr = YaST::HTTPDData::GetHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"");
 		  string directory_index=(string)UI::QueryWidget(`dir_index, `Value);
 
 		  if ( size(directory_index)>0 ){
@@ -1300,18 +1316,26 @@ global define void storeVhostDetails (string key, map events) ``{
 				value["SECTIONNAME"]:"" == "Directory" && 
 				(search(value["SECTIONPARAM"]:"", documentroot["VALUE"]:""))!=nil) 
 				 {
-				  if (size(directory_index)>0)	
+//				  if (size(directory_index)>0)	
 						value["VALUE"]=add(value["VALUE"]:[], $["KEY":"DirectoryIndex", "VALUE":directory_index]);
 				 }
-			  tmp_descr  = add(tmp_descr, value);
+		  tmp_descr  = add(tmp_descr, value);
+//			vhost_descr = add(vhost_descr, value);
 			 });
-			if (UI::QueryWidget(`pub_html, `Value)==true) tmp_descr=add(tmp_descr, 	$["KEY":"UserDir", "VALUE":"public_html"]);
-
+			vhost_descr = tmp_descr;
 			}
-			HttpServer::modified = true;
-			vhost_descr = [];
-		 }
+//		 }
+	if ( UI::QueryWidget(`pub_html, `Value)==true )
+		vhost_descr=add(vhost_descr, $["KEY":"UserDir", "VALUE":"public_html"]);
+  if ( YaST::HTTPDData::CreateHost ( ip["VALUE"]:""+"/"+servername["VALUE"]:"", vhost_descr )==nil )
+	{
+         map<string,string> error = (map<string,string>) YaST::HTTPDData::Error ();
+	 Popup::Error ( error["summary"]:"" );
+	}
+  HttpServer::modified = true;
+  vhost_descr = [];
 }
+
 
 
 /**
@@ -2024,7 +2048,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 		}
 
 		if ( key == "_SECTION" && option["SECTIONPARAM"]:"" == "SSL" )
-			{
+		{
 			    host_options[option_counter] = $[
 				"KEY" : "SSL",
 				"VALUE" :  "", 
@@ -2035,12 +2059,24 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 		    option_counter = option_counter + 1;
 		}
 
-
 		// skip SECTIONS
 		if ( key == "_SECTION" ) 
 		{
-		    option_counter = option_counter + 1;
-		    continue;
+		 if (option["SECTIONNAME"]:"" == "IfModule")
+		  {
+		    host_options[option_counter] = $[
+                                "KEY" : option["SECTIONPARAM"]:"",
+                                "VALUE" :  "",
+                                "DATA": option["VALUE"]:[],
+                                "OVERHEAD" : option["OVERHEAD"]:""
+                                ];
+                    res = add (res, option_counter);
+                    option_counter = option_counter + 1;
+
+		  } else{
+			    option_counter = option_counter + 1;
+			    continue;
+			}
 		}
 		// skip HostIP for default host
 		else if (currenthost == "main" && key == "HostIP")
@@ -2050,7 +2086,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 		    continue;
 		}
 		else
-		{			
+		{
 		    host_options[option_counter] = option;
 		    res = add (res, option_counter);
 		    option_counter = option_counter + 1;
@@ -2091,7 +2127,6 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 		res = add (res, option_counter);
 		option_counter = option_counter + 1;
 	    }
-	    
 	    return res;
 	}
 	else
