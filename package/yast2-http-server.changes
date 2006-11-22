@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Nov 22 16:02:18 CET 2006 - mzugec@suse.cz
+
+- #200805 - YaST Fails to Enable UserDir
+- 2.14.5
+
+-------------------------------------------------------------------
 Mon Nov 20 09:57:12 CET 2006 - mzugec@suse.cz
 
 - #220756 - yast2 http-server does not accept any servername

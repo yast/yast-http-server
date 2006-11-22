@@ -494,6 +494,7 @@ sub createVH (){
     my $self = shift;
     my $hostid = shift;
     my $data = shift;
+    my $params = shift;
 
     my $byname = "";
     my $ip = "";
@@ -509,6 +510,15 @@ sub createVH (){
 		$servername = $row->{VALUE} if ($row->{KEY} eq 'ServerName');
 	 	push(@newdata, $row);
 	}
+ }
+
+ if ($ip eq '' && $byname eq ''){
+  $ip = $params->{'id'};
+  if ($params->{'type'} eq "ip-based"){
+   $byname = "0";
+  } else {
+	 $byname = "1";
+ 	}
  }
 
 
@@ -566,8 +576,6 @@ sub modifyVH {
     my $self = shift;
     my $hostid = shift;
     my $data = shift;
-#    my $type = "";
-#    my $ip = "";
 
 
 # my @newdata = ();
@@ -580,9 +588,13 @@ sub modifyVH {
 #	 	push(@newdata, $row);
 #	}
 # }
+print Dumper($vhost_files->{'ip-based'});
+print Dumper($data);
+my $params = $self->getVhType($hostid);
+print Dumper($params);
 
  $self->deleteVH($hostid);
- $self->createVH($hostid, $data);
+ $self->createVH($hostid, $data, $params);
  $self->validateNVH();
 
 }
@@ -890,7 +902,7 @@ sub writeHosts (){
     my $self = shift;
     my @vhosts = ();
 
-    my @vhosts = @{$vhost_files->{'ip-based'}} if (defined $vhost_files->{'ip-based'}); 
+    @vhosts = @{$vhost_files->{'ip-based'}} if (defined $vhost_files->{'ip-based'}); 
 
      foreach my $key ( keys(%{$vhost_files}) ) {
 	switch($key)
