@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Jan 10 14:23:49 CET 2007 - mzugec@suse.cz
+
+- add http-server.rnc autoyast validation file (#232808) 
+
+-------------------------------------------------------------------
 Wed Nov 22 16:37:41 CET 2006 - mzugec@suse.cz
 
 - #200805 - YaST Fails to Enable UserDir

@@ -1,0 +1,57 @@
+default namespace = "http://www.suse.com/1.0/yast2ns"
+namespace a = "http://relaxng.org/ns/compatibility/annotations/1.0"
+namespace config = "http://www.suse.com/1.0/configns"
+
+
+http-server = element http-server {
+    element firewall { BOOLEAN }? &
+    element service  { BOOLEAN }? &
+    element version  { text }? &
+
+    http-listen? &
+    http-hosts? &
+    http-modules?
+}
+
+
+http-listen = element Listen {
+    LIST,
+    element listentry {
+        element ADDRESS { text } &
+        element PORT    { text }
+    }*
+}
+
+http-hosts = element hosts {
+    LIST,
+    element hosts_entry {
+        element KEY   { text } &
+        element VALUE {
+            LIST,
+            element listentry {
+                element KEY          { text }? &
+                element OVERHEAD     { text }? &
+                element SECTIONNAME  { text }? &
+                element SECTIONPARAM { text }? &
+                element VALUE        {
+                    LIST,
+                    element listentry {
+                        element KEY   { text }? &
+                        element VALUE { text }?
+                    }*
+                }*
+            }*
+        }
+    }*
+}
+
+http-modules = element modules {
+    LIST,
+    element module_entry {
+        element change  { text } &
+        element default { "1" | "0" } &
+        element name    { text }
+    }*
+}
+
+
