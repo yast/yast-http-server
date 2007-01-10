@@ -3,6 +3,8 @@
 #
 
 yncludedir = @yncludedir@/http-server
+rncdir =  $(schemadir)/autoyast/rnc
+rnc_DATA = http-server.rnc
 
 client_DATA =			\
 	http-server.ycp		\
