@@ -44,6 +44,6 @@ ycpchook = http-server
 
 YCPCFLAGS=-I.
 
-EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(module_DATA) $(ydata_DATA) $(desktop_DATA) $(YaPI_perl_DATA) $(YaST_perl_DATA)
+EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(module_DATA) $(ydata_DATA) $(desktop_DATA) $(YaPI_perl_DATA) $(YaST_perl_DATA) $(rnc_DATA)
 
 include $(top_srcdir)/Makefile.am.common
