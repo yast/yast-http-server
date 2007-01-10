@@ -22,6 +22,7 @@ Summary:	Configuration of http-server
 %files
 %defattr(-,root,root)
 %dir @yncludedir@/http-server
+@schemadir@/autoyast/rnc/http-server.rnc
 @yncludedir@/http-server/*
 @clientdir@/http-server.ycp
 @clientdir@/http-server_*.ycp
