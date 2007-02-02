@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Feb  2 09:47:30 CET 2007 - mzugec@suse.de
+
+- missing server modules on 64-bit architecture (#239029)
+- 2.13.23 
+
+-------------------------------------------------------------------
 Wed Jan 10 14:23:49 CET 2007 - mzugec@suse.cz
 
 - add http-server.rnc autoyast validation file (#232808) 
