@@ -445,9 +445,10 @@ global list HostsContents (map descr) {
     return filter(string row, YaST::HTTPDData::GetHostsList (), { return (row !="main"); });
 }
 
-void changeDelDefault(boolean stat){
+void changeButtons(boolean stat){
 	UI::ChangeWidget(`set_default, `Enabled, stat);
 	UI::ChangeWidget(`_tp_delete, `Enabled, stat);
+	UI::ChangeWidget(`_tp_edit, `Enabled, stat);
 }
 
   /**
@@ -470,8 +471,8 @@ global boolean HostsDelete (any opt_id, string opt_key) {
 	
     HttpServer::modified = true;
     boolean ret = YaST::HTTPDData::DeleteHost ((string)opt_id);
-    if (size( HostsContents($[]) )==0) changeDelDefault(false);
-	else changeDelDefault(true);
+    if (size( HostsContents($[]) )==0) changeButtons(false);
+	else changeButtons(true);
     return ret;
 }
 
@@ -539,8 +540,8 @@ map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
 global symbol HostsHandle (string table, map event)
 {
     if (size((list)UI::QueryWidget(`_tp_table, `Items))==0)
-						changeDelDefault(false);
-	else changeDelDefault(true);
+						changeButtons(false);
+	else changeButtons(true);
 
     if ( event["ID"]:nil == `_tp_add )
     {
