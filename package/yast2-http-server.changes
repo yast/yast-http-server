@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Feb 13 11:03:55 CET 2007 - mzugec@suse.de
+
+- incorrect order of modules (#243693)
+- 2.13.24
+
+-------------------------------------------------------------------
 Fri Feb  2 09:47:30 CET 2007 - mzugec@suse.de
 
 - missing server modules on 64-bit architecture (#239029)
