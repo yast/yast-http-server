@@ -588,10 +588,7 @@ sub modifyVH {
 #	 	push(@newdata, $row);
 #	}
 # }
-print Dumper($vhost_files->{'ip-based'});
-print Dumper($data);
 my $params = $self->getVhType($hostid);
-print Dumper($params);
 
  $self->deleteVH($hostid);
  $self->createVH($hostid, $data, $params);
@@ -1058,6 +1055,19 @@ sub ModifyModuleList {
                          $aa <=> $bb;
                         } @oldList );
     }
+
+   # change order for modules:
+   # known first, then unknown
+   my @known=();
+   my @unknown=();
+   foreach my $module (@newList){
+    if (grep (/^$module$/, (keys %YaPI::HTTPDModules::modules))){
+     push(@known, $module);
+    } else {
+         push(@unknown, $module);
+        }
+    }
+    @newList = (@known, @unknown);
 
     SCR->Write('.sysconfig.apache2.APACHE_MODULES', join(' ',@newList));
     SCR->Write('.sysconfig.apache2', undef);
