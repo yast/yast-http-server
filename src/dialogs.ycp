@@ -286,13 +286,14 @@ symbol  SetVHostOptions() {
    * @return symbol from directory widget
    */
     symbol DirDialog () {
-	list< map<string,any> > w = CWM::CreateWidgets (["dir"],
+	list< map<string,any> > w = CWM::CreateWidgets (["dir_name", "dir"],
 	    HttpServerWidgets::widgets);
-	term contents = `HBox (`HSpacing (1), `VBox (
-	    `VSpacing (1),
-	    w[0, "widget"]:`VSpacing (0),
-	    `VSpacing (1)
-	), `HSpacing (1));
+        term contents = `HBox( `HSpacing(0.5), `VBox (
+                w[0, "widget"]:`VSpacing (0),
+            `VSpacing (1),
+                w[1, "widget"]:`VSpacing (0),
+                `HSpacing (0.5)
+        ));
 
 	// translators: dialog caption, %1 is the host name
 	string caption = sformat( _("Dir Configuration for '%1'"),
