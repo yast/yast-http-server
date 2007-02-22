@@ -408,7 +408,6 @@ the default host.
 	    `HBox( `PushButton (`id(`ok), `opt(`default), Label::ContinueButton ()),
 		`PushButton (`id(`cancel), Label::CancelButton ()) )
 	));
-y2internal("I am here");
     UI::SetFocus (`servername);
     UI::ChangeWidget (`id("ip"), `Value, ip);
 
@@ -569,7 +568,6 @@ global symbol HostsHandle (string table, map event)
 	list< map<string,any> > defhost_options = YaST::HTTPDData::GetHost("main");
 	string servername = (string) get_host_value( "ServerName", defhost_options, "");
 	string ip = (string) get_host_value( "HostIP", defhost_options, "");
-y2internal("%1", ip);
 	if (ip == "" || servername != "")
 	{
 	    // we must set a new server name and ip for the old default host
@@ -739,7 +737,7 @@ global map<string,map> popups = $[
 	    "Directory" : $[
 		"table" : $[
 		"handle"   : `dir,
-		"optional" : false,
+		"optional" : true,
 		"unique"   : true,
 		],
 	    ],
@@ -892,6 +890,7 @@ map<string, any> dirwidget = (map<string, any>)TablePopup::CreateTableDescr (
 global void DirInit (string widget)
 {
    TablePopup::TableInit(dirwidget, widget);
+UI::ChangeWidget(`dir_name, `Value, dir_value);
 }
 
   /**
@@ -945,32 +944,35 @@ global symbol handleDirTable( string key, map event )
 global void DirStore (string key, map event)
  {
 	list< map<string,any> > options = [];
+	string new_dir=(string)UI::QueryWidget(`dir_name, `Value);
 	boolean dir_before=false;
             list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+y2internal("host %1", host);
             foreach (map<string, any> option, host, ``{
-                if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory" 
+                if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory"
 								&& option["SECTIONPARAM"]:"unknown" == dir_value)
                 {
 		 dir_before = true;
 		   list < map<string,any> > newlist = [];
 		  foreach(integer key, map<string,any> value, host_options, {newlist = add(newlist, value);});
 		option["VALUE"] = newlist;
+		option["SECTIONPARAM"] = new_dir;
                 }
 		options = add(options, option);
             });
+y2internal("options 2 :\n%1", options);
  if (!dir_before){
 
 		   list < map<string,any> > newlist = [];
 		  foreach(integer key, map<string,any> value, host_options, {newlist = add(newlist, value);});
 //		options = add(options, $["VALUE":newlist]);
-  options = add(host, $["KEY":"_SECTION", 
+  options = add(host, $["KEY":"_SECTION",
 		"SECTIONNAME":"Directory",
-		"SECTIONPARAM":dir_value,
+		"SECTIONPARAM":new_dir,
 		"VALUE":newlist]);
- }
-y2internal("modify %1", options);
+	}
+y2internal("options before write %1", options);
 	YaST::HTTPDData::ModifyHost (currenthost, options );
-y2internal("\n\nget %1", YaST::HTTPDData::GetHost(currenthost));
 	setHostOptions(nil);
 	HttpServer::modified = true;
  }
@@ -1471,6 +1473,13 @@ global map<string, map <string, any> > widgets = $[
 	    "hosts"	: hosts_widget,
 	    "ssl" : sslwidget,
 	    "dir" : dirwidget,
+	    "dir_name" : $[
+               "widget" : `custom,
+               "custom_widget" : `VBox(
+		 `TextEntry(`id(`dir_name), "Directory")
+		)
+
+			],
 		// wizard widgets
 	    "open_port" : $[
 		"widget" : `textentry,
@@ -2227,7 +2236,8 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
      *  @return symbol 	the result of the handling
      */
     global define symbol handleHostTable(string key, map event ) ``{
-	dir_value = host_options[(integer)UI::QueryWidget (`_tp_table, `CurrentItem), "VALUE"]:"";
+	if ( event["EventType"]:"" == "WidgetEvent" && event["WidgetID"]:nil == `_tp_add ) dir_value="";
+		else dir_value = host_options[(integer)UI::QueryWidget (`_tp_table, `CurrentItem), "VALUE"]:"";
 
 	// handle menu button entries
 /*
