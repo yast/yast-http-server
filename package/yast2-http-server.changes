@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Feb 22 16:18:45 CET 2007 - mzugec@suse.cz
+
+- support for add/edit Directory option (L3 #247337)
+- 2.14.8 
+
+-------------------------------------------------------------------
 Tue Feb 13 10:57:49 CET 2007 - mzugec@suse.de
 
 - incorrect order of modules (#243693)
