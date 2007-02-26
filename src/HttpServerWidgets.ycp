@@ -1476,7 +1476,7 @@ global map<string, map <string, any> > widgets = $[
 	    "dir_name" : $[
                "widget" : `custom,
                "custom_widget" : `VBox(
-		 `TextEntry(`id(`dir_name), "Directory")
+		 `TextEntry(`id(`dir_name), _("Directory"))
 		)
 
 			],
