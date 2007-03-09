@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Mar  9 16:06:30 CET 2007 - mzugec@suse.cz
+
+- remove yast2-firewall dependency (#252975) 
+
+-------------------------------------------------------------------
 Mon Feb 26 16:39:18 CET 2007 - mzugec@suse.cz
 
 - mark "Directory" string for translation
