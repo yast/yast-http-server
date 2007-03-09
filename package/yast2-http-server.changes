@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Mar  9 16:41:11 CET 2007 - mzugec@suse.cz
+
+- HTTPD configuration "add modules" list empty (#252348)
+- remove yast2-firewall dependency (#252975)
+- 2.13.26 
+
+-------------------------------------------------------------------
 Mon Feb 26 16:46:37 CET 2007 - mzugec@suse.cz
 
 - mark "Directory" string for translation 
