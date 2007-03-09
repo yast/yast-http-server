@@ -36,6 +36,7 @@
     import "Hostname";
     import "DNS";
     import "Arch";
+    import "PackageSystem";
 
     include "http-server/helps.ycp";
 
@@ -2472,15 +2473,17 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
         }
 	else if (event["ID"]:nil == `add_user)
         {
+
+	string modules_dir=sformat("/usr/%1/apache2-%2/", (Arch::ia64()||Arch::mips64()||Arch::ppc64()||Arch::s390_64()||Arch::sparc64()||Arch::x86_64())?"lib64":"lib", (PackageSystem::Installed("apache2-prefork"))?"prefork":"worker");
+y2internal("modules_dir %1", modules_dir);
 	// list of all installed modules
-	    list <string> modules_dir = splitstring(((map<string, any>) SCR::Execute(.target.bash_output,
-		sformat("ls /usr/%1/apache2/|grep so|cut -d. -f1|cut -d_ -f2-",
-		(Arch::ia64()||Arch::mips64()||Arch::ppc64()||Arch::s390_64()||Arch::sparc64()||Arch::x86_64())?"lib64":"lib")))["stdout"]:"", "\n");
+	    list <string> all_modules = splitstring(((map<string, any>) SCR::Execute(.target.bash_output,
+		sformat("ls %1|grep so|cut -d. -f1|cut -d_ -f2-", modules_dir)))["stdout"]:"", "\n");
 	    list<string> existing = maplist (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), ``(
 		mod["name"]:_("unknown")));
 	// extract unknown modules from all installed
 	    list<string> unknown_modules = [];
-	    foreach(string single_module, modules_dir, {
+	    foreach(string single_module, all_modules, {
 		if ((!contains(existing, single_module))&&(single_module != "")) unknown_modules=add(unknown_modules, single_module);
 	    });
 	y2milestone("List of new modules %1", unknown_modules);
