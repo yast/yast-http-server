@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Mar 21 09:57:20 CET 2007 - mzugec@suse.cz
+
+- apache mod perl not working in for userdir default hosts (#245173)
+- 2.14.10 
+
+-------------------------------------------------------------------
 Fri Mar  9 16:33:05 CET 2007 - mzugec@suse.cz
 
 - HTTPD configuration "add modules" list empty (#252348)
