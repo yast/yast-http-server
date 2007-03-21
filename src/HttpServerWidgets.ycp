@@ -1961,6 +1961,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
    */
     global void HostStore (string key, map event)
     {
+y2internal("%1", YaST::HTTPDData::GetHost("main"));
 	list< map<string,any> > options = []; 
        foreach (integer key, map<string,any> values, host_options,
         ``{
@@ -1989,6 +1990,17 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
                     "OVERHEAD" : values["OVERHEAD"]:""]);
 		 y2milestone("Directory section - %1", values);
 		}
+
+             if (values["KEY"]:"" == "mod_userdir.c") 
+		{
+                options = add(options, $[
+                   "KEY"       : "_SECTION",
+                    "SECTIONNAME": "IfModule",
+                    "SECTIONPARAM": "mod_userdir.c",
+                    "VALUE" : values["DATA"]: [],
+                    "OVERHEAD" : values["OVERHEAD"]:""]);
+		 y2milestone("Directory section - %1", values);
+		}
 	    } else 
 		{
 		 options = add(options, values);
@@ -1996,6 +2008,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 		}
 	  });
 
+y2internal("%1", options);
 	options = filter (map <string,any> option, options, ``( option != nil ));
 
 	// for all host options check whether module from directive is loaded
