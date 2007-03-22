@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Mar 22 08:54:06 CET 2007 - mzugec@suse.cz
+
+- mark text for translation (#180792) 
+
+-------------------------------------------------------------------
 Wed Mar 21 09:57:20 CET 2007 - mzugec@suse.cz
 
 - apache mod perl not working in for userdir default hosts (#245173)
