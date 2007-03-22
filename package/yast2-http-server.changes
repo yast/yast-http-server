@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Mar 22 08:49:12 CET 2007 - mzugec@suse.cz
+
+- mark text for translation (#180792) 
+
+-------------------------------------------------------------------
 Fri Mar  9 16:41:11 CET 2007 - mzugec@suse.cz
 
 - HTTPD configuration "add modules" list empty (#252348)
