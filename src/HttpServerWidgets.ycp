@@ -948,7 +948,6 @@ global void DirStore (string key, map event)
 	string new_dir=(string)UI::QueryWidget(`dir_name, `Value);
 	boolean dir_before=false;
             list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
-y2internal("host %1", host);
             foreach (map<string, any> option, host, ``{
                 if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory"
 								&& option["SECTIONPARAM"]:"unknown" == dir_value)
@@ -961,7 +960,6 @@ y2internal("host %1", host);
                 }
 		options = add(options, option);
             });
-y2internal("options 2 :\n%1", options);
  if (!dir_before){
 
 		   list < map<string,any> > newlist = [];
@@ -972,7 +970,6 @@ y2internal("options 2 :\n%1", options);
 		"SECTIONPARAM":new_dir,
 		"VALUE":newlist]);
 	}
-y2internal("options before write %1", options);
 	YaST::HTTPDData::ModifyHost (currenthost, options );
 	setHostOptions(nil);
 	HttpServer::modified = true;
@@ -1961,7 +1958,6 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
    */
     global void HostStore (string key, map event)
     {
-y2internal("%1", YaST::HTTPDData::GetHost("main"));
 	list< map<string,any> > options = []; 
        foreach (integer key, map<string,any> values, host_options,
         ``{
@@ -2008,7 +2004,6 @@ y2internal("%1", YaST::HTTPDData::GetHost("main"));
 		}
 	  });
 
-y2internal("%1", options);
 	options = filter (map <string,any> option, options, ``( option != nil ));
 
 	// for all host options check whether module from directive is loaded
@@ -2488,7 +2483,6 @@ y2internal("%1", options);
         {
 
 	string modules_dir=sformat("/usr/%1/apache2-%2/", (Arch::ia64()||Arch::mips64()||Arch::ppc64()||Arch::s390_64()||Arch::sparc64()||Arch::x86_64())?"lib64":"lib", (PackageSystem::Installed("apache2-prefork"))?"prefork":"worker");
-y2internal("modules_dir %1", modules_dir);
 	// list of all installed modules
 	    list <string> all_modules = splitstring(((map<string, any>) SCR::Execute(.target.bash_output,
 		sformat("ls %1|grep so|cut -d. -f1|cut -d_ -f2-", modules_dir)))["stdout"]:"", "\n");

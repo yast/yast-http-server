@@ -355,24 +355,6 @@ sub WriteHosts {
 
     YaPI::HTTPD->writeHosts();
 
-#    foreach my $hostid( keys( %{$dirty{DEL}} ) ) {
-#        delete($certs{$hostid});
-#        YaPI::HTTPD->DeleteHost( $hostid );
-#    }
-#    if( $dirty{MODIFIED}->{'default'} ) {
-#        YaPI::HTTPD->ModifyHost('default', $hosts{'default'} );
-#        $self->WriteCert( 'default' );
-#    }
-#    foreach my $hostid( keys( %{$dirty{MODIFIED}} ) ) {
-#        next if( $hostid eq 'default' );
-#        YaPI::HTTPD->ModifyHost( $hostid, $hosts{$hostid} );
-#        $self->WriteCert( $hostid );
-#    }
-#    foreach my $hostid( keys( %{$dirty{NEW}} ) ) {
-#        YaPI::HTTPD->CreateHost( $hostid, $hosts{$hostid} );
-#        $self->WriteCert( $hostid );
-#    }
-
     %dirty = ( NEW => {}, DEL => {}, MODIFIED => {} );
     return 1;
 }
