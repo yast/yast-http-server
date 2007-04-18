@@ -918,8 +918,8 @@ sub writeHosts (){
      }
 
  my %data = ( 'default-server.conf' =>$vhost_files->{'main'});
- my $vh_size = @vhosts;
- $data{'yast2_vhosts.conf'} = \@vhosts if ($vh_size>0);
+ $data{'yast2_vhosts.conf'} = \@vhosts ;
+
  SCR->Write(".http_server.vhosts", \%data);
 }
 

@@ -79,7 +79,6 @@ global map<string,string> ip2device = $[];
 
 
 global boolean getFirewallStatus(){
- y2internal("get firewall status %1", firewall);
  return firewall;
 }
 
@@ -379,12 +378,10 @@ Install them now?
 /*
 foreach(map<string, any> ifc, SuSEFirewall::GetAllKnownInterfaces(), {
  if (!contains(zones, ifc["zone"]:"")) zones = add(zones, ifc["zone"]:"");
-y2internal("%1", ifc);
 });
 */
 //list <string> interfaces=[];
 //foreach(map<string, any> row, SuSEFirewall::GetAllKnownInterfaces(), { interfaces = add(interfaces, row["id"]:""); });
-//y2internal("interfaces %1", interfaces);
 list<string> zones = SuSEFirewall::GetZonesOfInterfacesWithAnyFeatureSupported( SuSEFirewall::GetListOfKnownInterfaces() );
 y2milestone("Firewall zones %1", zones);
 
@@ -419,7 +416,6 @@ y2milestone("Firewall zones %1", zones);
     if (configured_dns) DnsServerAPI::Write ();
 	Progress::set(true);
     YaST::HTTPDData::WriteModuleList ();
-//y2internal("selscted modules %1", YaST::HTTPDData::GetModuleSelectionsList());
     // in autoyast, quit here
     // Wrong, service still has to be enabled...
     // if( write_only ) return true;
