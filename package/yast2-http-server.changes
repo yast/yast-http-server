@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Apr 19 16:40:54 CEST 2007 - mzugec@suse.cz
+
+- use also additional addresses for Listen and Virtual Hosts (#264393)
+- 2.15.1 
+
+-------------------------------------------------------------------
 Wed Apr 18 15:30:41 CEST 2007 - mzugec@suse.cz
 
 - couldn't delete virtual host (#265807)

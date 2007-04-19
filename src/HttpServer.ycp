@@ -236,8 +236,11 @@ without installing the package."), "apache2" ) );
     ip2device = $["127.0.0.1":"loopback"];
     list<string> devs = NetworkDevices::Locate("BOOTPROTO", "static");
     foreach(string dev, devs, {
-	string ip = NetworkDevices::GetValue(dev, "IPADDR");
+     // use also additional addresses (#264393)
+     foreach(string ip, NetworkDevices::GetIP(dev),
+      {
 	if(ip != nil && ip != "") ip2device[ip] = dev;
+      });
     });
     // add DHCP ones, if we can find out the current IP
     devs = NetworkDevices::Locate("BOOTPROTO", "dhcp");
