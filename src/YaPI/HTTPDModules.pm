@@ -842,17 +842,9 @@ textdomain "http-server";
                     suggested => 0,
                     position  => 510
     },
-    'ruby' => {
-                    summary   => __("Provides support for Ruby dynamically generated pages"),
-                    packages  => ["apache2-mod_ruby"],
-                    default   => 0,
-                    required  => 0,
-                    suggested => 0,
-                    position  => 520
-    },
     'apparmor' => {
                     summary   => __("Provides support for AppArmor subprocess confinement within apache"),
-                    packages  => ["apache2-mod_apparmor"],
+                    packages  => ["mod-apparmor"],
                     default   => 0,
                     required  => 0,
                     suggested => 0,

@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed May  9 14:14:18 CEST 2007 - mzugec@suse.cz
+
+- apache2-mod_ruby dropped, apache2-mod_apparmor renamed to 
+mod-apparmor (#259688)
+- 2.15.2 
+
+-------------------------------------------------------------------
 Thu Apr 19 16:40:54 CEST 2007 - mzugec@suse.cz
 
 - use also additional addresses for Listen and Virtual Hosts (#264393)
