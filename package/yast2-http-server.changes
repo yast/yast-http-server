@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri May 11 14:26:47 CEST 2007 - mzugec@suse.cz
+
+- validation for VhostID when create new virtual host (#245155)
+- 2.15.3 
+
+-------------------------------------------------------------------
 Wed May  9 14:14:18 CEST 2007 - mzugec@suse.cz
 
 - apache2-mod_ruby dropped, apache2-mod_apparmor renamed to 
