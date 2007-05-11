@@ -1104,6 +1104,14 @@ global define symbol handleVhostRest (string key, map event){
 }
 
 
+global boolean validateVhostRes(string key, map event) ``{
+ string vhost=(string)UI::QueryWidget(`id( `virtual_host ), `Value);
+ if (size(vhost)==0) {
+	 Popup::Error(_("Name for VirtualHost ID can't be empty."));
+	 return false;
+	}
+ return true;
+}
 
 string dns_zone = "";
 global void initVhostDetails(string key){
@@ -1580,6 +1588,8 @@ global map<string, map <string, any> > widgets = $[
 		))),
 		"init" : initVhostRes,
 		"handle" : handleVhostRest,
+		"validate_type" : `function,
+		"validate_function" : validateVhostRes,
 		"help" : HELPS["vhost_res"]:""
 		],
 	   "vhost_details" : $[
