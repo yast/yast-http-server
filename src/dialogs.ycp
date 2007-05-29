@@ -257,7 +257,7 @@ symbol  SetVHostOptions() {
 	// translators: dialog caption, %1 is the host name
 	string caption = sformat( _("SSL Configuration for '%1'"),
 	    // translators: human-readable "default host"
-	    HttpServerWidgets::currenthost == "defaulthost" ? _("Default Host") 
+	    HttpServerWidgets::currenthost == "main" ? _("Default Host") 
 		: HttpServerWidgets::get_host_value ( "ServerName"
 		, YaST::HTTPDData::GetHost(HttpServerWidgets::currenthost), HttpServerWidgets::currenthost ) );
 

@@ -20,45 +20,24 @@ include "http-server/complex.ycp";
 include "http-server/dialogs.ycp";
 include "http-server/wizard-dialog.ycp";
 
+define symbol MainSequence();
 
-/**
- * Main workflow of the http-server configuration
- * @return sequence result
- */
-symbol MainSequence() {
+symbol VirtualHostSequence(string action){
 
     map aliases = $[
-	"overview"	:   ``( OverviewDialog() ),
 	"host"		:   ``( HostDialog() ),
-	"main-host"	:   ``( HostDialog() ),			// different workflow
 	"addhost"	:   ``( AddHost() ),
 	"setvhost"	:   ``( SetVHostOptions() ),
 	"ssl"		:   ``( SSLDialog () ),
 	"dir"		:   ``( DirDialog () ),
-	"ssl-default"	:   ``( SSLDialog () ),
     ];
 
+    string def = (action=="add")?"addhost":"host";
     map sequence = $[
-	"ws_start" : "overview",
-	"overview" : $[
-	    `abort	: `abort,
-	    `next	: `next,
-	    `default	: "main-host",
-//	    `hosts	: "hosts",
-	    `dir	: "dir",
-	    `ssl	: "ssl-default",
-	    `edit	: "host",
-	    `add	: "addhost",
-	],
-	"ssl-default" : $[
-	    `abort	: `abort,
-	    `next	: "main-host",
-	    `back	: "main-host",
-	],
+	"ws_start" : def,
 	"host" : $[
 	    `abort	: `abort,
-	    `next	: "overview",
-//	    `back	: "hosts",
+	    `next	: `next, //"overview",
 	    `ssl	: "ssl",
 	    `dir	: "dir"
 	],
@@ -66,11 +45,10 @@ symbol MainSequence() {
 	"addhost": $[
 	    `abort	: `abort,
 	    `next	: "setvhost",
-//	    `back	: "hosts",
 	],
 	"setvhost": $[
 	    `abort	: `abort,
-	    `next	: "overview",
+	    `next	: `next, //"overview",
 	    `back	: "addhost"
 	],
 	"ssl": $[
@@ -82,6 +60,51 @@ symbol MainSequence() {
 	    `abort	: `abort,
 	    `next	: "host",
 	    `back	: "host"
+	]
+    ];
+
+    return Sequencer::Run(aliases, sequence);
+}
+
+/**
+ * Main workflow of the http-server configuration
+ * @return sequence result
+ */
+symbol MainSequence() {
+
+    map aliases = $[
+	"overview"	:   ``( OverviewDialog() ),
+	"addhost"	:   ``( AddHost() ),
+	"setvhost"	:   ``( SetVHostOptions() ),
+	"dir"		:   ``( DirDialog () ),
+	"add-vh"	:   [ ``( VirtualHostSequence("add")), true ],
+	"edit-vh"	:   [ ``( VirtualHostSequence("edit")), true ]
+    ];
+
+    map sequence = $[
+	"ws_start" : "overview",
+	"overview" : $[
+	    `abort	: `abort,
+	    `next	: `next,
+	    `dir	: "dir",
+	    `edit	: "edit-vh",
+	    `add	: "add-vh",
+	],
+	"add-vh" : $[
+	    `next	: "overview" //`next
+	],
+	"edit-vh" : $[
+	    `next	: "overview" //`next
+	],
+	"setvhost": $[
+	    `abort	: `abort,
+	    `next	: "overview",
+	    `back	: "addhost"
+	],
+	"dir": $[
+	    `abort	: `abort,
+	    `next	: "overview",
+	    `back	: "overview"
 	]
     ];
 
