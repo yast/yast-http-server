@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue May 29 09:08:05 CEST 2007 - mzugec@suse.cz
+
+- improved workflow dialogs (host/hosts)
+- 2.15.4 
+
+-------------------------------------------------------------------
 Fri May 11 14:26:47 CEST 2007 - mzugec@suse.cz
 
 - validation for VhostID when create new virtual host (#245155)

@@ -202,7 +202,6 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	    // skip ourself also when this is main server
 	if (( host == hostid ) || (hostid == "main")) continue;
 	if (host == "main") continue;
-//	list< map<string,any> > desc = YaST::HTTPDData::GetHost (host);
 	// find out the server name
 	string value = (string)get_host_value ( "ServerName", YaST::HTTPDData::GetHost (host), nil );
 	if (value == servername)
@@ -214,7 +213,6 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	    break;
 	}
 
-//	value = (string)get_host_value ("HostIP", desc, nil);
 	map<string, any> vhost = YaST::HTTPDData::GetVhostType(host);
 
 		if (! FileUtils::CheckAndCreatePath( documentroot )){
@@ -319,12 +317,6 @@ global boolean validate_server_fnc (string id, map key);
 	]);
 	return nil;
     }
-//symbol showAccessLogPopup (any key, map event);
-//symbol showErrorLogPopup (any key, map event);
-
-//list <string> host_ids = nil;
-
-//void OverviewInit (string widget) { }
 
   /**
    * Handle overview (listen) widget
@@ -636,8 +628,6 @@ global symbol handleServiceStatus (string key, map event);
 global void storeServiceStatus (string key, map event);
 global void initAdaptFirewall (string key);
 global void storeAdaptFirewall (string opt_id, map event);
-//global void DirectoryOptionInit (any key, string id);
-//global void DirectoryOptionStore (any key, string id);
 
 	// wizard widget functions
 global void initOpenPort (string key);
@@ -647,10 +637,9 @@ global void initListenInterfaces (string key);
 global boolean validateListenInterfaces(string key, map event);
 global void initFwOpen (string key);
 global void storeFwOpen (string opt_id, map event);
-//void initExpertConf (string key);
 global symbol handleExpertConf (string key, map event);
 void initScriptModules(string key);
-void initSummaryText(string key); 
+void initSummaryText(string key);
 global symbol handleBooting (string key, map event);
 global map getHostOptions(boolean is_main_server);
 boolean getServiceAutoStart();
@@ -677,8 +666,6 @@ global map<string,map> popups = $[
 		    // table cell description
 		    "label"  : _("Server Name"),
 		    "widget" : `textentry,
-//		    "validate_type" : `function,
-//		    "validate_function" : validate_servername,
 		],
 	    ],
 	    "DocumentRoot" : $[
