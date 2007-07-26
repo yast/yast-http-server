@@ -1801,6 +1801,7 @@ global void SSLStore (string key, map event)
 		 } else options = add(options, option);
             });
 	if (found == false) { options = add(options, $["KEY":"_SECTION", "SECTIONNAME":"IfDefine", "SECTIONPARAM":"SSL", "VALUE":forssl]); }
+	YaST::HTTPDData::ModifyHost(currenthost, options);
         setHostOptions(nil);
         HttpServer::modified = true;
  }
