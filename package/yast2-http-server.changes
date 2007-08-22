@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Aug 22 14:46:04 CEST 2007 - mzugec@suse.cz
+
+- don't forget values for vhost when go next-back (#299223)
+- 2.15.7 
+
+-------------------------------------------------------------------
 Thu Jul 26 18:49:56 CEST 2007 - mzugec@suse.cz
 
 - save SSL section correctly (#294679)
