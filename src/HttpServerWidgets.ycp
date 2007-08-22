@@ -602,7 +602,7 @@ global void HostsInit (string widget)
 {
     init_tab = "hosts";
     TablePopup::TableInit(hosts_widget, widget);
-
+    vhost_descr = [];
 						    // menu button label
     UI::ReplaceWidget( `id(`_tp_table_repl), `PushButton( `id( `set_default ), _("Set as De&fault") ) );
 
@@ -964,6 +964,14 @@ global void DirStore (string key, map event)
 
 global void initVhostRes(string key){
   map<string, any> vhost = YaST::HTTPDData::GetVhostType(currenthost);
+ if (vhost_descr!=[]){
+  vhost=$[];
+  foreach(map row, vhost_descr, {
+  if (row["KEY"]:""=="HostIP") vhost["id"] = row["VALUE"]:"";
+  if (row["KEY"]:""=="VirtualByName") vhost["type"] = (row["VALUE"]:"0"=="0")?"ip-based":"name-based";
+  });
+ }
+
   if (vhost["type"]:""=="ip-based") UI::ChangeWidget(`resolution, `CurrentButton, `ip_based);
 	else UI::ChangeWidget(`resolution, `CurrentButton, `name_based);
   UI::ChangeWidget(`virtual_host, `Value, vhost["id"]:"");
