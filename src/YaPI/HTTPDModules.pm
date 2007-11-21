@@ -1,4 +1,6 @@
 package YaPI::HTTPDModules;
+use YaPI;
+textdomain "http-server";
 %modules = (
     'authz_host' => {
                     summary   => __("Provides access control based on client host name, IP address, etc."),
