@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Nov 21 16:58:26 CET 2007 - mzugec@suse.cz
+
+- mark texts in HTTPDModules.pm to translation (#181133)
+- 2.13.28 
+
+-------------------------------------------------------------------
 Wed Nov 21 14:49:03 CET 2007 - mzugec@suse.cz
 
 - add dependency to yast2-dns-server (#290616) 
