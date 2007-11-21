@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Nov 21 14:49:03 CET 2007 - mzugec@suse.cz
+
+- add dependency to yast2-dns-server (#290616) 
+
+-------------------------------------------------------------------
 Thu Jul 26 19:08:34 CEST 2007 - mzugec@suse.cz
 
 - save SSL section correctly (#294679)
