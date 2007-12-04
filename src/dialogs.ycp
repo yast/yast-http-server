@@ -129,6 +129,7 @@ map tabs_descr = $[
     contents = CWM::PrepareDialog(contents, w);
 
     Wizard::SetContentsButtons(caption, contents, help, Label::BackButton (), Label::FinishButton ());
+    Wizard::RestoreAbortButton();
     Wizard::DisableBackButton();
 
     symbol ret = CWM::Run(w, $[`abort:ReallyAbort ]);

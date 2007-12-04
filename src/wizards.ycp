@@ -91,9 +91,11 @@ symbol MainSequence() {
 	    `add	: "add-vh",
 	],
 	"add-vh" : $[
+	    `abort	: `abort,
 	    `next	: "overview" //`next
 	],
 	"edit-vh" : $[
+	    `abort	: `abort,
 	    `next	: "overview" //`next
 	],
 	"setvhost": $[

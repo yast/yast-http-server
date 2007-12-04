@@ -1042,19 +1042,19 @@ global boolean validateVhostId(string key, map event) ``{
 global define void storeVhostId (string opt_id, map event) ``{
 }
 
-define string changeVHostPopup(){
+define string changeVHostPopup(string value){
  string vhost="";
- string servername = ""; foreach(integer num, map<string,any> row, host_options, {if (row["KEY"]:"" == "ServerName") servername = row["VALUE"]:"";});
  list items = maplist( string ip, string dev, HttpServer::ip2device, ``(ip) );
  UI::OpenDialog(
   `RadioButtonGroup(`id(`rb),
 	 `VBox(
-		`Left(`RadioButton(`id(`ms),`opt(`notify), "", true)),
+		`Left( `RadioButton(`id(`all_addr),`opt(`notify), _("All addresses (*)"), true)),
+		`Left(`RadioButton(`id(`multiselect),`opt(`notify), "")),
 		  `MultiSelectionBox( `id(`ipaddress),
 			_("IP Adresses"), items )
 			,
-		`Left(`RadioButton(`id(`sn),`opt(`notify), "")),
-		  `TextEntry(`id(`serv_name), _("ServerName"), servername)
+		`Left(`RadioButton(`id(`custom),`opt(`notify), "")),
+		  `TextEntry(`id(`serv_name), _("ServerName"))
 			,
 		    `VSpacing(),
 		    `HBox(
@@ -1064,27 +1064,49 @@ define string changeVHostPopup(){
 	      )
 	     )
  );
+ if (value=="*" || value=="") UI::ChangeWidget(`serv_name, `Value, value);
+  else {
+	list<term> it=[];
+	foreach(string ip, (list<string>)items, {
+	 it=add(it, `item(`id(ip), ip, contains(splitstring(value, " "), ip)) );
+	 });
+	boolean unknown = false;
+	foreach(string ip, splitstring(value, " "), {
+	 if (!contains(items, ip))  unknown = true;
+	});
+	if (unknown){
+	 UI::ChangeWidget(`serv_name, `Value, value);
+	 UI::ChangeWidget(`rb, `CurrentButton, `custom);
+	 } else {
+		UI::ChangeWidget(`ipaddress, `Items, it);
+		UI::ChangeWidget(`rb, `CurrentButton, `multiselect);
+		 }
+	}
 
  symbol ret = nil;
  do{
-	if(UI::QueryWidget(`id(`rb), `CurrentButton)==`ms){
-	  UI::ChangeWidget(`id(`ipaddress), `Enabled, true);
-	  UI::ChangeWidget(`id(`serv_name), `Enabled, false);
-	}else{
-	  UI::ChangeWidget(`id(`ipaddress), `Enabled, false);
-	  UI::ChangeWidget(`id(`serv_name), `Enabled, true);
-	 }
+    symbol rb = (symbol)UI::QueryWidget(`id(`rb), `CurrentButton);
+	  UI::ChangeWidget(`id(`ipaddress), `Enabled, rb==`multiselect);
+	  UI::ChangeWidget(`id(`serv_name), `Enabled, rb==`custom);
     ret = (symbol) UI::UserInput();
    } while( ret != `ok && ret != `cancel );
   if( ret == `ok ) {
-    if(UI::QueryWidget(`id(`rb), `CurrentButton)==`ms){
+   switch((symbol)UI::QueryWidget(`id(`rb), `CurrentButton)){
+    case `all_addr:
+	vhost="*";
+	break;
+    case `multiselect:
 	list<string> selected=(list<string>)UI::QueryWidget(`id(`ipaddress), `SelectedItems);
-	if (size(selected)==size(items)) vhost="*";
-	  else vhost = mergestring(selected, " ");
-     } else {
-	     vhost=(string)UI::QueryWidget(`id(`serv_name), `Value);
-	    }
-	} else vhost="";
+	  vhost = mergestring(selected, " ");
+	break;
+    case `custom:
+	vhost=(string)UI::QueryWidget(`id(`serv_name), `Value);
+	break;
+    default:
+	vhost="";
+	y2warning("unrecognized selection");
+	}
+   }
   UI::CloseDialog();
  return vhost;
 }
@@ -1092,7 +1114,7 @@ define string changeVHostPopup(){
 
 global define symbol handleVhostRest (string key, map event){
  if (event["EventReason"]:""=="Activated" && event["ID"]:nil ==`change_vhost){
-  string vhost = changeVHostPopup();
+  string vhost = changeVHostPopup((string)UI::QueryWidget(`virtual_host, `Value));
   if (size(vhost)>0) UI::ChangeWidget(`id(`virtual_host), `Value, vhost);
  }
  return nil;
@@ -1105,6 +1127,22 @@ global boolean validateVhostRes(string key, map event) ``{
 	 Popup::Error(_("Name for VirtualHost ID can't be empty."));
 	 return false;
 	}
+
+ // for name-based vhost only IP address is allowed
+ // or regexp (* or *:port) or list of IP addresses
+ if (UI::QueryWidget(`resolution, `Value)==`name_based) {
+			// regexp matches '*' and '*:80'
+  if (regexpmatch(vhost, "^\\*$\|^\\*:[[:digit:]]\+$")) return true;
+  boolean ok=true;
+  foreach(string ip, splitstring(vhost, " "), {
+   if (!IP::Check4(ip)) ok=false;
+  });
+  if (!ok) Popup::Warning(_("To use name-based virtual hosting,
+you must designate the IP address on the server
+that will be accepting requests for the hosts.
+Also * for all addresses and *:port are acceptable."));
+  return ok;
+ }
  return true;
 }
 
