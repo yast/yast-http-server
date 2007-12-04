@@ -245,6 +245,8 @@ without installing the package."), "apache2" ) );
     // add DHCP ones, if we can find out the current IP
     devs = NetworkDevices::Locate("BOOTPROTO", "dhcp");
     foreach(string dev, devs, {
+/*
+y2internal("dhcp devs %1", devs);
 	// first, convert to the current name
 	map output = (map)SCR::Execute (.target.bash_output, "/sbin/getcfg-interface " + dev);
 
@@ -254,8 +256,8 @@ without installing the package."), "apache2" ) );
 	}
 
         string device = output["stdout"]:"";
-
-	output = (map)SCR::Execute (.target.bash_output, "/sbin/ifconfig "+device, $["LC_MESSAGES":"C"] );
+*/
+	map output = (map)SCR::Execute (.target.bash_output, "/sbin/ifconfig "+dev, $["LC_MESSAGES":"C"] );
 	if (output["exit"]:-1 == 0)
 	{
 	    // lookup the correct line first
