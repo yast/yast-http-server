@@ -1017,8 +1017,6 @@ global boolean validateVhostId(string key, map event) ``{
 
     if (! validate_servername(servername)) return false;
 
-//     if (! validate_serverip("", "ipaddress", nil)) return false;
-
      if ( size(admin) == 0 )
      {
          // translators: error popup
@@ -1106,6 +1104,30 @@ global define symbol handleVhostRest (string key, map event){
  return nil;
 }
 
+global boolean validateVhostRes(string key, map event) ``{
+ string vhost=(string)UI::QueryWidget(`id( `virtual_host ), `Value);
+ if (size(vhost)==0) {
+         Popup::Error(_("Name for VirtualHost ID can't be empty."));
+         return false;
+        }
+
+ // for name-based vhost only IP address is allowed
+ // or regexp (* or *:port) or list of IP addresses
+ if (UI::QueryWidget(`resolution, `Value)==`name_based) {
+                        // regexp matches '*' and '*:80'
+  if (regexpmatch(vhost, "^\\*$\|^\\*:[[:digit:]]\+$")) return true;
+  boolean ok=true;
+  foreach(string ip, splitstring(vhost, " "), {
+   if (!IP::Check4(ip)) ok=false;
+  });
+  if (!ok) Popup::Warning(_("To use name-based virtual hosting,
+you must designate the IP address on the server
+that will be accepting requests for the hosts.
+Also * for all addresses and *:port are acceptable."));
+  return ok;
+ }
+ return true;
+}
 
 
 string dns_zone = "";
@@ -1583,6 +1605,8 @@ global map<string, map <string, any> > widgets = $[
 		))),
 		"init" : initVhostRes,
 		"handle" : handleVhostRest,
+                "validate_type" : `function,
+                "validate_function" : validateVhostRes,
 		"help" : HELPS["vhost_res"]:""
 		],
 	   "vhost_details" : $[
