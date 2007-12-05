@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Dec  5 17:01:44 CET 2007 - mzugec@suse.cz
+
+- be clonable in autoYaST (AutoInstClonable in desktop file)
+- 2.13.30 
+
+-------------------------------------------------------------------
 Tue Dec  4 18:22:19 CET 2007 - mzugec@suse.cz
 
 - into IP addresses include also IPs from dhcp interfaces
