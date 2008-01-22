@@ -2,7 +2,7 @@
 Tue Jan 22 15:11:12 CET 2008 - mzugec@suse.cz
 
 - use SuSEFirewallServices for list of ports (#264112)
-- 2.15.10 
+- 2.16.1 
 
 -------------------------------------------------------------------
 Wed Dec  5 17:02:48 CET 2007 - mzugec@suse.cz
