@@ -1403,7 +1403,7 @@ global map<string, map <string, any> > widgets = $[
 		"help" : HELPS["server_enable"]:"",
 	    ],
 	    "firewall_adapt" : CWMFirewallInterfaces::CreateOpenFirewallWidget ($[
-                "services" : [ "http" ],
+                "services" : [ "service:apache2" ],
 		"help" : HELPS["firewall_adapt"]:"",
                 "display_details" : true,
               ]),
