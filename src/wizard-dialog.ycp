@@ -45,7 +45,7 @@ symbol WizardSequence1(){
 
     Wizard::SetContentsButtons (caption, contents, help,
         Label::BackButton (), Label::NextButton ());
-    Wizard::HideBackButton();
+    Wizard::DisableBackButton();
     Wizard::SetAbortButton(`abort, Label::CancelButton () );
 
     map event = $[];

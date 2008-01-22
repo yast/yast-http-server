@@ -30,6 +30,7 @@ import "DnsServerAPI";
 import "NetworkService";
 import "SuSEFirewall";
 import "Confirm";
+import "SuSEFirewallServices";
 
 /**
  * Abort function
@@ -375,48 +376,17 @@ Install them now?
 	y2error ("Writing listen failed, firewall problems?");
     }
 
-    // firewall should not be open, close all ports still open
-    // the ones from deleted Listen statements were closed in WriteListen    
-  if (firewall_first)
-   {
-// list<string> zones = [];
-/*
-foreach(map<string, any> ifc, SuSEFirewall::GetAllKnownInterfaces(), {
- if (!contains(zones, ifc["zone"]:"")) zones = add(zones, ifc["zone"]:"");
-});
-*/
-//list <string> interfaces=[];
-//foreach(map<string, any> row, SuSEFirewall::GetAllKnownInterfaces(), { interfaces = add(interfaces, row["id"]:""); });
-list<string> zones = SuSEFirewall::GetZonesOfInterfacesWithAnyFeatureSupported( SuSEFirewall::GetListOfKnownInterfaces() );
-y2milestone("Firewall zones %1", zones);
-
-
-    foreach (map<string,any> listen, YaST::HTTPDData::GetCurrentListen (),
-    {
-	// find out the port and host
-	string port = listen["PORT"]:"";
-	string ip = listen["ADDRESS"]:"";
-	// fixed #176722 - assigned loopback for firewall
-        if(ip == "127.0.0.1") continue;
-	if (!firewall)
-	{
-	    y2milestone ("Removing service %1:%2", ip, port);
-	 if (ip2device[ip]:""=="") foreach(string zone, zones, {
-				SuSEFirewall::RemoveService ( port, "TCP", zone);
-				});
-		else  SuSEFirewall::RemoveService ( port, "TCP", ip2device[ip]:"all");
-	}
-	else
-	{
-	    y2milestone ("Adding service %1:%2", ip, port);
-
-	 if (ip2device[ip]:""=="") foreach(string zone, zones, {
-				SuSEFirewall::AddService ( port, "TCP", zone);
-				});
-		else  SuSEFirewall::AddService ( port, "TCP", ip2device[ip]:"all");
-	}
+    // Firewall
+    list <string> ports=[];
+    foreach(map row, YaST::HTTPDData::GetCurrentListen(), {
+     ports = add(ports, row["PORT"]:"");
     });
-   }
+    SuSEFirewallServices::SetNeededPortsAndProtocols("service:apache2",
+        $[
+        "tcp_ports" : ports,
+        "udp_ports" : [],
+        ]);
+
     SuSEFirewall::Write ();
     if (configured_dns) DnsServerAPI::Write ();
 	Progress::set(true);
