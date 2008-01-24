@@ -17,7 +17,7 @@ textdomain "http-server";
 
 import "YaPI::HTTPD";
 import "YaST::HTTPDData";
-import "NetworkDevices";
+import "NetworkInterfaces";
 import "Progress";
 import "Report";
 import "Package";
@@ -231,20 +231,20 @@ without installing the package."), "apache2" ) );
 
     // read current settings for firewall and network
     Progress::set(false);	//off();
-    NetworkDevices::Read();
+    NetworkInterfaces::Read();
 
     // generate the map: static IP -> device
     ip2device = $["127.0.0.1":"loopback"];
-    list<string> devs = NetworkDevices::Locate("BOOTPROTO", "static");
+    list<string> devs = NetworkInterfaces::Locate("BOOTPROTO", "static");
     foreach(string dev, devs, {
      // use also additional addresses (#264393)
-     foreach(string ip, NetworkDevices::GetIP(dev),
+     foreach(string ip, NetworkInterfaces::GetIP(dev),
       {
 	if(ip != nil && ip != "") ip2device[ip] = dev;
       });
     });
     // add DHCP ones, if we can find out the current IP
-    devs = NetworkDevices::Locate("BOOTPROTO", "dhcp");
+    devs = NetworkInterfaces::Locate("BOOTPROTO", "dhcp");
     foreach(string dev, devs, {
 /*
 y2internal("dhcp devs %1", devs);

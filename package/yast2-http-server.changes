@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jan 24 14:24:12 CET 2008 - mzugec@suse.cz
+
+- replace deprecated NetworkDevices by NetworkInterfaces (from yast2)
+- 2.16.2 
+
+-------------------------------------------------------------------
 Tue Jan 22 15:11:12 CET 2008 - mzugec@suse.cz
 
 - use SuSEFirewallServices for list of ports (#264112)
