@@ -4,7 +4,7 @@ use YaPI;
 textdomain "http-server";
 
 YaST::YCP::Import ("SuSEFirewall");
-YaST::YCP::Import ("NetworkDevices");
+YaST::YCP::Import ("NetworkInterfaces");
 YaST::YCP::Import ("Progress");
 YaST::YCP::Import ("SCR");
 
@@ -182,10 +182,10 @@ sub ip2device {
     my %ip2device;
     Progress->off();
     SuSEFirewall->Read();
-    NetworkDevices->Read();
-    my $devices = NetworkDevices->Locate("BOOTPROTO", "static");
+    NetworkInterfaces->Read();
+    my $devices = NetworkInterfaces->Locate("BOOTPROTO", "static");
     foreach my $dev ( @$devices ) {
-        my $ip = NetworkDevices->GetValue($dev, "IPADDR");
+        my $ip = NetworkInterfaces->GetValue($dev, "IPADDR");
         $ip2device{$ip} = $dev if( $ip );
     }
     Progress->on();
