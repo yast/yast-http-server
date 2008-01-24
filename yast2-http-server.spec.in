@@ -2,8 +2,9 @@
 
 @HEADER@
 BuildRequires:	yast2-dns-server yast2-network docbook-xsl-stylesheets doxygen libxslt perl-XML-Writer popt-devel sgml-skel update-desktop-files yast2 yast2-devtools yast2-packagemanager-devel yast2-perl-bindings yast2-testsuite libzio
-Requires:	yast2 yast2-network yast2-perl-bindings libzio yast2-dns-server
-Requires:       yast2 >= 2.15.30
+Requires:	yast2-network yast2-perl-bindings libzio yast2-dns-server
+# yast2/NeworkDevices -> yast2/NetworkInterfaces
+Requires:       yast2 >= 2.16.23
 
 BuildArchitectures:	noarch
 
