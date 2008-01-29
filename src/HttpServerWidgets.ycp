@@ -1389,6 +1389,7 @@ global map<string, map <string, any> > widgets = $[
 	    "firewall_adapt" : CWMFirewallInterfaces::CreateOpenFirewallWidget ($[
                 "services" : [ "http" ],
 		"help" : HELPS["firewall_adapt"]:"",
+		"store"	 : storeFwOpen,
                 "display_details" : true,
               ]),
 	     "firewall_first" : $[
@@ -1521,14 +1522,6 @@ global map<string, map <string, any> > widgets = $[
                 "validate_type" : `function,
                 "validate_function" : validateListenInterfaces,
 		"help" : HELPS["listen_interfaces"]:""
-		],
-	   "fw_open" : $[
-		"widget" : `checkbox,
-		//translators: checkbox 
-		"label"  : _("Open &Firewall for Selected Ports"),
-		"init"	 : initFwOpen,
-		"store"	 : storeFwOpen,
-		"help"   : HELPS["fw_open"]:""
 		],
 	  "booting" 	 : CWMServiceStart::CreateAutoStartWidget ($[
 		"get_service_auto_start" : getServiceAutoStart,
@@ -2822,7 +2815,7 @@ global define void initFwOpen (string key) ``{
     */
     global define void storeFwOpen (string opt_id, map event) ``{
         if( SuSEFirewall::IsEnabled() || Mode::config ()) {
-            HttpServer::firewall = (boolean)UI::QueryWidget (`id (opt_id), `Value);
+            HttpServer::firewall = (boolean)UI::QueryWidget (`id("_cwm_open_firewall"), `Value);
             HttpServer::modified = true;
         }
     }
