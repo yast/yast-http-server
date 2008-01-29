@@ -373,8 +373,8 @@ Install them now?
 
     // firewall should not be open, close all ports still open
     // the ones from deleted Listen statements were closed in WriteListen    
-  if (firewall_first)
-   {
+//  if (firewall_first)
+//   {
 // list<string> zones = [];
 /*
 foreach(map<string, any> ifc, SuSEFirewall::GetAllKnownInterfaces(), {
@@ -396,6 +396,7 @@ y2milestone("Firewall zones %1", zones);
 	string ip = listen["ADDRESS"]:"";
 	// fixed #176722 - assigned loopback for firewall
         if(ip == "127.0.0.1") continue;
+y2internal("Write firewall %1", firewall);
 	if (!firewall)
 	{
 	    y2milestone ("Removing service %1:%2", ip, port);
@@ -414,7 +415,7 @@ y2milestone("Firewall zones %1", zones);
 		else  SuSEFirewall::AddService ( port, "TCP", ip2device[ip]:"all");
 	}
     });
-   }
+//   }
     SuSEFirewall::Write ();
     if (configured_dns) DnsServerAPI::Write ();
 	Progress::set(true);

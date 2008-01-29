@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jan 29 17:39:59 CET 2008 - mzugec@suse.de
+
+- open all Listen ports in firewall (#264112)
+- 2.13.31 
+
+-------------------------------------------------------------------
 Wed Dec  5 17:01:44 CET 2007 - mzugec@suse.cz
 
 - be clonable in autoYaST (AutoInstClonable in desktop file)
