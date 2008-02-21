@@ -1124,7 +1124,7 @@ global define symbol handleVhostRest (string key, map event){
 global boolean validateVhostRes(string key, map event) ``{
  string vhost=(string)UI::QueryWidget(`id( `virtual_host ), `Value);
  if (size(vhost)==0) {
-	 Popup::Error(_("Name for VirtualHost ID can't be empty."));
+	 Popup::Error(_("Name for VirtualHost ID cannot be empty."));
 	 return false;
 	}
 

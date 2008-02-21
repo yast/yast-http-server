@@ -60,7 +60,7 @@ sub checkHostmap {
         next unless( exists($checkMap{$entry->{KEY}}) );
         my $re = $checkMap{$entry->{KEY}};
         if( $entry->{VALUE} !~ /$re/ ) {
-            return $self->SetError( summary => sprintf( __("illegal '%s' parameter"), $entry->{KEY} ), 
+            return $self->SetError( summary => sprintf( __("Illegal '%s' parameter"), $entry->{KEY} ), 
                                     code    => "PARAM_CHECK_FAILED" );
         }
 #        $ssl = $entry->{VALUE} if( $entry->{KEY} eq 'SSL' );
