@@ -120,6 +120,7 @@ global define boolean Read() ``{
 
     // check the environment
     if(!Confirm::MustBeRoot()) return false;
+    if(!NetworkService::RunningNetworkPopup()) return false;
 
     if (!NetworkService::ConfirmNetworkManager()) return false;
     Progress::NextStep();
