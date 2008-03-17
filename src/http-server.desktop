@@ -23,3 +23,4 @@ Exec=/sbin/yast2 http-server
 Name=HTTP Server
 GenericName=Configure an Apache 2 server
 X-KDE-SubstituteUID=true
+StartupNotify=true
