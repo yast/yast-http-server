@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Apr  1 09:57:06 CEST 2008 - jsrain@suse.cz
+
+- merged texts from proofread
+
+-------------------------------------------------------------------
 Mon Mar 17 12:43:32 CET 2008 - jsrain@suse.cz
 
 - added 'StartupNotify=true' to the desktop file (bnc #304964)

@@ -19,7 +19,7 @@ sub getFileByHostid {
             return $k if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} eq $hostid );
         }
     }
-    return $self->SetError( summary => __('host not found'),
+    return $self->SetError( summary => __('Host not found'),
                             code => 'PARAM_CHECK_FAILED' );
 }
 
