@@ -31,6 +31,7 @@ import "NetworkService";
 import "SuSEFirewall";
 import "Confirm";
 import "SuSEFirewallServices";
+import "FileChanges";
 
 /**
  * Abort function
@@ -83,7 +84,7 @@ global boolean getFirewallStatus(){
  return firewall;
 }
 
-
+list<string> files_to_check = ["/etc/sysconfig/apache2", "/etc/apache2/default-server.conf", "/etc/apache2/httpd.conf", "/etc/apache2/listen.conf", "/etc/apache2/vhosts.d/yast2_vhosts.conf"];
 
 /**
  * Read all http-server settings
@@ -204,6 +205,8 @@ without installing the package."), "apache2" ) );
     YaST::HTTPDData::ReadListen();
     YaST::HTTPDData::ReadModules();
     YaST::HTTPDData::ReadService();
+
+    if (!FileChanges::CheckFiles( files_to_check )) return false;
 
     // check the modules RPMs
     list<string> modules = YaST::HTTPDData::GetModuleList();
@@ -430,7 +433,10 @@ Install them now?
 	}
     }
 
-SCR::Write ( .target.string, Directory::vardir + "/http_server", "");
+    foreach(string file, files_to_check, {
+     FileChanges::StoreFileCheckSum( file );
+    });
+    SCR::Write ( .target.string, Directory::vardir + "/http_server", "");
 
     // translators: progress finished
     ProgressNextStage(_("Finished"));
