@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Apr  3 01:20:12 CEST 2008 - mzugec@suse.de
+
+- check checksums from configuration files (FaTE#303374)
+- 2.16.6 
+
+-------------------------------------------------------------------
 Tue Apr  1 09:57:06 CEST 2008 - jsrain@suse.cz
 
 - merged texts from proofread
