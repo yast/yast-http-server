@@ -71,18 +71,12 @@ global define boolean Modified() ``{
 
 include "http-server/routines.ycp";
 
-global boolean firewall = false;
-global boolean firewall_first = true;
-
 /**
  * Mapping of IPs to network devices
  */
 global map<string,string> ip2device = $[];
 
 
-global boolean getFirewallStatus(){
- return firewall;
-}
 
 list<string> files_to_check = ["/etc/sysconfig/apache2", "/etc/apache2/default-server.conf", "/etc/apache2/httpd.conf", "/etc/apache2/listen.conf", "/etc/apache2/vhosts.d/yast2_vhosts.conf"];
 
@@ -195,7 +189,6 @@ without installing the package."), "apache2" ) );
 		configured_dns = true;
 	}
     Progress::set(true);	//on();
-//    firewall_started = SuSEFirewall::IsEnabled();			//Service::Enabled( "SuSEfirewall2_final" );
 
     // read current settings from httpd.conf and sysconfig
     Progress::NextStage();
@@ -283,28 +276,6 @@ y2internal("dhcp devs %1", devs);
 
     y2milestone ("Mapping of IP addresses and network devices: %1", ip2device);    
    
-    // now, check the firewall status to set up the original status correctly
-    firewall = true;
-    foreach (map<string,any> listen, YaST::HTTPDData::GetCurrentListen (),
-    {
-	// find out the port and host
-	string port = listen["PORT"]:"";
-	string ip = listen["ADDRESS"]:"";
-	
-	firewall = SuSEFirewall::HaveService ( port, "TCP", ip2device[ip]:"any");
-	
-	if (!firewall && port == "80")
-	{
-	    // also try http name
-	    firewall = SuSEFirewall::HaveService ( "http", "TCP", ip2device[ip]:"any");
-	}
-
-	y2milestone ("Status of firewall for %2:%1: %3", ip, port, firewall);
-	
-	// the firewall is not properly opened
-	if (! firewall)
-	    break;
-    });
 
     Progress::set(true);	//on();
 
@@ -432,6 +403,9 @@ Install them now?
 	    Report::Error( Message::CannotAdjustService("apache2") );
 	}
     }
+	// configuration test
+//	map<string, any> test = (map<string, any>)SCR::Execute(.target.bash_output, "apache2ctl conftest");
+//y2internal("test %1", test);
 
     foreach(string file, files_to_check, {
      FileChanges::StoreFileCheckSum( file );
@@ -540,12 +514,6 @@ This can cause inconsistent module configuration."), mod));
     {
 	YaST::HTTPDData::ModifyService (s["service"]:false);
     }
-    
-    // setup firewall
-    if (haskey( s, "firewall" ))
-    {
-	firewall = s["firewall"]:false;
-    }
 
     modified = false;
     configured = true;
@@ -614,7 +582,6 @@ foreach(string host, YaST::HTTPDData::GetHostsList(), {
 	"hosts" : hosts,
 	"Listen": YaST::HTTPDData::GetCurrentListen(),
 	"service" : YaST::HTTPDData::GetService (),
-	"firewall" : firewall,
     ];
 
     configured = true;

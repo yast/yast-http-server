@@ -1407,14 +1407,6 @@ global map<string, map <string, any> > widgets = $[
 		"help" : HELPS["firewall_adapt"]:"",
                 "display_details" : true,
               ]),
-	     "firewall_first" : $[
-		"widget" : `checkbox,
-		// translators: checkbox label
-		"label" : _("Open &Firewall on Selected Ports"),
-		"help"	 : HELPS["firewall_adapt"]:"",
-		"init"	: initAdaptFirewall,
-		"store"	 : storeAdaptFirewall,
-	    ],
 	    "host" : hostwidget,
         "LISTEN" : $[
             "widget" : `custom,
@@ -2706,33 +2698,6 @@ listen cannot be empty.") );
 	return nil;
     }
 
-// ************************************ Adapt firewall widget ********************
-
-    /**
-      * Initialization function for firewall adapting
-      * @param key any option key to be initialized
-      */
-    global void initAdaptFirewall (string key) ``{
-	if( SuSEFirewall::IsStarted() ) {
-	    UI::ChangeWidget (`id (key), `Value, HttpServer::getFirewallStatus());
-	    UI::ChangeWidget (`id (key), `Enabled, true );
-	} else {
-	    // disable the widget
-	    UI::ChangeWidget (`id (key), `Enabled, false );
-	}
-    }
-
-    /**
-      * Store function for firewall adapting
-      * @param opt_id any option id
-      * @param event map event description
-      */
-    global void storeAdaptFirewall (string opt_id, map event) ``{
-	if( SuSEFirewall::IsStarted() ) {
-	    HttpServer::firewall = (boolean)UI::QueryWidget (`id (opt_id), `Value);
-	    HttpServer::modified = true;
-	}
-    }
 /* these are for future use: */
 
 // error message - the entered ip address is not found
@@ -2827,33 +2792,6 @@ global boolean validateListenInterfaces(string key, map event) ``{
         } else return true;
 }
 
-
-  /**
-   * Initialize firewall settings
-   * @param key string 
-   */
-global define void initFwOpen (string key) ``{
- y2milestone("initializing firewall open ...");
-       if( SuSEFirewall::IsStarted() ) {
-            UI::ChangeWidget (`id (key), `Value, true);
-            UI::ChangeWidget (`id (key), `Enabled, true );
-        } else {
-            // disable the widget
-            UI::ChangeWidget (`id (key), `Enabled, false );
-        }
-}
-
-   /**
-    * Store firewall settings
-    * @param opt_id string 
-    * @param event map
-    */
-    global define void storeFwOpen (string opt_id, map event) ``{
-        if( SuSEFirewall::IsEnabled() || Mode::config ()) {
-            HttpServer::firewall = (boolean)UI::QueryWidget (`id (opt_id), `Value);
-            HttpServer::modified = true;
-        }
-    }
 
 
 // *********************** Wizard Dialog 2 Widgets *****************************************
