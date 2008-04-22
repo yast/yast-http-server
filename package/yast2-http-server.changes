@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Apr 22 17:30:57 CEST 2008 - mzugec@suse.cz
+
+- fixed Missing "Open Firewall Ports" checkbox in wizard expert 
+  (bnc#378742)
+- 2.16.7 
+
+-------------------------------------------------------------------
 Thu Apr  3 01:20:12 CEST 2008 - mzugec@suse.de
 
 - check checksums from configuration files (FaTE#303374)

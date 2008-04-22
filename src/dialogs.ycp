@@ -112,7 +112,7 @@ map tabs_descr = $[
       */
     symbol OverviewDialog () {
 	string caption = _("HTTP Server Configuration");
-    if (HttpServer::firewall_first) tabs_descr["listen", "widget_names"]= [ "server_enable", "LISTEN", "logs" ];
+//    if (HttpServer::firewall_first) tabs_descr["listen", "widget_names"]= [ "server_enable", "LISTEN", "logs" ];
     map widget_descr = $[
         "tab": CWMTab::CreateWidget($[
             "tab_order": [ "listen", "modules", "main_host", "hosts"],
