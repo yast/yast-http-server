@@ -786,7 +786,6 @@ global define map getHostOptions(boolean mainhost)
 					else used[option["option"]:""]=$[];
 			});
 	});
-
  if (mainhost) used = union(used, filter(string key,map val, popups, { return(key!="SSL"); }));
 	else used = union(used, popups);
  return used;
@@ -1403,7 +1402,7 @@ global map<string, map <string, any> > widgets = $[
 		"help" : HELPS["server_enable"]:"",
 	    ],
 	    "firewall_adapt" : CWMFirewallInterfaces::CreateOpenFirewallWidget ($[
-                "services" : [ "service:apache2" ],
+                "services" : [ "service:apache2", "service:apache2-ssl" ],
 		"help" : HELPS["firewall_adapt"]:"",
                 "display_details" : true,
               ]),

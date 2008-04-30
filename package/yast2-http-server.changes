@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Apr 30 13:57:22 CEST 2008 - mzugec@suse.cz
+
+- enable/disable https by firewall (bnc#384692)
+- 2.16.8 
+
+-------------------------------------------------------------------
 Tue Apr 22 17:30:57 CEST 2008 - mzugec@suse.cz
 
 - fixed Missing "Open Firewall Ports" checkbox in wizard expert 
