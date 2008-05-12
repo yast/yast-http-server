@@ -163,6 +163,7 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 
 	//TODO: don't allow user to use this directive !!!
 	//main server can't use SSL
+	boolean valid=true;
 	if ( hostid == "main" )
 	 {
 	  foreach(map<string,any> value, server, {
@@ -170,10 +171,12 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	    {
 	     //translators: popup error message when validate server
 	     Report::Error ( _("The default host cannot be configured with SSL support.") );
+	     valid=false;
              return false;
 	    }
 	  });
 	 }
+	if (!valid) return false;
 
     list <string> hosts = YaST::HTTPDData::GetHostsList ();
 
@@ -2294,12 +2297,14 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	    return showErrorLogPopup( key, event );
 	}
 */
-	symbol res = TablePopup::TableHandle( hostwidget, key, event );
+	symbol res = TablePopup::TableHandleWrapper ( key, event );
+/*
 	if (update_contents)
 	{
 	    update_contents = false;
 	    TablePopup::TableInit( hostwidget, key);
 	}
+*/
 	return res;
     }
 

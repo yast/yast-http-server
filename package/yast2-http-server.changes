@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon May 12 14:52:28 CEST 2008 - mzugec@suse.cz
+
+- don't allow user to choose SSL for main host (bnc#383333)
+- 2.16.9 
+
+-------------------------------------------------------------------
 Wed Apr 30 13:57:22 CEST 2008 - mzugec@suse.cz
 
 - enable/disable https by firewall (bnc#384692)
