@@ -37,6 +37,7 @@
     import "DNS";
     import "Arch";
     import "PackageSystem";
+    import "Map";
 
     include "http-server/helps.ycp";
 
@@ -1152,29 +1153,32 @@ string dns_zone = "";
 global void initVhostDetails(string key){
 
   map <string, any> servername = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "ServerName"));
+  map <string, any> ip = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "HostIP"));
+
   dns_zone="";
 
-  if (Package::Installed("bind"))
-        {
-	 if ( Service::Status("named") == 0 ){
-		foreach(string key, map<string, any> value, (map<string, map<string, any> >) DnsServerAPI::GetZones(), {
-		 if ( (value["type"]:"" == "master") 
-			&& (regexpmatch(servername["VALUE"]:"", "\\."+key+"$" ))
-				&& (size(key)>size(dns_zone)) ) dns_zone=key;
+  if (HttpServer::configured_dns)
+   {
+   if (IP::Check4(ip["VALUE"]:""))
+       {
+	foreach(string key, map<string, any> value, (map<string, map<string, any> >) DnsServerAPI::GetZones(), {
+	 if ( value["type"]:"" == "master" ){
+	  if (regexpmatch(servername["VALUE"]:"", "\\."+key+"$" ) && (size(key)>size(dns_zone)) ) dns_zone=key;
 			   y2milestone(_("Master Zone %1"), key);
-		});
-		if (size(dns_zone)>0)
-		 {
-		  y2milestone("Matching zone %1", dns_zone);
-		boolean exists=false;
-		foreach(map<string, any> records, DnsServerAPI::GetZoneRRs(dns_zone), {
-		 if (records["key"]:"" == servername["VALUE"]:"" || records["key"]:"" == servername["VALUE"]:""+".") exists=true;
-		});
-		if (exists == true) 
-			{
-			 y2milestone(_("Record %1 already exists in zone %2."), servername["VALUE"]:"", dns_zone);
-			} else {
-                   UI::ReplaceWidget(`replace, `Frame(_("DNS Settings"),
+	 } else y2warning("Zone %1 is not type master", key);
+	});
+	if (size(dns_zone)>0)
+	 {
+	  y2milestone("Matching zone %1", dns_zone);
+	  boolean exists=false;
+	  foreach(map<string, any> records, DnsServerAPI::GetZoneRRs(dns_zone), {
+	   if (records["key"]:"" == servername["VALUE"]:"" || records["key"]:"" == servername["VALUE"]:""+".") exists=true;
+	  });
+	  if (exists == true)
+	   {
+	    y2milestone(_("Record %1 already exists in zone %2."), servername["VALUE"]:"", dns_zone);
+	   } else {
+              UI::ReplaceWidget(`replace, `Frame(_("DNS Settings"),
                                               `Left(
                                                 `HBox(
                                                  `Label(servername["VALUE"]:""),
@@ -1183,23 +1187,24 @@ global void initVhostDetails(string key){
 
 				}
 
-		 } else {
-		   list <string> opts = splitstring(servername["VALUE"]:"", ".");
-			                       opts[0] = nil;
-                        list <string> newList=[];
-                        foreach(string it, opts, {
-                         if (it !=nil){
-                        list <string> tmpList=[];
-                          foreach(string itzone, newList, {
-                           tmpList = add(tmpList, itzone+"."+it);
-                           });
-                           newList=tmpList;
-                          newList = add(newList, it);
-                        }
-                        });
+	 } else {
+	    list <string> opts = splitstring(servername["VALUE"]:"", ".");
+	    opts[0] = nil;
+            list <string> newList=[];
+            foreach(string it, opts, {
+             if (it !=nil){
+              list <string> tmpList=[];
+              foreach(string itzone, newList, {
+	       if (!contains(Map::Keys(DnsServerAPI::GetZones()), itzone+"."+it)) tmpList = add(tmpList, itzone+"."+it);
+		else y2warning("%1 is already configured zone",  itzone+"."+it);
+              });
+              newList=tmpList;
+              newList = add(newList, it);
+             }
+            });
 
-		   if (size(opts)>0)
-	                   UI::ReplaceWidget(`replace, `Frame(_("DNS Settings"),
+	     if (size(opts)>0)
+	       UI::ReplaceWidget(`replace, `Frame(_("DNS Settings"),
                                               `Left(
                                                 `HBox(
                                                  `Label(servername["VALUE"]:""),
@@ -1207,15 +1212,14 @@ global void initVhostDetails(string key){
                                                  `PushButton(`id(`dns_create_zone), _("Create New Zone"))
                                                     ))));
 
-			}
-	 } else y2milestone(_("There is no DNS server running on this machine."));
-        }
+	}
+   } else y2warning("%1 is not valid IP4 address", ip["VALUE"]:"");
+  }
 
  // disable using SSL for name-based virtual host
  foreach(map<string, any> row, vhost_descr, {
   if (row["KEY"]:"" == "VirtualByName" && row["VALUE"]:"0" =="1") UI::ChangeWidget(`ssl_support, `Enabled, false);
  });
-
 }
 
 global define symbol handleVhostDetails (string key, map event){

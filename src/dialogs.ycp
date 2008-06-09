@@ -23,8 +23,6 @@
     import "CWM";
     import "CWMTab";
     import "Wizard";
-    import "DnsServerAPI";
-    import "DnsServer";
     import "Service";
     import "TablePopup";
     import "Package";
