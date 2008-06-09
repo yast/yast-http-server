@@ -59,7 +59,7 @@ global boolean proposal_valid = false;
  */
 global boolean write_only = false;
 
-boolean configured_dns = false;
+global boolean configured_dns = false;
 /**
  * Data was modified?
  * @return true if modified
@@ -184,10 +184,14 @@ without installing the package."), "apache2" ) );
     
     Progress::set(false);	//off();
     SuSEFirewall::Read();
-    if ((Package::Installed("bind")) &&(false == SCR::Read (.target.stat, Directory::vardir + "/dns_server"))){
-		DnsServerAPI::Read();
-		configured_dns = true;
-	}
+    if (Package::Installed("bind")){
+      if(size((map)SCR::Read (.target.stat, Directory::vardir + "/dns_server"))>0){
+	 if ( Service::Status("named") == 0 ){
+		if(DnsServerAPI::Read()) configured_dns = true;
+	 } else y2milestone(_("There is no DNS server running on this machine."));
+       } else y2warning("DNS server is not correctly configured via YaST.");
+     } else y2warning("Package bind is not installed.");
+    y2internal("DNS running and configured: %1", configured_dns);
     Progress::set(true);	//on();
 
     // read current settings from httpd.conf and sysconfig
