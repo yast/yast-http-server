@@ -4,6 +4,7 @@
  * Summary:	Widgets used by HTTP server configuration
  * Authors:	Jiri Srain <jsrain@suse.cz>
  *		Stanislav Visnovsky <visnov@suse.cz>
+ * Internal
  *
  * $Id$
  */
