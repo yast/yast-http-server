@@ -2440,9 +2440,9 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	    index = index + 1;
 	    // translators: server module status unknown
 	    string name = mod["name"]:_("unknown");
-	if ((mod["default"]:"0" == "1") && (!contains(modules, name))) YaST::HTTPDData::ModifyModuleList ([name], true);
+//	if ((mod["default"]:"0" == "1") && (!contains(modules, name))) YaST::HTTPDData::ModifyModuleList ([name], true);
 	    // translators: server module status
-	    return `item (`id (index), name, (contains( modules, name)||mod["default"]:"0"=="1") ? _("Enabled") 
+	    return `item (`id (index), name, contains( modules, name) ? _("Enabled") 
 		// translators: server module status
 		: _("Disabled"), mod["summary"]:"" );
 	});

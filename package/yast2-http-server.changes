@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jun 20 17:08:45 CEST 2008 - mzugec@suse.de
+
+- enable/disable also modules with default=1 (bnc#399288)
+- 2.13.32 
+
+-------------------------------------------------------------------
 Tue Jan 29 17:39:59 CET 2008 - mzugec@suse.de
 
 - open all Listen ports in firewall (#264112)
