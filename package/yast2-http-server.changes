@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jun 20 16:01:18 CEST 2008 - mzugec@suse.de
+
+- enable/disable also modules with default=1 (bnc#399288)
+- 2.17.0 
+
+-------------------------------------------------------------------
 Mon Jun  9 17:05:44 CEST 2008 - mzugec@suse.cz
 
 - DnsServerAPI moved from dns-server into yast2 (bnc#392606)

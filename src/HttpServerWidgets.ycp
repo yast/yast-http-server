@@ -2461,7 +2461,6 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
                        return( mapmap(string k,any v, $["default":"1", "name":name, "summary":_("unknown"), "required":"0", "suggested":"0"],
                                {return ($[k:v]); }));
        });
-
        // add to known modules list modules from temporary list
        foreach(map<string, any> mapmodules, listmodules, {
         boolean finded=false;
@@ -2472,14 +2471,13 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
         });
          if (!finded) known=add(known, mapmodules);
        });
-
 	list<term> items = maplist (map<string,any> mod, known , ``{
 	    index = index + 1;
 	    // translators: server module status unknown
 	    string name = mod["name"]:_("unknown");
-	if ((mod["default"]:"0" == "1") && (!contains(modules, name))) YaST::HTTPDData::ModifyModuleList ([name], true);
+//	if ((mod["default"]:"0" == "1") && (!contains(modules, name))) YaST::HTTPDData::ModifyModuleList ([name], true);
 	    // translators: server module status
-	    return `item (`id (index), name, (contains( modules, name)||mod["default"]:"0"=="1") ? _("Enabled") 
+	    return `item (`id (index), name, (contains( modules, name)) ? _("Enabled") 
 		// translators: server module status
 		: _("Disabled"), mod["summary"]:"" );
 	});
