@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Sun Jun 29 18:55:29 CEST 2008 - mzugec@suse.de
+
+- fixed help text about IP-based vhost & SSL (bnc#383720)
+- 2.17.1 
+
+-------------------------------------------------------------------
 Fri Jun 20 16:01:18 CEST 2008 - mzugec@suse.de
 
 - enable/disable also modules with default=1 (bnc#399288)
