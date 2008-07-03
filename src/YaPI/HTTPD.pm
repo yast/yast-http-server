@@ -1307,6 +1307,7 @@ sub CreateListen {
     my @listenEntries = @{$self->GetCurrentListen()};
     my %newEntry;
     $newEntry{ADDRESS} = $ip if ($ip);
+    $newEntry{ADDRESS} = "[$ip]" if ($ip=~m/\:/);
     $newEntry{PORT} = ($fromPort eq $toPort)?($fromPort):($fromPort.'-'.$toPort);
     SCR->Write( ".http_server.listen", [ @listenEntries, \%newEntry ] );
 
@@ -1408,12 +1409,19 @@ sub GetCurrentListen {
     if( not ref($data[0]) ) {
         return $self->SetError( %{SCR->Error(".http_server.listen")} );
     }
-    foreach my $listen ( @{$data[0]} ) {
-        if( $listen =~ /^([^:]+):([^:]+)/ ) {
-            push( @ret, { ADDRESS => $1, PORT => $2 } );
-        } elsif( $listen =~ /^\d+$/ ) {
-            push( @ret, { PORT => $listen } );
-        }
+    foreach my $new ( @{$data[0]} ) {
+     my ($ip, $fp, $tp, $port) = ('', '', '', '');
+     if ($new =~ m/\[([\w\W]*)\]([\w\W]*)/){
+      $ip="[$1]";
+      if ($2 =~ m/([\d\:]*)/){
+       ($fp, $tp) = split(/:/, $1);
+      } else{
+             ( $ip, $fp, $tp ) = split(/:/, $new);
+            }
+      $fp=$tp if ($fp eq '');
+      $port = ($fp eq $tp)?($fp):($fp.'-'.$tp);
+     }
+    push(@ret, {ADDRESS => $ip, PORT=>$port});
     }
     return \@ret;
 }

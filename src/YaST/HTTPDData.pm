@@ -546,7 +546,7 @@ sub CreateListen {
     return 1;
 }
 
-# boolean CreateListen( int, int, list<string> )
+# boolean DeleteListen( int, int, list<string> )
 BEGIN { $TYPEINFO{DeleteListen} = ["function", "boolean", "integer", "integer", "string" ] ; }
 sub DeleteListen {
     my $self = shift;
@@ -566,8 +566,17 @@ sub GetCurrentListen {
     my $self = shift;
     my @new;
     foreach my $new ( keys(%newListen) ) {
-        my ( $ip, $fp, $tp ) = split(/:/, $new);
-        my $port = ($fp eq $tp)?($fp):($fp.'-'.$tp);
+     my ($ip, $fp, $tp, $port) = ('', '', '', '');
+     if ($new =~ m/\[([\w\W]*)\]/){
+      $ip=$1;
+      if ($new =~ m/\[$ip\]:([\d\:]*)/){
+       ($fp, $tp) = split(/:/, $1);
+      } else{
+             ( $ip, $fp, $tp ) = split(/:/, $new);
+            }
+      $tp=$fp if ($tp eq '');
+      $port = ($fp eq $tp)?($fp):($fp.'-'.$tp);
+     }
         push( @new, { ADDRESS => $ip, PORT => $port } );
     }
     foreach my $old ( @oldListen ) {
@@ -589,13 +598,33 @@ sub WriteListen {
     my $self = shift;
     my $doFirewall = shift;
     my $ret = 1;
-
+ 
     foreach my $toDel ( keys(%delListen) ) {
-        my ($ip,$fp,$tp) = split(/:/, $toDel);
+     my ($ip, $fp, $tp, $port) = ('', '', '', '');
+     if ($toDel =~ m/\[([\w\W]*)\]/){
+      $ip=$1;
+      if ($toDel =~ m/\[$ip\]:([\d\:]*)/){
+       ($fp, $tp) = split(/:/, $1);
+      } else{
+             ( $ip, $fp, $tp ) = split(/:/, $toDel);
+            }
+      $tp=$fp if ($tp eq '');
+      }
+      $ip="[$ip]" if ($ip=~m/:/);
         YaPI::HTTPD->DeleteListen( $fp, $tp, $ip, $doFirewall );
     }
-    foreach my $toCreate ( keys(%newListen) ) {
-        my ($ip,$fp,$tp) = split(/:/, $toCreate);
+    foreach my $new ( keys(%newListen) ) {
+     my ($ip, $fp, $tp, $port) = ('', '', '', '');
+     if ($new =~ m/\[([\w\W]*)\]/){
+      $ip=$1;
+      if ($new =~ m/\[$ip\]:([\d\:]*)/){
+       ($fp, $tp) = split(/:/, $1);
+      } else{
+             ( $ip, $fp, $tp ) = split(/:/, $new);
+            }
+      $tp=$fp if ($tp eq '');
+      $port = ($fp eq $tp)?($fp):($fp.'-'.$tp);
+     }
         unless( YaPI::HTTPD->CreateListen( $fp, $tp, $ip, $doFirewall ) ) {
             $ret = undef;
         }
