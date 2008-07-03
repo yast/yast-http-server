@@ -140,11 +140,14 @@ global boolean validate_serverip (any id, any key, map event)
     string value = (string)UI::QueryWidget (`id (id), `Value);
 
     // check, if there is also a port, if yes, skip it
-    integer pos = search (value, ":");
-    if (pos != nil) value = substring (value, 0, pos);
+//    integer pos = search (value, ":");
+//    if (pos != nil) value = substring (value, 0, pos);
 
     // validate wildcard
     if (value == "*") return true;
+    // remove brackets before validation (because of IPv6 [::])
+    if (substring(value, 0, 1)=="[" && substring(value, size(value)-1, 1)=="]")
+				value = substring(value, 1, size(value)-2);
 
     if (!IP::Check (value))
     {
@@ -1048,7 +1051,10 @@ global define void storeVhostId (string opt_id, map event) ``{
 
 define string changeVHostPopup(string value){
  string vhost="";
- list items = maplist( string ip, string dev, HttpServer::ip2device, ``(ip) );
+ list items = maplist( string ip, string dev, HttpServer::ip2device, {
+  if (IP::Check6(ip)) return sformat("[%1]", ip);
+	  else return ip;
+  } );
  UI::OpenDialog(
   `RadioButtonGroup(`id(`rb),
 	 `VBox(
@@ -1883,8 +1889,11 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	// translators: Listen type for all addresses;
 	string aa =  _("All Addresses");
 
-	list ips = union( [ aa ], maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) );
-
+	list ips = union( [ aa ], maplist( string ip, string dev, HttpServer::ip2device,
+	 {
+	  if (IP::Check6(ip)) return sformat("[%1]", ip);
+		else return ip;
+	 } ) );
 	UI::OpenDialog( `VBox(
 	    `TextEntry( `id(`port), Label::Port(), port ),
 	    // translators: combo box label for list of configured IPs
@@ -2621,8 +2630,10 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 		} 
 		else
 		{
+//		  if (IP::Check6(res["ADDRESS"]:"")) res["ADDRESS"]=sformat("[%1]", res["ADDRESS"]:"");
 		    YaST::HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
 			res["ADDRESS"]:"" );
+y2internal("get %1", YaST::HTTPDData::GetCurrentListen());
 		    HttpServer::modified = true;
 		}
 	    }
@@ -2639,7 +2650,6 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 listen cannot be empty.") );
 	    return nil;
 	    }
-
 	    // remove the entry
 	    YaST::HTTPDData::DeleteListen( tointeger(port), tointeger(port), network );
 	    HttpServer::modified = true;
