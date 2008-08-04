@@ -185,7 +185,7 @@ define boolean ListenHandler(map<string, string> options) ``{
 	//FIXME:  check, if new address and port are correct values (if address is from machine's interfaces)
     if (size(address)>0 && !contains(maplist( string ip, string dev, HttpServer::ip2device, ``( ip )), address))
      {
-      Report::Error(_("Can use only exsists interfaces"));
+      Report::Error(_("Can use only exsisting interfaces"));
       return false;
      }
        if (finded)
