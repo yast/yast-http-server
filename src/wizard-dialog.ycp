@@ -124,13 +124,13 @@ symbol WizardSequence2(){
         boolean enable_php5=(boolean) UI::QueryWidget( `id(`scr_mod_php5), `Value );
         boolean enable_perl=(boolean) UI::QueryWidget( `id(`scr_mod_perl), `Value );
         boolean enable_python=(boolean) UI::QueryWidget( `id(`scr_mod_python), `Value );
-        boolean enable_ruby=(boolean) UI::QueryWidget( `id(`scr_mod_ruby), `Value );
+//        boolean enable_ruby=(boolean) UI::QueryWidget( `id(`scr_mod_ruby), `Value );
 
 	y2milestone("Saving script modules");
 	y2milestone("PHP5 support %1", enable_php5);
 	y2milestone("Perl support %1", enable_perl);
 	y2milestone("Python support %1", enable_python);
-	y2milestone("Ruby support %1", enable_ruby);
+//	y2milestone("Ruby support %1", enable_ruby);
 	// create list of all standard modules
            list<string> existing = maplist (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), { 
 			YaST::HTTPDData::ModifyModuleList ([ mod["name"]:_("unknown") ], mod["default"]:_("0") == "1");
@@ -139,7 +139,7 @@ symbol WizardSequence2(){
 	YaST::HTTPDData::ModifyModuleList ([ "php5" ], enable_php5);
         YaST::HTTPDData::ModifyModuleList ([ "perl" ], enable_perl);
         YaST::HTTPDData::ModifyModuleList ([ "python" ], enable_python);
-        YaST::HTTPDData::ModifyModuleList ([ "ruby" ], enable_ruby);
+//        YaST::HTTPDData::ModifyModuleList ([ "ruby" ], enable_ruby);
 
             HttpServer::modified = true;
     }

@@ -2820,12 +2820,12 @@ define void initScriptModules(string key) ``{
 	boolean enable_php5=false;
 	boolean enable_perl=false;
 	boolean enable_python=false;
-	boolean enable_ruby=false;
+//	boolean enable_ruby=false;
 list<string> modules = YaST::HTTPDData::GetModuleList();
 	if (contains(modules, "php5")) enable_php5 = true;
 	if (contains(modules, "perl")) enable_perl = true;
 	if (contains(modules, "python")) enable_python = true;
-	if (contains(modules, "ruby")) enable_ruby = true;
+//	if (contains(modules, "ruby")) enable_ruby = true;
 
 	UI::ReplaceWidget (`id (`scr_mod_replace),
 		    `HBox(`HSpacing(6),
@@ -2836,8 +2836,8 @@ list<string> modules = YaST::HTTPDData::GetModuleList();
                       `Left(`CheckBox(`id(`scr_mod_perl), _("Enable P&erl Scripting"), enable_perl)),
                         `VSpacing(1),   //translators: checkbox - support for python script language
                       `Left(`CheckBox(`id(`scr_mod_python), _("Enable P&ython Scripting"), enable_python)),
-                        `VSpacing(1),   //translators: checkbox - support for ruby script language
-                      `Left(`CheckBox(`id(`scr_mod_ruby), _("Enable &Ruby Scripting"), enable_ruby)),
+//                        `VSpacing(1),   //translators: checkbox - support for ruby script language
+//                      `Left(`CheckBox(`id(`scr_mod_ruby), _("Enable &Ruby Scripting"), enable_ruby)),
 		     `VSpacing(2) 
 			)));
 	y2milestone("initializing script modules");
