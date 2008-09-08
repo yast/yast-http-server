@@ -116,10 +116,10 @@ To edit the host settings, choose the appropriate entry of the table then click 
 To add a new option, click <b>Add</b>. To remove an option, select it and click <b>Delete</b>.</p>")
 
 	// host editing help 2/2
-	+ _("<p>The <b>Server Resolution</b> options set the resolution when using 
-virtual hosts. However, when you choose <b>Resolution via HTTP Headers</p>,
+	+ _("<p>The <b>Server Resolution</b> options set the resolution when using
+	virtual hosts. However, when you choose <b>Resolution via HTTP Headers</p>,
 	the default server will never be served requests to the IP address of
-	a name-based virtual host. If you plan to configure SSL based vhost, use <b>Resolution via IP address</b></p>"),
+	a name-based virtual host. If you plan to configure a SSL based vhost, use <b>Resolution via IP address</b></p>"),
 
 	// listen dialog editor help 1/2
 	"listen" : _("<p><b><big><i>Listen</i> Settings for a Host</big></b><br>
