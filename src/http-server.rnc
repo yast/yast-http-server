@@ -33,13 +33,7 @@ http-hosts = element hosts {
                 element OVERHEAD     { text }? &
                 element SECTIONNAME  { text }? &
                 element SECTIONPARAM { text }? &
-                element VALUE        {
-                    LIST,
-                    element listentry {
-                        element KEY   { text }? &
-                        element VALUE { text }?
-                    }*
-                }*
+                element VALUE        { text }?
             }*
         }
     }*
