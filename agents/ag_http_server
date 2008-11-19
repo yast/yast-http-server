@@ -403,7 +403,7 @@ sub Write {
             %listen = ();
             foreach my $entry ( @{$args[0]} ) {
                 my $key = "";
-                if( exists( $entry->{'ADDRESS'} ) ) {
+                if( exists( $entry->{'ADDRESS'} ) and $entry->{'ADDRESS'} ne '') {
                     $key = $entry->{'ADDRESS'}.':';
                 }
                 $key .= $entry->{'PORT'};
