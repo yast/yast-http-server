@@ -1,8 +1,9 @@
 package YaST::HTTPDData;
-use YaST::YCP;
+use YaST::YCP qw(:LOGGING sformat);
 use YaPI::HTTPDModules;
 use YaPI::HTTPD;
 use YaST::httpdUtils;
+use Data::Dumper;
 
 @YaST::HTTPDData::ISA = qw( YaST::httpdUtils );
 
@@ -532,10 +533,10 @@ sub CreateListen {
     delete($delListen{"$ip:$fromPort:$toPort"});
 
     foreach my $old ( @oldListen ) {
-        if( ($ip and exists($old->{ADDRESS}) and $ip eq $old->{ADDRESS}) and
+        if($ip and (exists($old->{ADDRESS}) and $ip eq $old->{ADDRESS}) and
             ($port eq $old->{PORT}) ) {
             return 1; # already created listen
-        } elsif( not($ip) and not(exists($old->{ADDRESS})) and
+        } elsif( not($ip) and (not(exists($old->{ADDRESS})) or $old->{ADDRESS} eq '') and
                  $port eq $old->{PORT} ) {
             return 1; # already created listen
         }
@@ -565,9 +566,12 @@ BEGIN { $TYPEINFO{GetCurrentListen} = ["function", ["list", [ "map", "string", "
 sub GetCurrentListen {
     my $self = shift;
     my @new;
+#y2internal("BEGIN - newListen ", Dumper(\%newListen), "oldListen", Dumper(@oldListen), "delListen ", Dumper(\%delListen));
+#y2internal("new ", Dumper(\@new));
     foreach my $new ( keys(%newListen) ) {
      my ($ip, $fp, $tp, $port) = ('', '', '', '');
-     if ($new =~ m/\[([\w\W]*)\]/){
+#     if (
+	$new =~ m/\[([\w\W]*)\]/; #) {
       $ip=$1;
       if ($new =~ m/\[$ip\]:([\d\:]*)/){
        ($fp, $tp) = split(/:/, $1);
@@ -576,8 +580,10 @@ sub GetCurrentListen {
             }
       $tp=$fp if ($tp eq '');
       $port = ($fp eq $tp)?($fp):($fp.'-'.$tp);
-     }
+#     }
         push( @new, { ADDRESS => $ip, PORT => $port } );
+#y2internal("MIDDLE newListen ", Dumper(\%newListen), "oldListen", Dumper(@oldListen), "delListen ", Dumper(\%delListen));
+#y2internal("new ", Dumper(\@new));
     }
     foreach my $old ( @oldListen ) {
         if( $old->{PORT} =~ /-/ ) {
@@ -590,6 +596,8 @@ sub GetCurrentListen {
         }
         push( @new, $old );
     }
+#y2internal("END - newListen ", Dumper(\%newListen), "oldListen", Dumper(@oldListen), "delListen ", Dumper(\%delListen));
+#y2internal("new ", Dumper(\@new));
     return \@new;
 }
 
@@ -601,7 +609,8 @@ sub WriteListen {
  
     foreach my $toDel ( keys(%delListen) ) {
      my ($ip, $fp, $tp, $port) = ('', '', '', '');
-     if ($toDel =~ m/\[([\w\W]*)\]/){
+#     if (
+      $toDel =~ m/\[([\w\W]*)\]/; #){
       $ip=$1;
       if ($toDel =~ m/\[$ip\]:([\d\:]*)/){
        ($fp, $tp) = split(/:/, $1);
@@ -609,13 +618,14 @@ sub WriteListen {
              ( $ip, $fp, $tp ) = split(/:/, $toDel);
             }
       $tp=$fp if ($tp eq '');
-      }
+#      }
       $ip="[$ip]" if ($ip=~m/:/);
         YaPI::HTTPD->DeleteListen( $fp, $tp, $ip, $doFirewall );
     }
     foreach my $new ( keys(%newListen) ) {
      my ($ip, $fp, $tp, $port) = ('', '', '', '');
-     if ($new =~ m/\[([\w\W]*)\]/){
+#     if (
+      $new =~ m/\[([\w\W]*)\]/; #){
       $ip=$1;
       if ($new =~ m/\[$ip\]:([\d\:]*)/){
        ($fp, $tp) = split(/:/, $1);
@@ -624,7 +634,7 @@ sub WriteListen {
             }
       $tp=$fp if ($tp eq '');
       $port = ($fp eq $tp)?($fp):($fp.'-'.$tp);
-     }
+#     }
         unless( YaPI::HTTPD->CreateListen( $fp, $tp, $ip, $doFirewall ) ) {
             $ret = undef;
         }

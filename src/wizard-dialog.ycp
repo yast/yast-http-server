@@ -79,14 +79,14 @@ symbol WizardSequence1(){
                         } );
 		// save interface information
 	if (all==true) {
-                     YaST::HTTPDData::CreateListen( tointeger(UI::QueryWidget( `id("open_port"), `Value )), 
+                     YaST::HTTPDData::CreateListen( tointeger(UI::QueryWidget( `id("open_port"), `Value )),
 				tointeger(UI::QueryWidget( `id("open_port"), `Value )), "");
-			} 
+			}
 		else {
-		// save firewall open port information 
+		// save firewall open port information
 			foreach(string ip, if_sel, {
 				YaST::HTTPDData::CreateListen( tointeger(UI::QueryWidget( `id("open_port"), `Value )),
-                                	tointeger(UI::QueryWidget( `id("open_port"), `Value )), ip);
+								tointeger(UI::QueryWidget( `id("open_port"), `Value )), ip);
 	y2milestone("Listen on : %1", ip);
 
 				});

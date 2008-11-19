@@ -299,10 +299,11 @@ package YaPI::HTTPD;
 use Switch;
 use Data::Dumper;
 use YaPI;
-use YaST::YCP;
+use YaST::YCP qw(:LOGGING sformat);
 use YaPI::HTTPDModules;
 use YaST::httpdUtils;
 use YaST::HTTPDData;
+use Data::Dumper;
 @YaPI::HTTPD::ISA = qw( YaPI YaST::httpdUtils YaST::HTTPDData );
 YaST::YCP::Import ("SCR");
 YaST::YCP::Import ("Service");
@@ -1306,9 +1307,11 @@ sub CreateListen {
     }
     my @listenEntries = @{$self->GetCurrentListen()};
     my %newEntry;
+    $newEntry{ADDRESS} = '';
     $newEntry{ADDRESS} = $ip if ($ip);
     $newEntry{ADDRESS} = "[$ip]" if ($ip=~m/\:/);
     $newEntry{PORT} = ($fromPort eq $toPort)?($fromPort):($fromPort.'-'.$toPort);
+y2warning("SCR::WRITE listentries", Dumper(\@listenEntries), "new entry ", Dumper(\%newEntry));
     SCR->Write( ".http_server.listen", [ @listenEntries, \%newEntry ] );
 
     if( $doFirewall ) {
@@ -1420,6 +1423,8 @@ sub GetCurrentListen {
             }
       $fp=$tp if ($fp eq '');
       $port = ($fp eq $tp)?($fp):($fp.'-'.$tp);
+     } elsif ($new =~/[\D]*([\d]*)[\D]*/){
+      $port=$1;
      }
     push(@ret, {ADDRESS => $ip, PORT=>$port});
     }
