@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Mar  3 10:25:03 CET 2009 - mzugec@suse.cz
+
+- added X-SuSE-YaST-AutoInstSchema into desktop file (bnc#480466)
+- 2.18.1 
+
+-------------------------------------------------------------------
 Mon Feb 23 12:15:14 CET 2009 - mzugec@suse.cz
 
 - fixed text (bnc#476002)
