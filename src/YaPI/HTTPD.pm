@@ -528,16 +528,6 @@ sub createVH (){
 	} else {
 		 $vhost_files->{$ip} =  [{HOSTID => "$ip/$servername", HostIP => $ip, DATA => \@newdata}];
 		}
-
-
-
-#$vhost_files->{$ip} = \@newdata;
-#  deleteVH() if (@{$self->GetHost($hostid)} ne 0);
- 
-# if ($type eq "0"){
-#   $vhost_files->{$ip} = @newdata;
-#  }
-
 }
 
 
@@ -579,17 +569,7 @@ sub modifyVH {
     my $data = shift;
 
 
-# my @newdata = ();
-# foreach my $row (@{$data}){
-#  if ($row->{KEY} eq 'HostIP' ) {
-#    $ip = $row->{VALUE};
-#   } elsif ($row->{KEY} eq 'VirtualByName' ) {
-#	 $type = $row->{VALUE};		
-#	}else {
-#	 	push(@newdata, $row);
-#	}
-# }
-my $params = $self->getVhType($hostid);
+ my $params = $self->getVhType($hostid);
 
  $self->deleteVH($hostid);
  $self->createVH($hostid, $data, $params);
@@ -781,17 +761,6 @@ sub CreateHost {
         if( $key->{KEY} eq 'VirtualByName' ) {
             $VirtualByName = $key->{VALUE};
         } 
-#elsif( $key->{KEY} eq 'SSL' and $key->{VALUE} == 1 ) {
-#            $sslHash->{'VALUE'} = 'on';
-#        } elsif( $key->{KEY} eq 'SSL' and $key->{VALUE} == 2 ) {
-#            $sslHash->{'VALUE'} = 'on';
-#            push( @tmp, { KEY => 'SSLRequireSSL', VALUE => '' } );
-#        } elsif( $key->{KEY} eq 'SSL' ) {
-#            # already set to "off" above. So ignore.
-#        } elsif( $key->{KEY} eq 'DocumentRoot' ) {
-#            $docRoot = $key->{VALUE};
-#            push( @tmp, $key );
-#        } els
 if( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
             # illegal keys in vhost
             return $self->SetError( summary => sprintf(__("Illegal key in vhost '%s'."), $key->{KEY}),
@@ -1622,15 +1591,11 @@ sub WriteServerCert {
     $file .= '-cert.pem';
 
     if( not $pemData ) {
-#        SCR->Execute( '.target.remove', $file );
-#        $self->ModifyHostKey( $host, 'SSLCertificateFile' );
     } elsif( $pemData !~ /BEGIN CERTIFICATE/ ) {
         return $self->SetError( summary => __("Corrupt PEM data."), code => 'CERT_ERROR' );
     } else {
         SCR->Write( '.target.string', $file, $pemData );
         SCR->Execute( '.target.bash', "chmod 0400 $file" );
-#        $self->ModifyHostKey( $host, 'SSLCertificateFile', $file );
-#        $self->ModifyHostKey( $host, 'SSLCertificateKeyFile', $file ) if( $key );
     }
     return $self->ModifyHost( $hostid, $host );
 }
@@ -1673,16 +1638,12 @@ sub WriteServerKey {
     $file .= '-key.pem';
 
     if( not $pemData ) {
-#        SCR->Execute( '.target.remove', $file );
-#        $self->ModifyHostKey( $host, 'SSLCertificateKeyFile' );
     } elsif( $pemData !~ /PRIVATE KEY/ ) {
         return $self->SetError( summary => __("Corrupt PEM data."), code => 'CERT_ERROR' );
     } else {
         my $cert = ($pemData =~ /BEGIN CERTIFICATE/)?(1):(0);
         SCR->Write( '.target.string', $file, $pemData );
         SCR->Execute( '.target.bash', "chmod 0400 $file" );
-#        $self->ModifyHostKey( $host, 'SSLCertificateKeyFile', $file );
-#        $self->ModifyHostKey( $host, 'SSLCertificateFile', $file ) if( $cert );
     }
     return $self->ModifyHost( $hostid, $host );
 }

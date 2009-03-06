@@ -48,14 +48,9 @@ sub checkHostmap {
     my %checkMap = (
         ServerAdmin  => qr/^[^@]+@[^@]+$/,
         ServerName   => qr/^[\w\d.-]+$/,
-#        SSL          => qr/^[012]$/,
         # more to go
     );
 
-#    my $ssl = 0;
-#    my $nb_vh = 0;
-#    my $dr = 0;
-#    my $sn = 0;
     foreach my $entry ( @$host ) {
         next unless( exists($checkMap{$entry->{KEY}}) );
         my $re = $checkMap{$entry->{KEY}};
@@ -63,10 +58,6 @@ sub checkHostmap {
             return $self->SetError( summary => sprintf( __("Illegal '%s' parameter"), $entry->{KEY} ), 
                                     code    => "PARAM_CHECK_FAILED" );
         }
-#        $ssl = $entry->{VALUE} if( $entry->{KEY} eq 'SSL' );
-#        $nb_vh = $entry->{VALUE} if( $entry->{KEY} eq 'VirtualByName' );
-#        $dr = 1 if(  $entry->{KEY} eq 'DocumentRoot' );
-#        $sn = 1 if(  $entry->{KEY} eq 'ServerName' );
     }
     return $self->SetError( summary => __('ssl together with "virtual by name" is not possible'),
                             code    => 'PARAM_CHECK_FAILED' ) if( $ssl and $nb_vh );
@@ -78,24 +69,6 @@ sub checkHostmap {
 sub readHosts {
     my $self = shift;
     my @data = SCR->Read('.http_server.vhosts');
-
-    # this is a hack.
-    # yast will put some directives in define sections
-    # automatically and here we remove them
-
-#    if( ref($data[0]) eq 'HASH' ) {
-#        foreach my $file ( keys %{$data[0]} ) {
-#            foreach my $host ( @{$data[0]->{$file}} ) {
-#                foreach my $data ( @{$host->{DATA}} ) {
-#                    if( exists($data->{OVERHEAD}) and
-#                        $data->{OVERHEAD} =~ /# YaST auto define section/ ) {
-#                        $data = $data->{VALUE}->[0]; # delete the "auto define" section
-#                    }
-#                }
-#            }
-#        }
-#    }
-
 
     return @data;
 }

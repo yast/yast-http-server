@@ -97,8 +97,6 @@ sub addDir {
                     }
                   ]
     };
-#    push( @{$hosts{'default'}}, $dirEntry );
-#    $dirty{MODIFIED}->{'default'} = 1;
     return $dirEntry;
 }
 
@@ -208,53 +206,10 @@ sub ModifyHost {
     my $hostdata = shift;
 
     return undef if( ! $self->checkHostmap( $hostdata ) );
-
-#    my $dr;
-#    my $vbn;
-#    foreach my $h ( @{$hosts{$hostid}} ) {
-#        if( $h->{KEY} eq 'DocumentRoot' ) {
-#            $dr = $h->{VALUE};
-#        } elsif( $h->{KEY} eq 'VirtualByName' ) {
-#            $vbn = $h->{VALUE};
-#        }
-#    }
-#    $hosts{$hostid} = $hostdata;
 if ($hostid ne 'main')
  {
 
     YaPI::HTTPD->modifyVH($hostid, $hostdata);
-
-
-#    foreach my $h ( @{$hosts{$hostid}} ) {
-#        if( $h->{KEY} eq 'DocumentRoot' ) {
-#            if( $dr ne $h->{VALUE} ) {
-#                $self->delDir( $dr );
-#                $self->addDir( $h->{VALUE} );
-#            }
-#        } els
-#	if( $h->{KEY} eq 'VirtualByName' ) {
-#            if( $vbn ne $h->{VALUE} ) {
-#                $hostid =~ /^([^\/]+)/;
-#                my $vhost = $1;
-#                if( $h->{VALUE} == 1 and $self->getNVH( $vhost ) == 0 ) {
-#                    push( @{$hosts{'main'}}, { KEY => 'NameVirtualHost', VALUE => $1 } );
-#               } elsif( $h->{VALUE} == 0 and $self->getNVH( $vhost ) == 1 ) {
-#                    my @newData = ();
-#                    while( my $e = shift(@{$hosts{'main'}}) ) {
-#                        if( $e->{KEY} eq 'NameVirtualHost' and
-#                            $e->{VALUE} eq $vhost ) {
-#                            push( @newData, @{$hosts{'main'}} );
-#                            last;
-#                        }
-#                        push( @newData, $e );
-#                    }
-#                    $hosts{'main'} = \@newData;
-#                }
-#                $dirty{MODIFIED}->{'main'} = 1;
-#            }
-#        }
-#    }
-
     $dirty{MODIFIED}->{$hostid} = 1 unless( exists($dirty{NEW}->{$hostid}) );
  } else {
 	 YaPI::HTTPD->modifyMain($hostdata);
@@ -272,19 +227,6 @@ sub CreateHost {
     if( ! $self->checkHostmap( $hostdata ) ) {
         return undef;
     }
-#    foreach my $h ( @$hostdata ) {
-#        if( $h->{KEY} eq 'DocumentRoot' ) {
-#            $dir=$self->addDir($h->{VALUE});
-#        } elsif( $h->{KEY} eq 'VirtualByName' and $h->{VALUE} ) {
-#            $hostid =~ /^([^\/]+)/;
-#            my $v = $1;
-#            if( $self->getNVH( $v ) == 0 ) {
-#                push( @{$hosts{'main'}}, { KEY => 'NameVirtualHost', VALUE => $v } );
-#                $dirty{MODIFIED}->{'main'} = 1;
-#            }
-#        } 
-#    }
-
  # don't create Directory for DocumentRoot, if already exists
  if ($dir ne ""){
   foreach my $row (@$hostdata) {
@@ -566,11 +508,8 @@ BEGIN { $TYPEINFO{GetCurrentListen} = ["function", ["list", [ "map", "string", "
 sub GetCurrentListen {
     my $self = shift;
     my @new;
-#y2internal("BEGIN - newListen ", Dumper(\%newListen), "oldListen", Dumper(@oldListen), "delListen ", Dumper(\%delListen));
-#y2internal("new ", Dumper(\@new));
     foreach my $new ( keys(%newListen) ) {
      my ($ip, $fp, $tp, $port) = ('', '', '', '');
-#     if (
 	$new =~ m/\[([\w\W]*)\]/; #) {
       $ip=$1;
       if ($new =~ m/\[$ip\]:([\d\:]*)/){
@@ -580,10 +519,7 @@ sub GetCurrentListen {
             }
       $tp=$fp if ($tp eq '');
       $port = ($fp eq $tp)?($fp):($fp.'-'.$tp);
-#     }
         push( @new, { ADDRESS => $ip, PORT => $port } );
-#y2internal("MIDDLE newListen ", Dumper(\%newListen), "oldListen", Dumper(@oldListen), "delListen ", Dumper(\%delListen));
-#y2internal("new ", Dumper(\@new));
     }
     foreach my $old ( @oldListen ) {
         if( $old->{PORT} =~ /-/ ) {
@@ -596,8 +532,6 @@ sub GetCurrentListen {
         }
         push( @new, $old );
     }
-#y2internal("END - newListen ", Dumper(\%newListen), "oldListen", Dumper(@oldListen), "delListen ", Dumper(\%delListen));
-#y2internal("new ", Dumper(\@new));
     return \@new;
 }
 
