@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Mar  6 16:49:11 CET 2009 - mzugec@suse.cz
+
+- modules ordering problem (bnc#350590)
+- validation of modules dependency
+- 2.18.2 
+
+-------------------------------------------------------------------
 Tue Mar  3 10:25:03 CET 2009 - mzugec@suse.cz
 
 - added X-SuSE-YaST-AutoInstSchema into desktop file (bnc#480466)
