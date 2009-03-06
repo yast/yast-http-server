@@ -93,14 +93,10 @@ textdomain "http-server";
                     suggested => 0,
                     position  => 50,
                     module    => {
-#                                    AuthDBMAuthoritative => 'mod_auth_dbm',
-#                                    AuthDBMGroupFile => 'mod_auth_dbm',
                                     AuthDBMType => 'mod_auth_dbm',
                                     AuthDBMUserFile => 'mod_auth_dbm'
                     },
                     directives=> [ 
-#{ option => "AuthDBMAuthoritative", "context" => [ "Directory" ] , "values" => [ "On", "Off" ] },
-#				   { option => "AuthDBMGroupFile",     "context" => [ "Directory" ] },
 				   { option => "AuthDBMType", 	       "context" => [ "Directory" ] , 
 										"values" => [ "default", "SDBM", "GDBM", "NDBM", "DB" ] },
 				   { option => "AuthDBMUserFile",      "context" => [ "Directory" ] }
@@ -806,17 +802,6 @@ textdomain "http-server";
                                    { option =>"VirtualScriptAliasIP",     "context" => [ "Server", "Virtual", "Directory" ] }
 				]
     },
-
-#    'php4' => {
-#                    summary   => 'Provides support for PHP4 dynamically generated pages',
-#                    packages  => ["apache2-mod_php4"],
-#                    default   => 0,
-#                    required  => 0,
-#                    suggested => 0,
-#                    position  => 490,
-#		    exclude   => [ "php5" ]
-#    },
-
     'php5' => {
                     summary   => __("Provides support for PHP5 dynamically generated pages"),
                     packages  => ["apache2-mod_php5"],
@@ -849,6 +834,22 @@ textdomain "http-server";
                     required  => 0,
                     suggested => 0,
                     position  => 530
+     },
+    'authz_svn' => {
+                    summary   => __("Provides support for AppArmor subprocess confinement within apache"),
+                    packages  => ["subversion-server"],
+                    default   => 0,
+                    required  => 0,
+                    suggested => 0,
+                    position  => 535
+     },
+    'dav_svn' => {
+                    summary   => __("Provides support for AppArmor subprocess confinement within apache"),
+                    packages  => ["subversion-server"],
+                    default   => 0,
+                    required  => 0,
+                    suggested => 0,
+                    position  => 540
      }
 
 );
