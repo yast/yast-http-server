@@ -1,14 +1,18 @@
 package YaPI::HTTPDModules;
 use YaPI;
 textdomain "http-server";
-
 %modules = (
+# (without_leading mod_) module name = {
+#	summary   => __("Translatable text with module description - will be shown in YaST table"),
+#	packages  => [ list of rpm packages needed for particular module ],
+#	default	  => 0 or 1 if this module should be enabled by default
+#       postition => order in /etc/sysconfig/apache2 (lowest numbew, ... , higher number)   
+#	requires  => required modulename (this is used in YaST dialog validation)
+# }
     'authz_host' => {
                     summary   => __("Provides access control based on client host name, IP address, etc."),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 10,
 		    directives=> [ { option => "Allow", "context" => [ "Directory" ] }, 
 				   { option => "Deny",  "context" => [ "Directory" ] },
@@ -19,8 +23,6 @@ textdomain "http-server";
                     summary   => __("Executing CGI scripts based on media type or request method"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 20,
 		    directives=> [ { option => "Action", "context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "Script", "context" => [ "Directory", "Server", "Virtual" ] }
@@ -30,8 +32,6 @@ textdomain "http-server";
                     summary   => __("Mapping different parts of the host file system in the document tree and for URL redirection"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 30,
                     directives=> [ { option => "Alias", 		"context" => [ "Server", "Virtual" ] },
 				   { option => "AliasMatch", 		"context" => [ "Server", "Virtual" ] },
@@ -47,8 +47,6 @@ textdomain "http-server";
                     summary   => __("Basic authentication"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 40,
 		    directives=> [ { option => "AuthBasicAuthoritative", "context" => [ "Directory" ] , "values" => [ "On", "Off" ] },
 				   { option => "AuthBasicProvider",     "context" => [ "Directory" ] }
@@ -58,8 +56,6 @@ textdomain "http-server";
                     summary   => __("User authentication using text files"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 40,
 		    directives=> [ { option => "AuthUserFile", "context" => [ "Directory" ] }
 				]
@@ -68,8 +64,6 @@ textdomain "http-server";
                     summary   => __("User Authorization"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 40,
 		    directives=> [ { option => "AuthzUserAuthoritative", "context" => [ "Directory" ], "values" => [ "On", "Off" ] }
 				]
@@ -78,8 +72,6 @@ textdomain "http-server";
                     summary   => __("Group authorization using plaintext files"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 40,
 		    directives=> [ { option => "AuthGroupFile", "context" => [ "Directory" ] },
 				   { option => "AuthzGroupFileAuthoritative", "context" => [ "Directory" ], "values" => [ "On", "Off" ] }
@@ -89,8 +81,6 @@ textdomain "http-server";
                     summary   => __("User authentication using DBM files"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 50,
                     module    => {
                                     AuthDBMType => 'mod_auth_dbm',
@@ -106,8 +96,6 @@ textdomain "http-server";
                     summary   => __("Generates directory indices, automatically, similar to the Unix ls command"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 60,
                     directives=> [ { option => "AddAlt", 		"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "AddAltByEncoding", 	"context" => [ "Directory", "Server", "Virtual" ] },
@@ -129,8 +117,6 @@ textdomain "http-server";
                     summary   => __("Execution of CGI scripts"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 70,
                     directives=> [ { option => "ScriptLog", 		"context" => [ "Server", "Virtual" ] },
 				   { option => "ScriptLogBuffer", 	"context" => [ "Server", "Virtual" ] },
@@ -141,8 +127,6 @@ textdomain "http-server";
                     summary   => __("Provides for trailing slash redirects and serving directory index files"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 80,
                     directives=> [ { option => "DirectoryIndex", "context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "DirectorySlash", "context" => [ "Directory", "Server", "Virtual" ] , "values" => [ "On", "Off" ] }
@@ -152,8 +136,6 @@ textdomain "http-server";
                     summary   => __("Modifies the environment passed to CGI scripts and SSI pages"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 90,
                     directives=> [ { option => "PassEnv",  "context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "SetEnv",   "context" => [ "Directory", "Server", "Virtual" ] },
@@ -164,8 +146,6 @@ textdomain "http-server";
                     summary   => __("Generation of Expires HTTP headers according to user-specified criteria"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 100,
                     module    => {
                                     ExpiresActive  => 'mod_expires',
@@ -181,8 +161,6 @@ textdomain "http-server";
                     summary   => __("Server-parsed HTML documents (Server Side Includes)"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 110,
                     directives=> [ { option => "SSIEndTag", 		"context" => [ "Server", "Virtual" ] },
 				   { option => "SSIErrorMsg", 		"context" => [ "Directory", "Server", "Virtual" ] },
@@ -197,8 +175,6 @@ textdomain "http-server";
                     summary   => __("Logging of the requests made to the server"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 120,
                     directives=> [ { option => "BufferedLogs",  "context" => [ "Server" ] , "values" => [ "On", "Off" ] },
 				   { option => "CookieLog",   	"context" => [ "Server", "Virtual" ] },
@@ -211,8 +187,6 @@ textdomain "http-server";
                     summary   => __("Associates the requested file name\'s extensions with the file\'s behavior and content"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 130,
                     directives=> [ { option => "AddCharset", 			"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "AddEncoding", 			"context" => [ "Directory", "Server", "Virtual" ] },
@@ -238,8 +212,6 @@ textdomain "http-server";
                     summary   => __("Provides for content negotiation"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 140,
                     directives=> [ { option => "CacheNegotiatedDocs", 	"context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] },
 				   { option => "ForceLanguagePriority", "context" => [ "Directory", "Server", "Virtual" ] },
@@ -250,8 +222,6 @@ textdomain "http-server";
                     summary   => __("Allows the setting of environment variables based on characteristics of the request"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 150,
                     directives=> [ { option => "BrowserMatch", 		"context" => [ "Directory", "Server", "Virtual" ] },
 				   { option => "BrowserMatchNoCase", 	"context" => [ "Directory", "Server", "Virtual" ] },
@@ -263,8 +233,6 @@ textdomain "http-server";
                     summary   => __("Provides information about server activity and performance"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 160,
                     directives=> [ { option => "ExtendedStatus", "context" => [ "Server" ], "values" => [ "On", "Off" ] } 
 				]
@@ -273,8 +241,6 @@ textdomain "http-server";
                     summary   => __("Allows CGI scripts to run as a specified user and group"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 0,
                     module    => {
                                     SuexecUserGroup => 'mod_suexec',
@@ -286,8 +252,6 @@ textdomain "http-server";
                     summary   => __("User-specific directories"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 180,
                     directives=> [ { option =>"UserDir", "context" => [ "Server", "Virtual" ] } 
 				]
@@ -296,16 +260,12 @@ textdomain "http-server";
                     summary   => __("Sends files that contain their own HTTP headers"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 190
     },
     'authn_anon' => {
                     summary   => __("Allows \"anonymous\" user access to authenticated areas"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 200,
                     module    => { 
                                     Anonymous => 'mod_auth_anon',
@@ -327,8 +287,6 @@ textdomain "http-server";
                     summary   => __("User authentication using MD5 Digest Authentication"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 210,
                     directives=> [ { option =>"AuthDigestAlgorithm", 		"context" => [ "Directory" ], "values" => [ "MD5", "MD5-sess" ] },
 				   { option =>"AuthDigestDomain", 		"context" => [ "Directory" ] },
@@ -344,8 +302,6 @@ textdomain "http-server";
                     summary   => __("Allows an LDAP directory to be used to store the database for HTTP Basic authentication"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 355,
                     directives=> [ { option =>"AuthLDAPBindDN", 		"context" => [ "Directory" ] },
 				   { option =>"AuthLDAPBindPassword", 		"context" => [ "Directory" ] },
@@ -364,8 +320,6 @@ textdomain "http-server";
                     summary   => __("Content cache keyed to URIs"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 230,
                     directives=> [ { option =>"CacheDefaultExpire", 	"context" => [ "Server", "Virtual" ] },
 				   { option =>"CacheDisable", 		"context" => [ "Server", "Virtual" ] },
@@ -383,8 +337,6 @@ textdomain "http-server";
                     summary   => __("Specify character set translation or recoding"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 240,
                     directives=> [ { option =>"CharsetDefault", 	"context" => [ "Directory", "Server", "Virtual" ] },
                                    { option =>"CharsetOptions", 	"context" => [ "Directory", "Server", "Virtual" ] },
@@ -395,8 +347,6 @@ textdomain "http-server";
                     summary   => __("Distributed Authoring and Versioning (WebDAV) functionality"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 250,
                     module    => {
                                   Dav => 'mod_dav',
@@ -412,8 +362,6 @@ textdomain "http-server";
                     summary   => __("File system provider for mod_dav"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 260,
                     module    => {
                                   DavLockDB => 'mod_dav_fs'
@@ -425,8 +373,6 @@ textdomain "http-server";
                     summary   => __("Compress content before it is delivered to the client"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 270,
                     module    => {
                                   DeflateBufferSize => 'mod_deflate',
@@ -441,14 +387,11 @@ textdomain "http-server";
 				   { option =>"DeflateMemLevel", 		"context" => [ "Server", "Virtual" ] },
 				   { option =>"DeflateWindowSize", 		"context" => [ "Server", "Virtual" ] }
                                 ]
-
     },
     'disk_cache' => {
                     summary   => __("Content cache storage manager keyed to URIs"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 280,
                     directives=> [ { option =>"CacheDirLength",		"context" => [ "Server", "Virtual" ] },
 				   { option =>"CacheDirLevels",         "context" => [ "Server", "Virtual" ] },
@@ -461,8 +404,6 @@ textdomain "http-server";
                     summary   => __("A simple echo server to illustrate protocol modules"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 290,
                     directives=> [ { option =>"ProtocolEcho", "context" => [ "Server", "Virtual" ], "values" => [ "On", "Off" ] }
 				]
@@ -471,8 +412,6 @@ textdomain "http-server";
                     summary   => __("Pass the response body through an external program before delivery to the client"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 300,
                     module    => {
                                     ExtFilterDefine  => 'mod_ext_filter',
@@ -481,26 +420,20 @@ textdomain "http-server";
                     directives=> [ { option =>"ExtFilterDefine", 	"context" => [ "Server" ] },
 				   { option =>"ExtFilterOptions", 	"context" => [ "Directory" ] }
                                 ]
-
     },
     'file_cache' => {
                     summary   => __("Caches a static list of files in memory"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 310,
                     directives=> [ { option =>"CacheFile",      "context" => [ "Server" ] },
                                    { option =>"MMapFile",	"context" => [ "Server" ] }
                                 ]
-
     },
     'headers' => {
                     summary   => __("Customization of HTTP request and response headers"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 320,
                     module    => {
                                     Header => 'mod_headers',
@@ -509,28 +442,22 @@ textdomain "http-server";
                     directives=> [ { option =>"Header",      	"context" => [ "Server", "Virtual", "Directory" ] },
                                    { option =>"RequestHeader",  "context" => [ "Server", "Virtual", "Directory" ] }
                                 ]
-
     },
     'imagemap' => {
                     summary   => __("Server-side image map processing"),
                     packages  => [],
                     default   => 1,
-                    required  => 0,
-                    suggested => 0,
                     position  => 330,
                     directives=> [ { option =>"ImapBase",       "context" => [ "Server", "Virtual", "Directory" ] },
                                    { option =>"ImapDefault",  	"context" => [ "Server", "Virtual", "Directory" ] },
                                    { option =>"ImapMenu",  	"context" => [ "Server", "Virtual", "Directory" ], 
 									"values" => [ "none", "formatted", "semiformatted", "unformatted" ] }
                                 ]
-
     },
     'info' => {
                     summary   => __("Provides a comprehensive overview of the server configuration"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 340,
                     module    => { AddModuleInfo => 'mod_info' },
                     directives=> [ { option =>"AddModuleInfo",         "context" => [ "Server", "Virtual" ] },
@@ -540,8 +467,6 @@ textdomain "http-server";
                     summary   => __("LDAP connection pooling and result caching services for use by other LDAP modules"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 350,
                     directives=> [ { option =>"LDAPCacheEntries", 	"context" => [ "Server" ] },
 				   { option =>"LDAPCacheTTL", 		"context" => [ "Server" ] },
@@ -562,16 +487,12 @@ textdomain "http-server";
                     summary   => __("Logging of input and output bytes per request"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 360
     },
     'mem_cache' => {
                     summary   => __("Content cache keyed to URIs"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 370,
                     directives=> [ { option =>"MCacheMaxObjectCount",         "context" => [ "Server" ] },
 				   { option =>"MCacheMaxObjectSize",          "context" => [ "Server" ] },
@@ -585,20 +506,15 @@ textdomain "http-server";
                     summary   => __("Determines the MIME type of a file by looking at a few bytes of its contents"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 380,
                     module    => { MimeMagicFile => 'mod_mime_magic' },
                     directives=> [ { option =>"MimeMagicFile",         "context" => [ "Server", "Virtual" ] },
                                 ]
-
     },
     'proxy' => {
                     summary   => __("HTTP/1.1 proxy/gateway server"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 390,
                     module    => { 
                                     NoProxy => 'mod_proxy',
@@ -642,14 +558,11 @@ textdomain "http-server";
                                    { option =>"ProxyVia",         	"context" => [ "Server", "Virtual" ], 
 												"values" => [ "On", "Off", "Full", "Block" ] }
                                 ]
-
     },
     'proxy_connect' => {
                     summary   => __("mod_proxy extension for CONNECT request handling"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 400,
                     module    => { AllowCONNECT => 'mod_proxy_connect' }
     },
@@ -657,24 +570,18 @@ textdomain "http-server";
                     summary   => __("FTP support module for mod_proxy"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 410
     },
     'proxy_http' => {
                     summary   => __("HTTP support module for mod_proxy"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 420
     },
     'rewrite' => {
                     summary   => __("Provides a rule-based rewriting engine to rewrite requested URLs on the fly"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 430,
                     module    => {
                                     RewriteBase => 'mod_rewrite',
@@ -697,26 +604,20 @@ textdomain "http-server";
                                    { option =>"RewriteOptions",      "context" => [ "Server", "Virtual", "Directory" ] },
                                    { option =>"RewriteRule",         "context" => [ "Server", "Virtual", "Directory" ] }
                                 ]
-
     },
     'speling' => {
                     summary   => __("Attempts to correct mistaken URLs that users might have entered"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 440,
                     module    => { CheckSpelling => 'mod_speling' },
                     directives=> [ { option =>"CheckSpelling",         "context" => [ "Server", "Virtual", "Directory" ], "values" => [ "On", "Off" ] },
                                 ]
-
     },
     'ssl' => {
                     summary   => __("Strong cryptography using the Secure Sockets Layer (SSL) and Transport Layer Security (TLS) protocols"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 450,
                     directives=> [ { option =>"SSLCACertificateFile", 		"context" => [ "SSL", "Server", "Virtual" ] },
 				   { option =>"SSLCACertificatePath", 		"context" => [ "SSL", "Server", "Virtual" ] },
@@ -757,16 +658,12 @@ textdomain "http-server";
                     summary   => __("Provides an environment variable with a unique identifier for each request"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 460
     },
     'usertrack' => {
                     summary   => __("Clickstream logging of user activity on a site"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 470,
                     module    => {
                                   CookieDomain => 'mod_usertrack',
@@ -787,8 +684,6 @@ textdomain "http-server";
                     summary   => __("Provides support for dynamically configured mass virtual hosting"),
                     packages  => [],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 480,
                     module    => {
                                     VirtualDocumentRoot => 'mod_vhost_alias',
@@ -806,55 +701,41 @@ textdomain "http-server";
                     summary   => __("Provides support for PHP5 dynamically generated pages"),
                     packages  => ["apache2-mod_php5"],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
-                    position  => 490,
-		    exclude   => [ "php4" ]
+                    position  => 490
     },
     'perl' => {
                     summary   => __("Provides support for Perl dynamically generated pages"),
                     packages  => ["apache2-mod_perl"],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 500
     },
     'python' => {
                     summary   => __("Provides support for Python dynamically generated pages"),
                     packages  => ["apache2-mod_python"],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 510
     },
     'apparmor' => {
                     summary   => __("Provides support for AppArmor subprocess confinement within apache"),
                     packages  => ["mod-apparmor"],
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 530
      },
-    'authz_svn' => {
-                    summary   => __("Provides support for AppArmor subprocess confinement within apache"),
-                    packages  => ["subversion-server"],
-                    default   => 0,
-                    required  => 0,
-                    suggested => 0,
-                    position  => 535
-     },
     'dav_svn' => {
-                    summary   => __("Provides support for AppArmor subprocess confinement within apache"),
+                    summary   => __("Provides support for subversion"),
                     packages  => ["subversion-server"],
+		    requires  => "dav",
                     default   => 0,
-                    required  => 0,
-                    suggested => 0,
                     position  => 540
+     },
+    'authz_svn' => {
+                    summary   => __("Provides support for subversion"),
+                    packages  => ["subversion-server"],
+		    requires  => "dav_svn", 
+                    default   => 0,
+                    position  => 550
      }
-
 );
-
-
 %selection = (
     TestSel => {
                 summary => 'A test selection',
@@ -862,4 +743,3 @@ textdomain "http-server";
                 default => 0
     }
 );
-
