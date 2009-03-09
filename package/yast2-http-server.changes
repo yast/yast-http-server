@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Mar  9 09:28:02 CET 2009 - mzugec@suse.cz
+
+- handling of custom modules (see bnc#482424)
+- 2.18.3 
+
+-------------------------------------------------------------------
 Fri Mar  6 16:49:11 CET 2009 - mzugec@suse.cz
 
 - modules ordering problem (bnc#350590)
