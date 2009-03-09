@@ -2563,7 +2563,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	else if (event["ID"]:nil == `add_user)
         {
 
-	string module_dirs=sformat("/usr/lib*/apache2/ /usr/lib*/apache2-%2/", (PackageSystem::Installed("apache2-prefork"))?"prefork":"worker");
+	string module_dirs=sformat("/usr/lib*/apache2/ /usr/lib*/apache2-%1/", (PackageSystem::Installed("apache2-prefork"))?"prefork":"worker");
 	// list of all installed modules
 	    list <string> all_modules = splitstring(((map<string, any>) SCR::Execute(.target.bash_output,
 		sformat("ls %1|grep \".so$\"|cut -d. -f1|cut -d_ -f2-", module_dirs)))["stdout"]:"", "\n");
