@@ -305,6 +305,18 @@ list <string> hosts = YaST::HTTPDData::GetHostsList ();
     return true;
 }
 
+define boolean ModeHandler(map<string, string> options) ``{
+y2internal("options %1", options);
+ string mode=options["wizard"]:"";
+y2internal("mode %1", mode);
+ if (size(mode)>0){
+  if (mode=="on" || mode=="true") HttpServer::setWizardMode(true);
+	else HttpServer::setWizardMode(false);
+ }
+ return true;
+}
+
+
 map cmdline_description = $[
     "id" 	: "http-server",
     // translators: command line help for HTTP server module
@@ -331,6 +343,10 @@ map cmdline_description = $[
 	"hosts"		: $[
 	    "help"	: _("Configure virtual hosts"),
 	    "handler"	: HostsHandler
+	],
+	"mode"		: $[
+	    "help"	: _("Enable or disable wizardmode."),
+	    "handler"	: ModeHandler
 	],
     ],
     "options"		: $[
@@ -392,13 +408,18 @@ map cmdline_description = $[
 	"setdefault"	: $[
             "type"      : "string",
 	    "help"	: _("Set selected virtual host as default host")
+	],
+	"wizard"	: $[
+            "type"      : "string",
+	    "help"	: _("Set wizardmode \"on\" or \"off\".")
 	]
     ],
     "mappings"		: $[
 	"configure"	: [ "host", "servername", "serveradmin", "documentroot", "list" ],
 	"modules"	: [ "enable", "disable", "list" ],
 	"listen"	: [ "add", "delete", "list" ],
-	"hosts"		: [ "create", "servername", "serveradmin", "documentroot", "remove", "setdefault", "list" ]
+	"hosts"		: [ "create", "servername", "serveradmin", "documentroot", "remove", "setdefault", "list" ],
+	"mode"		: [ "wizard" ],
     ]
 ];
 

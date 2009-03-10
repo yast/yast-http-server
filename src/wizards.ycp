@@ -232,12 +232,11 @@ boolean HttpServerSequence() {
     Wizard::CreateDialog();
     Wizard::SetDesktopIcon("http-server");
 
-       if ($[] == SCR::Read (.target.stat, Directory::vardir + "/http_server"))
-        {
-	 sequence["read", `next] = "wizard";
-        }
+    boolean w_mode=HttpServer::isWizardMode();
+    if (w_mode) sequence["read", `next] = "wizard";
 
     symbol ret = Sequencer::Run(aliases, sequence);
+    if (w_mode) HttpServer::setWizardMode(false);
 
     UI::CloseDialog();
     return ret == `next;
