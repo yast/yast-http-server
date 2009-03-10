@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Mar 10 15:17:03 CET 2009 - mzugec@suse.cz
+
+- CLI can set wizardmode (bnc#378743)
+- 2.18.4 
+
+-------------------------------------------------------------------
 Mon Mar  9 09:28:02 CET 2009 - mzugec@suse.cz
 
 - handling of custom modules (see bnc#482424)

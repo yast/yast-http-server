@@ -2913,6 +2913,7 @@ define void initSummaryText (string key) ``{
    UI::ReplaceWidget(`id(`summary_text_rp), `RichText( HttpServer::Summary()[0]:"error" ));
 }
 
+
 /* EOF */
 }
 

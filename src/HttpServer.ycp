@@ -80,6 +80,22 @@ global map<string,string> ip2device = $[];
 
 list<string> files_to_check = ["/etc/sysconfig/apache2", "/etc/apache2/default-server.conf", "/etc/apache2/httpd.conf", "/etc/apache2/listen.conf", "/etc/apache2/vhosts.d/yast2_vhosts.conf"];
 
+global boolean isWizardMode(){
+  if ($[] == SCR::Read (.target.stat, Directory::vardir + "/http_server")) return true;
+	else return false;
+}
+
+global void setWizardMode(boolean w_mode){
+  if(w_mode==true){
+   SCR::Execute(.target.bash, sformat("rm %1%2", Directory::vardir, "/http_server"));
+   y2milestone("Set wizardmode on");
+  }
+  else{
+   SCR::Write ( .target.string, Directory::vardir + "/http_server", "");
+   y2milestone("Set wizardmode off");
+  }
+}
+
 /**
  * Read all http-server settings
  * @return true on success
@@ -247,18 +263,6 @@ without installing the package."), "apache2" ) );
     // add DHCP ones, if we can find out the current IP
     devs = NetworkInterfaces::Locate("BOOTPROTO", "dhcp");
     foreach(string dev, devs, {
-/*
-y2internal("dhcp devs %1", devs);
-	// first, convert to the current name
-	map output = (map)SCR::Execute (.target.bash_output, "/sbin/getcfg-interface " + dev);
-
-        if (output["exit"]:-1 != 0 || output["stdout"]:"" == "0" )
-	{
-	    continue;
-	}
-
-        string device = output["stdout"]:"";
-*/
 	map output = (map)SCR::Execute (.target.bash_output, "/sbin/ifconfig "+dev, $["LC_MESSAGES":"C"] );
 	if (output["exit"]:-1 == 0)
 	{
@@ -374,13 +378,6 @@ Install them now?
     // Wrong, service still has to be enabled...
     // if( write_only ) return true;
 
-//    // run SuSEconfig
-//    if (!write_only) {
-//	if( SCR::Execute( .target.bash, "/sbin/SuSEconfig --module apache2" ) != 0 ) {
-//	    // translators: error message
-//	    Report::Error( Message::SuSEConfigFailed() );
-//	}
-//    }
 
     Progress::NextStage();
     
@@ -414,8 +411,6 @@ Install them now?
     foreach(string file, files_to_check, {
      FileChanges::StoreFileCheckSum( file );
     });
-    SCR::Write ( .target.string, Directory::vardir + "/http_server", "");
-
     // translators: progress finished
     ProgressNextStage(_("Finished"));
 
