@@ -222,15 +222,14 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	}
 
 	map<string, any> vhost = YaST::HTTPDData::GetVhostType(host);
-
 		if (! FileUtils::CheckAndCreatePath( documentroot )){
                     res = false;
                     break;
 		  }
 	if (vhost["id"]:"" == ip)
 	{
-	    // this is valid only if both of them are name-based, not ip-based
-	    if ( YaST::HTTPDData::GetVhostType(host)["type"]:""=="name-based" && namebased )
+	    // this is valid only if both of them are name-based, not ip-based (bnc#486476)
+	    if ( !(YaST::HTTPDData::GetVhostType(host)["type"]:""=="name-based" && namebased) )
 	    {
 		// error message - the entered ip address is already 
 		// configured for another virtual host
