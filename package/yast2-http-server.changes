@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Mar 20 17:16:57 CET 2009 - mzugec@suse.de
+
+- correctly recognize virtual host type (IP/name) (bnc#486475)
+- 2.18.5 
+
+-------------------------------------------------------------------
 Tue Mar 10 15:17:03 CET 2009 - mzugec@suse.cz
 
 - CLI can set wizardmode (bnc#378743)
