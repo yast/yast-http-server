@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Mar 20 18:07:31 CET 2009 - mzugec@suse.de
+
+- correctly recognize virtual host type (IP/name) (bnc#486475)
+- 2.18.33 
+
+-------------------------------------------------------------------
 Fri Jun 20 17:08:45 CEST 2008 - mzugec@suse.de
 
 - enable/disable also modules with default=1 (bnc#399288)
