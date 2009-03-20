@@ -125,9 +125,11 @@ sub parse_vhost_files {
 #       { if ($data->{'KEY'} eq 'NameVirtualHost'){ $hash_table{ $data->{'VALUE'} } = []; }
 #       }
       } else {
+	   my $based='ip-based';
+	   $based='name-based' if (defined($vhost->{'VirtualByName'}) && $vhost->{'VirtualByName'} == 1);
 	   if (exists $vhost->{'HostIP'}){
              if ( exists $hash_table{  $vhost->{'HostIP'}} ){ push(@{$hash_table{  $vhost->{'HostIP'}}}, $vhost); }
-                 else { push(@{$hash_table{'ip-based'}}, $vhost); }
+                 else { push(@{$hash_table{$based}}, $vhost); }
 			}
          }
       }
