@@ -223,9 +223,10 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 		  }
 	if (vhost["id"]:"" == ip)
 	{
-	    // this is valid only if both of them are name-based, not ip-based
-	    if ( YaST::HTTPDData::GetVhostType(host)["type"]:""=="name-based" && namebased )
+	    // this is valid only if both of them are name-based, not ip-based (bnc#486476)
+	    if ( !(YaST::HTTPDData::GetVhostType(host)["type"]:""=="name-based" && namebased) )
 	    {
+y2internal("ip %1", ip);
 		// error message - the entered ip address is already 
 		// configured for another virtual host
 		string error_msg = _("The IP address is already configured on another virtual host (")+ host + ")";

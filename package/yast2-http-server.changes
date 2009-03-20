@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Mar 20 19:25:33 CET 2009 - mzugec@suse.de
+
+- improved IP addr.validation for ip-based vhosts (bnc#486476)
+- 2.18.34 
+
+-------------------------------------------------------------------
 Fri Mar 20 18:07:31 CET 2009 - mzugec@suse.de
 
 - correctly recognize virtual host type (IP/name) (bnc#486475)
