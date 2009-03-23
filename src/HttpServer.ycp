@@ -1,0 +1,673 @@
+/**
+ * File:	modules/HttpServer.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Data for configuration of http-server, input and output functions.
+ * Authors:	Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ *
+ * Representation of the configuration of http-server.
+ * Input and output routines.
+ */
+
+{
+
+module "HttpServer";
+textdomain "http-server";
+
+import "YaPI::HTTPD";
+import "YaST::HTTPDData";
+import "NetworkInterfaces";
+import "Progress";
+import "Report";
+import "Package";
+import "Service";
+import "Summary";
+import "Message";
+import "Directory";
+import "Popup";
+import "DnsServerAPI";
+import "NetworkService";
+import "SuSEFirewall";
+import "Confirm";
+import "SuSEFirewallServices";
+import "FileChanges";
+
+/**
+ * Abort function
+ * return boolean return true if abort
+ */
+global boolean() AbortFunction = nil;
+
+/**
+ * Required packages
+ */
+global list<string> required_packages = ["apache2"];
+
+/**
+ * Data was modified?
+ */
+global boolean modified = false;
+
+global boolean configured = false;
+
+global boolean proposal_valid = false;
+
+/**
+ * Write only, used during autoinstallation.
+ * Don't run services and SuSEconfig, it's all done at one place.
+ */
+global boolean write_only = false;
+
+global boolean configured_dns = false;
+/**
+ * Data was modified?
+ * @return true if modified
+ */
+global define boolean Modified() ``{
+    y2debug("modified=%1",modified);
+    return modified;
+};
+
+include "http-server/routines.ycp";
+
+/**
+ * Mapping of IPs to network devices
+ */
+global map<string,string> ip2device = $[];
+
+
+
+list<string> files_to_check = ["/etc/sysconfig/apache2", "/etc/apache2/default-server.conf", "/etc/apache2/httpd.conf", "/etc/apache2/listen.conf", "/etc/apache2/vhosts.d/yast2_vhosts.conf"];
+
+/**
+ * Read all http-server settings
+ * @return true on success
+ */
+global define boolean Read() ``{
+
+    /* HttpServer read dialog caption */
+    string caption = _("Initializing HTTP Server Configuration");
+
+    integer steps = 4;
+
+    // We do not set help text here, because it was set outside
+    Progress::New( caption, " ", steps, [
+	    // translators: progress stage
+	    _("Check the environment"),
+	    // translators: progress stage
+	    _("Read Apache2 configuration"),
+	    // translators: progress stage
+	    _("Read network configuration")
+
+	], [
+	    // translators: progress step
+	    _("Checking the environment..."),
+	    // translators: progress step
+	    _("Reading Apache2 configuration..."),
+	    // translators: progress step
+	    _("Reading network configuration..."),
+	    // translators: progress finished
+	    _("Finished")
+	],
+	""
+    );
+
+    // check the environment
+    if(!Confirm::MustBeRoot()) return false;
+    if(!NetworkService::RunningNetworkPopup()) return false;
+
+    if (!NetworkService::ConfirmNetworkManager()) return false;
+    Progress::NextStep();
+
+
+// check rpms
+list<string> required = (list<string>) HttpServer::required_packages;
+if( !Package::InstalledAny( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
+    // add a default MPM - prefork because of the PHP4 compatibility
+    required = (list<string>) union (required, ["apache2-prefork"] );
+}
+
+if( !Package::InstallAllMsg( required,
+    // notification about package needed 1/2
+    _("<p>To configure the HTTP server, the <b>%1</b> packages must be installed.</p>") +
+    // notification about package needed 2/2
+    _("<p>Do you want to install it now?</p>")) )
+{
+    if( !Package::Available("apache2") ) {
+        // translators: error popup before aborting the module
+        Popup::Error( sformat( _("The package %1 is not available.\n
+Configuration cannot continue\n
+without installing the package."), "apache2" ) );
+    } else {
+        // translators: error popup before aborting the module
+        Popup::Error( Message::CannotContinueWithoutPackagesInstalled() );
+    }
+
+    return false;
+}
+
+
+
+    Progress::NextStep();
+
+
+    // check httpd.conf
+    if( SCR::Read( .target.lstat, "/etc/apache2/httpd.conf" ) == $[] ) {
+	// translators: error message, %1 is the file name of expected configuration file
+	Report::Error( sformat( _("The configuration file '%1' does not exist."), "/etc/apache2/httpd.conf" )  );
+	return false;
+    }
+
+    // check sysconfig
+    if( SCR::Read( .target.lstat, "/etc/sysconfig/apache2" ) == $[] ) {
+	if( SCR::Execute( .target.bash, "cp /var/adm/fillup-templates/sysconfig.apache2 /etc/sysconfig/apache2" )
+	    != 0 ) {
+	// translators:: error message
+	    Report::Error( Message::CannotWriteSettingsTo( "/etc/sysconfig/apache2" ) );
+	    return false;
+	}
+    }
+
+    // check listen.conf
+    if( SCR::Read( .target.lstat, "/etc/apache2/listen.conf" ) == $[] ) {
+	// translators: warning message, %1 is the file name of expected configuration file
+	Report::Warning( sformat( _("The configuration file '%1' does not exist."), "/etc/apache2/listen.conf" )  );
+	// create empty file
+	if( ! SCR::Write( .target.string, "/etc/apache2/listen.conf", "" ) )
+	{
+	// translators:: error message
+	    Report::Error( Message::CannotWriteSettingsTo( "/etc/apache2/listen.conf" ) );
+	    return false;
+	}
+    }
+    
+    Progress::set(false);	//off();
+    SuSEFirewall::Read();
+    if (Package::Installed("bind")){
+      if(size((map)SCR::Read (.target.stat, Directory::vardir + "/dns_server"))>0){
+	 if ( Service::Status("named") == 0 ){
+		if(DnsServerAPI::Read()) configured_dns = true;
+	 } else y2milestone(_("There is no DNS server running on this machine."));
+       } else y2warning("DNS server is not correctly configured via YaST.");
+     } else y2warning("Package bind is not installed.");
+    y2internal("DNS running and configured: %1", configured_dns);
+    Progress::set(true);	//on();
+
+    // read current settings from httpd.conf and sysconfig
+    Progress::NextStage();
+
+    // read hosts
+    YaST::HTTPDData::ReadHosts();
+    YaST::HTTPDData::ReadListen();
+    YaST::HTTPDData::ReadModules();
+    YaST::HTTPDData::ReadService();
+
+    if (!FileChanges::CheckFiles( files_to_check )) return false;
+
+    // check the modules RPMs
+    list<string> modules = YaST::HTTPDData::GetModuleList();
+    y2milestone ("Testing packages for %1", modules);
+
+    foreach (string mod, modules, {
+	list<string> pkgs = YaST::HTTPDData::GetPackagesForModule (mod);
+	if ( size(pkgs) > 0 )
+	{
+	    import "Package";
+	    y2milestone ("Checking packages %1 for module %2", pkgs, mod);
+
+	    string res = find (string pkg, pkgs, {
+		return ! Package::Installed (pkg);
+	    });
+
+	    if (res != nil)
+	    {
+		y2milestone ("Packages not installed (missing %1), setting %2 as disabled", res, mod);
+		YaST::HTTPDData::ModifyModuleList ([mod], false);
+	    }
+	}
+    });
+
+    Progress::NextStage();
+
+    // read current settings for firewall and network
+    Progress::set(false);	//off();
+    NetworkInterfaces::Read();
+
+    // generate the map: static IP -> device
+    ip2device = $["127.0.0.1":"loopback"];
+    list<string> devs = NetworkInterfaces::Locate("BOOTPROTO", "static");
+    foreach(string dev, devs, {
+     // use also additional addresses (#264393)
+     foreach(string ip, NetworkInterfaces::GetIP(dev),
+      {
+	if(ip != nil && ip != "") ip2device[ip] = dev;
+      });
+    });
+    // add DHCP ones, if we can find out the current IP
+    devs = NetworkInterfaces::Locate("BOOTPROTO", "dhcp");
+    foreach(string dev, devs, {
+/*
+y2internal("dhcp devs %1", devs);
+	// first, convert to the current name
+	map output = (map)SCR::Execute (.target.bash_output, "/sbin/getcfg-interface " + dev);
+
+        if (output["exit"]:-1 != 0 || output["stdout"]:"" == "0" )
+	{
+	    continue;
+	}
+
+        string device = output["stdout"]:"";
+*/
+	map output = (map)SCR::Execute (.target.bash_output, "/sbin/ifconfig "+dev, $["LC_MESSAGES":"C"] );
+	if (output["exit"]:-1 == 0)
+	{
+	    // lookup the correct line first
+	    list<string> line = splitstring ( output["stdout"]:"", "\n" );
+	    string addr = nil;
+	    foreach ( string ln, line, ``{
+		if ( regexpmatch ( ln, "^[ \t]*inet addr:" ) )
+		{
+		    addr = regexpsub ( ln, "^[ \t]*inet addr:([0-9\\.]+)[ \t]*", "\\1" );
+		    y2milestone ("Found addr: %1",addr);
+		    break;
+		}
+	    });
+	    
+	    if(addr != nil && addr != "") ip2device[addr] = dev;
+	}
+    });
+
+    y2milestone ("Mapping of IP addresses and network devices: %1", ip2device);    
+   
+
+    Progress::set(true);	//on();
+
+    // translators: progress step
+    ProgressNextStage(_("Finished"));
+
+    if(Abort()) return false;
+    modified = false;
+
+    configured = true;
+
+    return true;
+}
+
+/**
+ * Write all http-server settings
+ * @return true on success
+ */
+global define boolean Write() ``{
+
+    /* HttpServer read dialog caption */
+    string caption = _("Saving HTTP Server Configuration");
+
+    integer steps = 2;
+
+    // We do not set help text here, because it was set outside
+    Progress::New(caption, " ", steps, [
+	    // translators: progress stage 1/3
+	    _("Write the Apache2 settings"),
+	    YaST::HTTPDData::GetService() ?
+		// translators: progress stage 2/3
+		_("Enable Apache2 service")
+		// translators: progress stage 3/3
+		: _("Disable Apache2 service")
+	], [
+	    // translators: progress step 1/3
+	    _("Writing the settings..."),
+	    YaST::HTTPDData::GetService() ?
+		// translators: progress step 2/3
+		_("Enabling Apache2 service...")
+		// translators: progress step 3/3
+		: _("Disabling Apache2 service..."),
+	    // translators: progress finished
+	    _("Finished")
+	],
+	""
+    );
+
+    // write Apache2 settings
+
+    list<string> rpms = YaPI::HTTPD::GetModulePackages();
+
+    // install required RPMs for modules
+    Package::InstallAllMsg( rpms, _("The enabled modules require
+installation of some of these additional packages:
+%1
+Install them now?
+") );
+
+    // write httpd.conf
+
+    // write hosts
+    YaST::HTTPDData::WriteHosts();
+   Progress::NextStage();
+    import "SuSEFirewall";
+	Progress::set(false);//    Progress::off ();
+
+    // always adapt firewall
+    if (YaST::HTTPDData::WriteListen (false) == nil)
+    {
+	// FIXME: show popup
+
+	y2error ("Writing listen failed, firewall problems?");
+    }
+
+    // Firewall
+    list <string> ports=[];
+    foreach(map row, YaST::HTTPDData::GetCurrentListen(), {
+     ports = add(ports, row["PORT"]:"");
+    });
+    SuSEFirewallServices::SetNeededPortsAndProtocols("service:apache2",
+        $[
+        "tcp_ports" : ports,
+        "udp_ports" : [],
+        ]);
+
+    SuSEFirewall::Write ();
+    if (configured_dns) DnsServerAPI::Write ();
+	Progress::set(true);
+    YaST::HTTPDData::WriteModuleList ();
+    // in autoyast, quit here
+    // Wrong, service still has to be enabled...
+    // if( write_only ) return true;
+
+//    // run SuSEconfig
+//    if (!write_only) {
+//	if( SCR::Execute( .target.bash, "/sbin/SuSEconfig --module apache2" ) != 0 ) {
+//	    // translators: error message
+//	    Report::Error( Message::SuSEConfigFailed() );
+//	}
+//    }
+
+    Progress::NextStage();
+    
+    if( ! YaST::HTTPDData::WriteService(write_only) )
+    {
+	// translators: error message
+	Report::Error( Message::CannotAdjustService("apache2") );
+    }
+    
+    if ( YaST::HTTPDData::GetService () )
+    {
+	// this will reload the configuration and start httpd
+	if ( !Service::Restart ("apache2") )
+	{
+	    // translators: error message
+	    Report::Error( Message::CannotAdjustService("apache2") );
+	}
+    }
+    else
+    {
+	if ( !Service::Stop ("apache2") )
+	{
+	    // translators: error message
+	    Report::Error( Message::CannotAdjustService("apache2") );
+	}
+    }
+	// configuration test
+//	map<string, any> test = (map<string, any>)SCR::Execute(.target.bash_output, "apache2ctl conftest");
+//y2internal("test %1", test);
+
+    foreach(string file, files_to_check, {
+     FileChanges::StoreFileCheckSum( file );
+    });
+    SCR::Write ( .target.string, Directory::vardir + "/http_server", "");
+
+    // translators: progress finished
+    ProgressNextStage(_("Finished"));
+
+    if(Abort()) return false;
+    return true;
+}
+
+
+ /**
+  * For module name find description map in known_modules
+  * @param known_modules list< map<string,any> > known modules
+  * @param mod string module name
+  * @return map<string,any> module description
+  */
+map<string,any> find_known_module (list< map<string,any> > known_modules, string mod)
+{
+    map<string,any> res = nil;
+    foreach( map<string,any> i, known_modules, ``{
+	if (i["name"]:"" == mod)
+	{
+	    res = i;
+	    break;
+	}
+    });
+    
+    return res;
+}
+
+/**
+ * Get all http-server settings from the first parameter
+ * (For use by autoinstallation.)
+ * @param s The YCP map to be imported
+ * @return boolean True on success
+ */
+global define boolean Import (map s) ``{
+    YaST::HTTPDData::InitializeDefaults ();
+    
+    string version = s["version"]:"unknown";
+    
+    // setup modules
+    foreach (map<string,any> desc, s["modules"]: [], ``{
+	string mod = desc["name"]:"";
+	
+	if ( size(mod) == 0 )
+	{
+	    // translators: warning in autoyast loading the configuration description.
+	    Report::Warning( _("Module description does not have a name specified, ignoring.") );
+	    continue;
+	}
+
+	string change_string = desc["change"]:"nochange";
+
+	// get the default
+	string defaultstatus = (string)desc["default"]:nil;
+	
+	if (change_string != "nochange")
+	{
+	    if (! contains ([ "enable", "disable" ], change_string  ) )
+	    {
+		// translators: warning in autoyast loading the configuration description.
+		Report::Warning (sformat(_("Unknown change of a module for autoinstallation: %1"), change_string));
+		continue;
+	    }
+	    
+	    // just change the status
+	    YaST::HTTPDData::ModifyModuleList( [mod], change_string == "enable" );
+	}
+	else
+	{
+	    // check against the current default
+	    if (defaultstatus != nil && (find_known_module(YaST::HTTPDData::GetKnownModules(), mod))["default"]:nil != defaultstatus)
+	    {
+		// translators: warning in autoyast loading the configuration description.
+		Report::Warning (sformat(_("Default value for module %1 does not match.
+This can cause inconsistent module configuration."), mod));
+	    }
+	}	
+    });
+    
+    // setup listen
+    list < map<string, any> > listen = s["Listen"]:[];
+    foreach (map<string, any> l, listen, ``{ 
+	if ( !haskey(l, "PORT") )
+	{
+	    // translators: error in autoyast loading the configuration description.
+	    Report::Error (_("Listen statement without port found."));
+	}
+	else
+	{
+	    YaST::HTTPDData::CreateListen(tointeger(l["PORT"]:"0"), tointeger(l["PORT"]:"0"), l["ADDRESS"]:"" ); 
+	}
+    });
+
+    // setup hosts
+//    foreach (string host, list<map<string, any> > desc, s["hosts"]:$[], ``{ YaST::HTTPDData::CreateHost(host,desc); }); // check host name
+    foreach (map<string, any> row, s["hosts"]:[], ``{ YaST::HTTPDData::CreateHost(row["KEY"]:"",row["VALUE"]:[]); }); // check host name
+    
+    // setup service
+    if (haskey( s, "service" ))
+    {
+	YaST::HTTPDData::ModifyService (s["service"]:false);
+    }
+
+    modified = false;
+    configured = true;
+
+    return true;
+}
+
+/**
+ * Dump the http-server settings to a single map
+ * (For use by autoinstallation.)
+ * @return map Dumped settings (later acceptable by Import ())
+ */
+global define map Export () ``{
+    list < map <string,any> > known_modules = YaST::HTTPDData::GetKnownModules();
+    
+    list <string> enabled_modules = YaST::HTTPDData::GetModuleList();
+    
+    y2milestone ("Enabled modules: %1", enabled_modules);
+
+    // walk over the known modules    
+    list <map <string,any> > modules = maplist (map<string, any> desc, known_modules, ``(
+	$[  "name" : desc["name"]:"", 
+	    "change" : (desc["default"]:nil == "1") ? 
+	    // default is true
+	    (
+		contains (enabled_modules, desc["name"]:"") ? "nochange" : "disable"
+	    )
+	    :
+	    // default is false
+	    (
+		contains (enabled_modules, desc["name"]:"") ? "enable" : "nochange"
+	    ),
+	    "default" : desc["default"]: "1"
+	]));
+	
+    // filter out not changed
+    modules = filter ( map<string,any> desc, modules, ``(desc["change"]:nil != "nochange") );
+    
+    // store the user defined ones
+    foreach (string mod, enabled_modules, ``{
+	if( find_known_module(known_modules, mod) == nil )
+	{
+	    // user-defined
+	    modules = add (modules, $[
+		"name" : mod,
+		"change" : "enable",
+		"userdefined" : true
+	    ]);
+	}
+    });
+
+    // hosts
+    list< map <string, any> > hosts = [];
+//listmap (string host, YaST::HTTPDData::GetHostsList(), ``(
+//	$[ "KEY":host, "VALUE":YaST::HTTPDData::GetHost(host) ]
+//    ));
+foreach(string host, YaST::HTTPDData::GetHostsList(), {
+ hosts = add(hosts, $["KEY":host, "VALUE":YaST::HTTPDData::GetHost(host)]);
+});
+
+    y2milestone ("Hosts: %1", hosts);
+
+    map result = $[
+	"version" : "2.9",
+	"modules": modules,
+	"hosts" : hosts,
+	"Listen": YaST::HTTPDData::GetCurrentListen(),
+	"service" : YaST::HTTPDData::GetService (),
+    ];
+
+    configured = true;
+    return result;
+}
+
+/**
+ * Create a textual summary for the current configuration
+ * @return summary of the current configuration
+ */
+global define list Summary() ``{
+
+    string nc = Summary::NotConfigured ();
+
+    string summary = "";
+    if( configured ) {
+		// "Listen on " information (interfaces, port)
+	    summary = Summary::AddLine(summary, _("<h3>Listen On</h3>") );
+            string port       = "80";
+            string interfaces = "127.0.0.1";
+            foreach(map listens, YaST::HTTPDData::GetCurrentListen(),
+                {
+                 port = listens["PORT"]:"80";
+                 if (listens["ADDRESS"]:"" == "" ) interfaces = "all";
+                        else interfaces = interfaces + listens["ADDRESS"]:"";
+                } );
+	    summary = Summary::AddLine(summary, interfaces + ", port " + port );
+
+		// "Default host" information 
+	    summary = Summary::AddLine(summary, _("<h3>Default Host</h3>") ); 
+	    string serv_name = "";
+	    string doc_root = "";
+	    boolean ssl = false;
+	     foreach(map<string, any> params, YaST::HTTPDData::GetHost("default"), {
+		if ( params["KEY"]:"" == "ServerName" ) serv_name = params["VALUE"]:"";
+		if ( params["KEY"]:"" == "DocumentRoot" ) doc_root = params["VALUE"]:"";
+		if ( params["KEY"]:"" == "SSL" && params["VALUE"]:"" != "0" ) ssl = true;
+			});
+			//translators: assiciation server name with document root
+            summary = Summary::AddLine(summary, serv_name + _(" in ") + doc_root);
+			//translators: whether SSL is enabled or disabled
+            summary = Summary::AddLine(summary, "SSL " + ((ssl)?_("enabled"):_("disabled")));
+
+		// the same information as in default host but for other virtual hosts
+            summary = Summary::AddLine(summary, _("<h3>Virtual Hosts</h3>") );
+
+	foreach(string host, YaST::HTTPDData::GetHostsList (), {
+		if (host == "default") continue;
+             foreach(map<string, any> params, YaST::HTTPDData::GetHost(host), {
+                if ( params["KEY"]:"" == "ServerName" ) serv_name = params["VALUE"]:"";
+                if ( params["KEY"]:"" == "DocumentRoot" ) doc_root = params["VALUE"]:"";
+                if ( params["KEY"]:"" == "SSL" && params["VALUE"]:""!="0") ssl = true;
+
+                        });
+		//translators: assiciation server name with document root
+            summary = Summary::AddLine(summary, serv_name + _(" in ") + doc_root + 
+		//translators: whether SSL is enabled or disable
+		", SSL " + ((ssl)?_("enabled"):_("disabled")));
+
+});
+	   }
+else {
+        summary = Summary::AddLine(summary, nc );
+    }
+
+    return [ summary, [] ];
+}
+
+/**
+ * Return required packages for auto-installation
+ * @return map of packages to be installed and to be removed
+ */
+global define map AutoPackages() ``{
+       if( !Package::InstalledAny( ["apache2-prefork", "apache2-metuxmpm", "apache2-worker"] ) ) {
+           // add a default MPM - prefork because of the PHP4 compatibility
+        required_packages = (list<string>)union (required_packages, ["apache2-prefork"] );
+       }
+
+       return ($["install": required_packages, "remove": []]);
+
+}
+
+/* EOF */
+
+}
