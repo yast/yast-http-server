@@ -1,0 +1,435 @@
+/**
+ * File:	clients/http-server.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Main file
+ * Authors:	Stanislav Visnovsky <visnov@suse.cz>
+ *
+ * $Id$
+ *
+ * Main file for http-server configuration. Uses all other files.
+ */
+
+{
+
+/***
+ * <h3>Configuration of the http-server</h3>
+ */
+
+textdomain "http-server";
+
+import "CommandLine";
+import "YaPI::HTTPD";
+import "Popup";
+import "Report";
+import "Message";
+import "Hostname";
+import "HttpServerWidgets";
+import "HttpServer";
+
+include "http-server/wizards.ycp";
+
+
+/**
+ * Handler for command line action "configure".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
+define boolean ConfigureHandler(map<string, any> options) ``{
+
+    list <string> hosts = YaST::HTTPDData::GetHostsList ();
+
+    if( !contains(hosts, (string) options["host"]:"")  ) {
+        if( ! haskey( options, "host" ) ) {
+            // translators: error message in configure command line action
+            Report::Error( _("Configured host not specified") );
+        } else
+	   {
+              // translators: error message in configure command line action
+              Report::Error( _("Only existing hosts can be specified as the host to configure") );
+           }
+          return false;
+    }
+
+    string host = options["host"]:"";
+    list< map<string,any> > hostconfig = YaPI::HTTPD::GetHost (host);
+    if (haskey(options, "list"))
+     {
+      CommandLine::Print(sformat("ServerName: %1", HttpServerWidgets::get_host_value("ServerName", hostconfig, "")));
+      CommandLine::Print(sformat("ServerAdmin: %1", HttpServerWidgets::get_host_value("ServerAdmin", hostconfig, "")));
+      CommandLine::Print(sformat("DocumentRoot: %1", HttpServerWidgets::get_host_value("DocumentRoot", hostconfig, "")));
+      return true;
+     }
+
+    string value = options["servername"]:"";
+    if( value != "" ) {
+	if (!Hostname::CheckFQ (value)) 
+	 {
+	  Report::Error(_("Invalid server name."));
+	  return false;
+	 }
+	hostconfig = HttpServerWidgets::set_host_value ( "ServerName", hostconfig, value );
+    }
+
+    value = options["serveradmin"]:"";
+    if( value != "" ) {
+	if (!regexpmatch ( value, ".+@.+" ))
+	 {
+          Report::Error(_("Invalid server admin."));
+          return false;
+	 }
+	hostconfig = HttpServerWidgets::set_host_value ( "ServerAdmin", hostconfig, value );
+    }
+
+    value = options["documentroot"]:"";
+    if( value != "" ) {
+	hostconfig = HttpServerWidgets::set_host_value ( "DocumentRoot", hostconfig, value );
+    }
+
+       if (!HttpServerWidgets::validate_server (options["servername"]:"", hostconfig))
+         {
+          Report::Error(_("Validate error "));
+          return false;
+         }
+
+    YaPI::HTTPD::ModifyHost (host, hostconfig);
+
+    return true;
+}
+
+/**
+ * Handler for command line action "modules".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
+define boolean ModulesHandler(map<string, string> options) ``{
+    // check the command to be present exactly once
+    string command = CommandLine::UniqueOption( options,
+        ["enable", "disable", "list" ] );
+    if( command == nil ) return false;
+
+    if( command == "enable" ) {
+	list<string> mods = splitstring( options["enable"]:"", "," );
+	YaPI::HTTPD::ModifyModuleList (mods, true);	
+    }
+    else if( command == "disable" ) {
+	list<string> mods = splitstring( options["disable"]:"", "," );
+	YaPI::HTTPD::ModifyModuleList (mods, false);	
+    }
+    else if( command == "list" ) {
+        // translators: heading for the "modules list" command line action output
+	// please, try to align the texts if possible.
+	CommandLine::Print( _("Status \tModule
+=================="));
+
+	list<string> enabled = YaPI::HTTPD::GetModuleList();
+	
+	foreach( map<string,any> mod, YaPI::HTTPD::GetKnownModules(), ``{
+	    // translators: status of a module
+	    CommandLine::Print( sformat( "%1\t%2", 
+		// translators: server module status
+		contains( enabled, mod["name"]:"" ) ? _("Enabled") 
+		    // translators: server module status
+		    : _("Disabled")
+		    // translators: server module status unknown
+		    , mod["name"]:_("unknown") ) );
+	});
+    }
+
+    return true;
+}
+
+/**
+ * Handler for command line action "listen".
+ *
+ * @param options    map of the options provided on the command line
+ * @return boolean   true on success
+ */
+define boolean ListenHandler(map<string, string> options) ``{
+
+    // check the command to be present exactly once
+    string command = CommandLine::UniqueOption( options,
+        ["add", "delete", "list" ] );
+    list< map<string,any> > all_listens = YaST::HTTPDData::GetCurrentListen();
+    if( command == nil ) return false;
+
+	   else if( command == "list" ) {
+	        // translators: heading for the "listen list" command line action output
+	        // please, try to align the texts if possible.
+	        CommandLine::Print( _("Listen Statements:"));
+		CommandLine::Print   ("==================");
+	        foreach( map<string, any> listen, all_listens, {
+	        CommandLine::Print(sformat("%1:%2", listen["ADDRESS"]:_("All interfaces"), listen["PORT"]:"80"));
+	        });
+	     return true;
+	    }
+
+	string address = "";
+	string port = "";
+        list listens = splitstring(options[command]:"", ":");
+        if (size(listens)==1) port = listens[0]:"";
+         else if (size(listens)==2)
+                {
+                 address = listens[0]:"";
+                 port   = listens[1]:"";
+                }
+          else return false;
+
+        boolean finded=false;
+        foreach( map<string, any> listen, all_listens, ``{
+         if (listen["ADDRESS"]:""==address && listen["PORT"]:""==port) finded=true;
+        });
+
+    if( command == "add" ) {
+	//FIXME:  check, if new address and port are correct values (if address is from machine's interfaces)
+    if (size(address)>0 && !contains(maplist( string ip, string dev, HttpServer::ip2device, ``( ip )), address))
+     {
+      Report::Error(_("Can use only existing interfaces"));
+      return false;
+     }
+       if (finded)
+         {
+          // translators: error message in "listen add" command line action
+          Report::Error( sformat( _("The listen statement '%1' is already configured.") , options["add"]:"") );
+          return false;
+         }
+	YaST::HTTPDData::CreateListen(tointeger(port), tointeger(port), address);
+	HttpServer::modified = true;
+
+    }
+    else if( command == "delete" ) {
+	if (!finded)
+	 {
+         // translators: error message in "listen delete" command line action
+	  Report::Error(_("Can remove only existing listeners"));
+	  return false;
+	 }
+	YaST::HTTPDData::DeleteListen(tointeger(port), tointeger(port), address);
+	HttpServer::modified = true;
+    }
+    return true;
+}
+
+  /**
+   * Handling hosts dialog
+   * @param map<string, string> options map to handle
+   * @return boolean correct execution
+   */
+define boolean HostsHandler(map<string, string> options) ``{
+
+    // check the command to be present exactly once
+list <string> hosts = YaST::HTTPDData::GetHostsList ();
+
+    if (haskey(options, "list"))
+     {
+      CommandLine::Print( _("Hosts list:"));
+      CommandLine::Print   ("==================");
+      foreach( string host, hosts, {
+        CommandLine::Print(host);
+       });
+      return true;
+     }
+
+// create
+    if (haskey(options, "create"))
+     {
+      if (!( haskey(options, "servername") && haskey(options, "serveradmin") && haskey(options, "documentroot")))
+       {
+	Report::Error(_("Some parameter missing"));
+	return false;
+       }
+	list < map<string, any> > hostmap = [ $[ "KEY": "ServerName", "VALUE" : options["servername"]:"" ],
+                                                $[ "KEY": "ServerAdmin", "VALUE" : options["serveradmin"]:"" ],
+                                                $[ "KEY": "DocumentRoot", "VALUE" : options["documentroot"]:"" ],
+                                                $[ "KEY": "VirtualByName", "VALUE" : "1" ],
+                                                $[ "KEY": "SSL", "VALUE" : "0" ],
+                                                $[ "KEY": "HostIP", "VALUE" :
+					(maplist( string ip, string dev, HttpServer::ip2device, ``( ip ))[0]:nil)
+						] ];
+        if (!HttpServerWidgets::validate_server (options["servername"]:"", hostmap))
+         {
+          Report::Error(_("Validate error "));
+          return false;
+         }
+
+        YaST::HTTPDData::CreateHost (  maplist( string ip, string dev, HttpServer::ip2device, ``( ip ))[0]:""
+                +"/"+options["servername"]:"", hostmap );
+
+      if (hostmap == nil) return false;
+      HttpServer::modified = true;
+      return true;
+     }
+// remove and setdefault
+
+ if (!contains(hosts, options["remove"]:"") && !contains(hosts, options["setdefault"]:""))
+  {
+   Report::Error(_("Argument can be only existing host"));
+   return false;
+  } 
+
+ if (haskey(options, "setdefault"))
+  if (options["setdefault"]:"" == "default")
+  {
+	Report::Error(_("The host is already default.") );
+	return false;
+  } else 
+     {
+      CommandLine::Print("Will set default host");
+	string host=options["setdefault"]:"";
+        y2milestone ("Changing default host to '%1'", host);
+
+        list< map<string,any> > defhost_options = YaST::HTTPDData::GetHost("default");
+        string servername = (string) HttpServerWidgets::get_host_value( "ServerName", defhost_options, "");
+        string ip = (string) HttpServerWidgets::get_host_value( "HostIP", defhost_options, "");
+
+        // move the old default host elsewhere
+        YaST::HTTPDData::CreateHost ( ip+"/"+servername, defhost_options );
+	//      YaST::HTTPDData::CreateHost ( res["ip"]:ip + "/" + res["name"]:ip, defhost_options );
+        // replace the values of the default host by the new one
+        YaST::HTTPDData::ModifyHost ("default", YaST::HTTPDData::GetHost(host) );
+        // remove the old non-default host
+        YaST::HTTPDData::DeleteHost (host);
+
+        HttpServer::modified = true;
+
+      return true;
+     }
+
+ if (options["remove"]:"" == "default")
+  {
+        Report::Error(_("Cannot delete the default host."));
+        return false;
+  } else YaST::HTTPDData::DeleteHost(options["remove"]:"");
+
+    return true;
+}
+
+map cmdline_description = $[
+    "id" 	: "http-server",
+    // translators: command line help for HTTP server module
+    "help"	: _("Configuration of HTTP server (Apache2)"),
+    "guihandler"        : HttpServerSequence,
+    "initialize"        : HttpServer::Read,
+    "finish"            : HttpServer::Write,
+    "actions"           : $[
+	"configure"	: $[
+	    // translators: help text for configure command line action
+	    "help" 	: _("Configure host settings"),
+	    "handler"	: ConfigureHandler
+	],
+	"modules"	: $[
+	    // translators: help text for modules command line action
+	    "help"	: _("Configure the Apache2 server modules"),
+	    "handler"	: ModulesHandler
+	],
+	"listen"	: $[
+	    // translators: help text for listen command line action
+	    "help" 	: _("Set up the ports and network addresses where the server should listen."),
+	    "handler"	: ListenHandler
+	],
+	"hosts"		: $[
+	    "help"	: _("Configure virtual hosts"),
+	    "handler"	: HostsHandler
+	],
+    ],
+    "options"		: $[
+	"servername"	: $[
+	    "type"	: "fullhostname",
+	    // translators: help text for servername option (configure command line action)
+	    "help"	: _("Server name, for example, www.example.com")
+	],
+	"serveradmin"	: $[
+	    "type"	: "string",
+	    // translators: help text for serveradmin option (configure command line action)
+	    "help"	: _("E-mail address of the server administrator")
+	],
+	"documentroot"	: $[
+	    "type"	: "string",
+	    // translators: help text for documentroot option (configure command line action)
+	    "help"	: _("Directory where the documents of the server are stored")
+	],
+	"host"		: $[
+	    "type"	: "string",
+	    // translators: help text for host option (configure command line action)
+	    "help"	: _("Name of the host to configure.")
+	],
+	"add"		: $[
+	    "type"	: "regex",
+	    "typespec"	: "(\[[0-9a-f:]+\]:[0-9]+)|([0-9]+)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)",
+	    // translators: help text for add subcommand (listen command line action)
+	    "help"	: _("Add a new listen entry ([address:]port)"),
+	],
+	"delete"	: $[
+	    "type"	: "regex",
+	    "typespec"	: "(\[[0-9a-f:]+\]:[0-9]+)|([0-9]+)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)",
+	    // translators: help text for delete subcommand (listen command line action)
+	    "help"	: _("Delete an existing listen entry ([address:]port)"),
+	],
+	"list"		: $[
+	    // translators: help text for list subcommand (listen command line action)
+	    "help"	: _("List configured entries"),
+	],
+	"enable"	: $[
+	    "type"	: "regex",
+	    "typespec"	: ".+(,.+)*",
+	    // translators: help text for enable subcommand (modules command line action)
+	    "help"	: _("Comma-separated list of modules to enable")
+	],
+	"disable"	: $[
+	    "type"	: "regex",
+	    "typespec"	: ".+(,.+)*",
+	    // translators: help text for disable subcommand (modules command line action)
+	    "help"	: _("Comma-separated list of modules to disable")
+	],
+	"create"	: $[
+	    "help"	: _("Create new virtual host")
+	],
+	"remove"	: $[
+            "type"      : "string",
+	    "help"	: _("Delete existing virtual host")
+	],
+	"setdefault"	: $[
+            "type"      : "string",
+	    "help"	: _("Set selected virtual host as default host")
+	]
+    ],
+    "mappings"		: $[
+	"configure"	: [ "host", "servername", "serveradmin", "documentroot", "list" ],
+	"modules"	: [ "enable", "disable", "list" ],
+	"listen"	: [ "add", "delete", "list" ],
+	"hosts"		: [ "create", "servername", "serveradmin", "documentroot", "remove", "setdefault", "list" ]
+    ]
+];
+
+
+/* The main () */
+y2milestone ("----------------------------------------");
+y2milestone ("HttpServer module started");
+
+
+/* is this proposal or not? */
+boolean propose = false;
+list args = WFM::Args();
+if(size(args) > 0) {
+    if(is(WFM::Args(0), path) && WFM::Args(0) == .propose) {
+        y2milestone("Using PROPOSE mode");
+        propose = true;
+    }
+}
+
+/* main ui function */
+any ret = nil;
+
+if(propose) ret = HttpServerAutoSequence();
+	else ret = CommandLine::Run(cmdline_description);
+y2debug("ret=%1", ret);
+
+/* Finish */
+y2milestone("HttpServer module finished");
+y2milestone("----------------------------------------");
+
+return ret;
+
+/* EOF */
+}

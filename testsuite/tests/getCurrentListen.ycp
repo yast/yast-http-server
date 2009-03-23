@@ -1,0 +1,19 @@
+	// testedfile: YaST::HTTPDData.pm
+	// return map of ip addresses and ports where apache2 listens
+
+{
+	include "testsuite.ycp";
+
+	map READ = $[
+	     "http_server" : $[
+		"listen" : [ "80", "127.0.0.1:99" ]
+	     ]	
+	];
+	TESTSUITE_INIT ([READ, $[], $[]], nil);
+
+        import "YaST::HTTPDData";
+        import "YaPI::HTTPD";
+
+
+	TEST( ``{ return YaST::HTTPDData::ReadListen();}, [ READ, $[], $[] ], nil );
+}

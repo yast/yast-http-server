@@ -1,0 +1,35 @@
+@HEADER-COMMENT@
+
+@HEADER@
+BuildRequires:	yast2-network docbook-xsl-stylesheets doxygen libxslt perl-XML-Writer popt-devel sgml-skel update-desktop-files yast2 yast2-devtools yast2-packagemanager-devel yast2-perl-bindings yast2-testsuite libzio
+Requires:	yast2-network yast2-perl-bindings libzio
+# DnsServerApi moved to yast2.rpm (bnc#392606)
+Requires:       yast2 >= 2.16.73
+
+BuildArchitectures:	noarch
+
+Summary:	Configuration of http-server
+
+%description
+-
+
+@PREP@
+
+@BUILD@
+
+@INSTALL@
+
+@CLEAN@
+
+%files
+%defattr(-,root,root)
+%dir @yncludedir@/http-server
+@schemadir@/autoyast/rnc/http-server.rnc
+@yncludedir@/http-server/*
+@clientdir@/http-server.ycp
+@clientdir@/http-server_*.ycp
+@moduledir@/*
+@desktopdir@/http-server.desktop
+@scrconfdir@/*
+@agentdir@/*
+%doc @docdir@

@@ -1,0 +1,19 @@
+/**
+ * File:
+ *   tty.scr
+ * Summary:
+ *   SCR Agent for reading/writing Apache2 configuration
+ * Access:
+ *   read/write
+ * Authors:
+ * See:
+ *   anyagent
+ *   libscr
+ * Example:
+
+ * $Id$
+ *
+ */
+.http_server
+
+`ag_http_server ()
