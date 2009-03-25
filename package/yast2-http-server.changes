@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Mar 25 09:24:13 CET 2009 - mzugec@suse.de
+
+- for name-based vhosts split configuration files (bnc#427427)
+- 2.17.7 
+
+-------------------------------------------------------------------
 Fri Mar 20 19:24:06 CET 2009 - mzugec@suse.de
 
 - improved IP addr. validation for ip-based vhosts (bnc#486476)
