@@ -1,0 +1,2917 @@
+/**
+ * File:	modules/HttpServerWidgets.ycp
+ * Package:	Configuration of http-server
+ * Summary:	Widgets used by HTTP server configuration
+ * Authors:	Jiri Srain <jsrain@suse.cz>
+ *		Stanislav Visnovsky <visnov@suse.cz>
+ * Internal
+ *
+ * $Id$
+ */
+
+{
+    module "HttpServerWidgets";
+
+    textdomain "http-server";
+
+    import "Directory";
+    import "Mode";
+    import "IP";
+    import "Label";
+    import "Popup";
+    import "Report";
+    import "Service";
+    import "String";
+    import "LogView";
+    import "TablePopup";
+    import "HttpServer";
+    import "YaST::HTTPDData";
+    import "Confirm";
+    import "SuSEFirewall";
+    import "CWMServiceStart";
+    import "CWMFirewallInterfaces";
+    import "Punycode";
+    import "Package";
+    import "DnsServerAPI";
+    import "FileUtils";
+    import "Hostname";
+    import "DNS";
+    import "Arch";
+    import "PackageSystem";
+    import "Map";
+
+    include "http-server/helps.ycp";
+
+global string currenthost = "main";
+string dir_value = "";
+map getSSLOptions();
+global string init_tab = "listen";
+
+boolean update_contents = false;
+list< map<string,any> > vhost_descr = [];
+
+  /**
+   * Validate certificate
+   * @return boolean certificate valid
+   */
+boolean CheckCommonServerCertificate () {
+    integer s = (integer)SCR::Read(.target.size, "/etc/ssl/servercerts/servercert.pem");
+    if (s <= 0) return false;
+    s = (integer)SCR::Read(.target.size, "/etc/ssl/servercerts/serverkey.pem");
+    if (s <= 0) return false;
+    return true;
+}
+
+  /**
+   * Get host value
+   * @param keyword string
+   * @param host list< map<string, any> >
+   * @param defaultvalue any
+   * @return any host value
+   */
+global any get_host_value ( string keyword, list< map<string, any> > host, any defaultvalue )
+{
+    any res = defaultvalue;
+    
+    foreach( map<string, any> option, host, ``{
+	if (option["KEY"]:nil == keyword)
+	{
+	    res = option["VALUE"]:defaultvalue;
+	    break;
+	}
+    });
+    
+	// drop quotes, if exist
+    if ( is( res, string) ) res = regexpsub ( (string)res, "\"?([^\"]*)\"?", "\\1");
+    
+    return res;
+}
+
+  /**
+   * Set host value
+   * @param keyword string
+   * @param host list< map<string, any> >
+   * @param value any
+   * @return list< map<string,any> > host map
+   */
+global list< map<string,any> > set_host_value ( string keyword, list< map<string, any> > host, any value )
+{
+    integer index = 0;
+    foreach( map<string, any> option, host, ``{
+	if (option["KEY"]:nil == keyword) break;
+	index = index + 1;
+    });
+    
+	// adding a new option
+    if (index >= size(host)) host[index] = $[ "KEY" : keyword , "VALUE" : value ];
+	else host[index, "VALUE"] = value;
+
+    return host;
+}
+
+  /**
+   * Validate server name
+   * @param key any
+   * @param id any
+   * @param event map
+   * @return boolean valid servername
+   */
+global boolean validate_servername (string value) 
+{
+//    string value = Punycode::EncodeDomainName( (string)UI::QueryWidget (`id(key), `Value) );
+    if (!Hostname::CheckFQ (value))
+    {
+	//translators: popup error message when validate servername
+	Popup::Error (_("Invalid server name.") + "\n\n" + Hostname::ValidFQ ());
+	return false;
+    } else return true;
+}
+
+  /**
+   * Validate IP for host
+   * @param id any
+   * @param key any
+   * @param event map
+   * @return boolean is IP valid
+   */
+global boolean validate_serverip (any id, any key, map event) 
+{
+    import "IP";
+    string value = (string)UI::QueryWidget (`id (id), `Value);
+
+    // check, if there is also a port, if yes, skip it
+//    integer pos = search (value, ":");
+//    if (pos != nil) value = substring (value, 0, pos);
+
+    // validate wildcard
+    if (value == "*") return true;
+    // remove brackets before validation (because of IPv6 [::])
+    if (substring(value, 0, 1)=="[" && substring(value, size(value)-1, 1)=="]")
+				value = substring(value, 1, size(value)-2);
+
+    if (!IP::Check (value))
+    {
+        //translators: popup error message when validate server ip
+	Popup::Error (_("Invalid IP address."));
+	return false;
+    } else return true;
+}
+
+  /**
+   * Function for validate server entries
+   * @param hostid string
+   * @param server list < map<string,any> >
+   * @return boolean valid server
+   */
+global boolean validate_server (string hostid, list < map<string,any> > server )
+{
+
+	//TODO: don't allow user to use this directive !!!
+	//main server can't use SSL
+	boolean valid=true;
+	if ( hostid == "main" )
+	 {
+	  foreach(map<string,any> value, server, {
+	   if (value["KEY"]:"" == "SSL")
+	    {
+	     //translators: popup error message when validate server
+	     Report::Error ( _("The default host cannot be configured with SSL support.") );
+	     valid=false;
+             return false;
+	    }
+	  });
+	 }
+	if (!valid) return false;
+
+    list <string> hosts = YaST::HTTPDData::GetHostsList ();
+
+    string servername = (string)get_host_value ( "ServerName", server, nil );
+    string ip = (string)get_host_value ( "HostIP", server, nil );
+    boolean namebased = ((string)get_host_value ( "VirtualByName", server, nil )) == "1";
+    string documentroot = (string) get_host_value ( "DocumentRoot", server, "" );
+
+	// for apache2.2 ServerName is not forced (if not - hostname will be used)
+    if ( size ( servername ) == 0 )
+    {
+     if (hostid == "main") {
+	 Report::Warning(_("When no Server name is defined, hostname will be used instead."));
+         return true;
+	} else {
+           //translators: popup error message when validate server
+	   Report::Error ( _("Server name cannot be empty.") );
+	   return false;
+	}
+    }
+
+    if (! FileUtils::CheckAndCreatePath( documentroot )) return false;
+    boolean res = true;
+
+    foreach (string host, hosts, ``{
+	    // skip ourself also when this is main server
+	if (( host == hostid ) || (hostid == "main")) continue;
+	if (host == "main") continue;
+	// find out the server name
+	string value = (string)get_host_value ( "ServerName", YaST::HTTPDData::GetHost (host), nil );
+	if (value == servername)
+	{
+	    // error message - the entered server name is already configured 
+	    // in another virtual host
+	    Report::Error (_("The server name entered is already configured on another virtual host."));
+	    res = false;
+	    break;
+	}
+
+	map<string, any> vhost = YaST::HTTPDData::GetVhostType(host);
+		if (! FileUtils::CheckAndCreatePath( documentroot )){
+                    res = false;
+                    break;
+		  }
+	if (vhost["id"]:"" == ip)
+	{
+	    // this is valid only if both of them are name-based, not ip-based (bnc#486476)
+	    if ( !(YaST::HTTPDData::GetVhostType(host)["type"]:""=="name-based" && namebased) )
+	    {
+		// error message - the entered ip address is already 
+		// configured for another virtual host
+		string error_msg = _("The IP address is already configured on another virtual host (")+ host + ")";
+		Report::Error (error_msg);
+		res = false;
+		break;
+	    }
+	}
+    });
+
+    // validate server admin
+    string serveradmin = (string)get_host_value ( "ServerAdmin", server, nil );
+    if ( ! regexpmatch ( serveradmin, ".+@.+" ))
+    {
+        //translators: popup error message when validate ServerAdmin
+	Report::Error (_("Administrator E-Mail is invalid."));
+	res = false;
+    }
+
+    return res;
+}
+
+global boolean validate_server_fnc (string id, map key);
+
+
+
+
+/*********************************** inital overview table ********************************/
+
+  /**
+   * Reload server
+   */
+    global void ReloadServer ()
+    {
+	SCR::Execute (.target.bash, "rcapache2 reload");
+    }
+    /**
+      * Handle function of the access log button (the first defined access log file)
+      * @param key any key of the widget
+      * @param event map event that occured
+      * @return value for wizard sequencer, always nil
+      */
+    define symbol showAccessLogPopup (any key, map event) {
+	// FIXME: log files needs to be done via HTTPDData
+	// string log = (string) select( YaST::HTTPDData::GetAccessLogFiles( [currenthost] ), 0, "/var/log/apache2/access_log" );
+
+	// strip the log format, if present
+	string log = "";
+//	log = select( splitstring( log, " " ), 0, "/var/log/apache2/access_log" );
+	log = splitstring( log, " " )[0]:"/var/log/apache2/access_log" ;
+
+	LogView::Display ($[
+	    "command" : sformat( "tail -f %1 -n 100 | /usr/sbin/logresolve2", log ),
+	    "save" : true,
+	    "actions" : [
+		// menubutton entry, try to keep short
+		[ _("&Reload HTTP Server"), ReloadServer ],
+		// menubutton entry, try to keep short
+		[ _("Save Settings and Re&start HTTP Server"),
+		    HttpServer::Write, true ],
+	    ],
+	]);
+	return nil;
+    }
+
+    /**
+      * Handle function of the error log button
+      * @param key any key of the widget
+      * @param event map event that occured
+      * @return value for wizard sequencer, always nil
+      */
+    define symbol showErrorLogPopup (any key, map event) ``{
+	// FIXME: log files needs to be done via HTTPDData
+	// string log = (string) select( YaST::HTTPDData::GetErrorLogFiles( [currenthost] ), 0, "/var/log/apache2/error_log" );
+	
+	// strip the log format, if present
+	string log = "";
+//	log = select( splitstring( log, " " ), 0, "/var/log/apache2/error_log" );
+	log = splitstring( log, " " )[0]:"/var/log/apache2/error_log";
+
+	LogView::Display ($[
+	    "command" : sformat( "tail -f %1 -n 100 | /usr/sbin/logresolve2", log ),
+	    "save" : true,
+	    "actions" : [
+		// menubutton entry, try to keep short
+		[ _("&Reload HTTP Server"), ReloadServer ],
+		// menubutton entry, try to keep short
+		[ _("Save Settings and Re&start HTTP Server"),
+		    HttpServer::Write, true ],
+	    ],
+	]);
+	return nil;
+    }
+
+  /**
+   * Handle overview (listen) widget
+   * @param table string
+   * @param event map
+   * @return symbol (access/error popup)
+   */
+symbol OverviewHandle (string table, map event)
+{
+    // handle menu button entries
+   if( event["ID"]:nil == `show_access_log ) {
+	return showAccessLogPopup( table, event );
+    }
+    else if( event["ID"]:nil == `show_error_log ) {
+	return showErrorLogPopup( table, event );
+    }
+    return nil;
+}
+
+map<string, any> overview_widget = $[
+    "widget"		: `custom,
+    "custom_widget"	:
+	`VBox(
+		Mode::config () ? `VSpacing(0) : (
+		// menu button label
+        	`MenuButton( `id(`menu), _("&Log Files"),
+            	    // menu button item
+            	    [ `item( `id( `show_access_log ), _("Show &Access Log") ),
+            	    // menu button item
+            	    `item( `id( `show_error_log ), _("Show &Error Log") )
+        	] ) )
+	),
+//    "init"		:  OverviewInit,
+    "handle"		:  OverviewHandle,
+    "help"		:  HELPS["overview_widget"]:"",
+];
+
+/******************************************************************************************/
+
+
+global void HostsInit (string widget);
+global symbol HostsHandle (string table, map event);
+
+
+  /**
+   *
+   * @param servername string
+   * @param ip string
+   * @return map<string,string> servername:ip
+   */
+map<string,string> AskNewInfo (string servername, string ip)
+{
+    if (size (servername) == 0)
+    {
+	// suggest reasonable value
+	servername = Hostname::MergeFQ (DNS::hostname, DNS::domain);
+	// maybe we should check, if there is such host already
+    }
+
+    list ips = maplist( string ip, string dev, HttpServer::ip2device, ``( ip ) ) ;
+    UI::OpenDialog (
+	`VBox(
+	    // translators: popup description on changing the default host
+	    // the old default host is changed to a virtual one, but it may
+	    // miss some needed information. the popup asks to set them.
+	    `Label( _("The current default host will be replaced by 
+the new host and will become a virtual host.
+
+However, the current default host does not have
+the IP address or the server name specified.
+Therefore, it is not possible to use it as 
+a virtual host. Verify the suggested values below 
+and click OK to continue with the default host
+switch. Otherwise click Cancel not to change
+the default host.
+")),
+	    // translators: textentry to set the host name
+	    `TextEntry (`id(`servername), _("Server &Name:"), servername),
+	    // translators: textentry to set the host IP address
+	    `Left( `ComboBox( `id("ip"), `opt(`editable), _("Server &IP Address:"), ips ) ),
+	    `VSpacing(0.5),
+	    `HBox( `PushButton (`id(`ok), `opt(`default), Label::ContinueButton ()),
+		`PushButton (`id(`cancel), Label::CancelButton ()) )
+	));
+    UI::SetFocus (`servername);
+    UI::ChangeWidget (`id("ip"), `Value, ip);
+
+    symbol ret = nil;
+
+    do
+    {
+	ret = (symbol)UI::UserInput ();
+	if (ret == `cancel) break;
+
+servername = Punycode::EncodeDomainName((string)UI::QueryWidget (`servername, `Value));
+	// it must be `ok
+	if (! validate_servername(servername)) continue;
+
+
+	if (! validate_serverip("ip",nil,nil)) continue;
+	ip = (string)UI::QueryWidget (`id("ip"), `Value);
+
+	break;
+
+    } while (ret != nil);
+
+    UI::CloseDialog ();
+    return ret != `cancel ? $[ "name": servername, "ip" : ip ] : (map<string,string>)nil;
+}
+
+
+  /**
+   * Hosts contents
+   * @param descr map
+   * @return list host list
+   */
+global list HostsContents (map descr) {
+    return filter(string row, YaST::HTTPDData::GetHostsList (), { return (row !="main"); });
+}
+
+void changeButtons(boolean stat){
+	UI::ChangeWidget(`set_default, `Enabled, stat);
+	UI::ChangeWidget(`_tp_delete, `Enabled, stat);
+	UI::ChangeWidget(`_tp_edit, `Enabled, stat);
+}
+
+  /**
+   * Widget for delete host
+   * @param opt_id any
+   * @param opt_key string
+   * @return boolean delete success
+   */
+global boolean HostsDelete (any opt_id, string opt_key) {
+
+    if (opt_id == "default")
+    {
+	// translators: popup error message - default host cannot be deleted
+	Popup::Error (_("Cannot delete the default host."));
+	return false;
+    }
+    // message popup
+    if (! Popup::YesNo (_("Delete selected host?")))
+	return false;
+	
+    HttpServer::modified = true;
+    boolean ret = YaST::HTTPDData::DeleteHost ((string)opt_id);
+    if (size( HostsContents($[]) )==0) changeButtons(false);
+	else changeButtons(true);
+    return ret;
+}
+
+  /**
+   * Get server name for host
+   * @param key any
+   * @param id string
+   * @return string server name
+   */
+global string HostName (any key, string id)
+{
+    string res = (string) get_host_value ( "ServerName", YaST::HTTPDData::GetHost((string)key), (string)key );
+    res = Punycode::DecodeDomainName(res);
+    // translators: human-readable "default host"
+    if (key == "default" && res == "default" ) res = _("Default Host");
+    return res;
+}
+
+  /**
+   * Get document root for host
+   * @param key any
+   * @param id string
+   * @return string document root
+   */
+global string HostDocumentRootSummary( any key, string id )
+{
+    return (string) get_host_value ("DocumentRoot", YaST::HTTPDData::GetHost( (string)key), "");
+}
+
+  /**
+   * Is that host default?
+   * @param widget any
+   * @param key string
+   * @return boolean is_default?
+   */
+global boolean HostIsDefault( any widget, string key )
+{
+    return key == "default";
+}
+
+map<string, any> hosts_widget = (map<string, any>)TablePopup::CreateTableDescr (
+	$["add_delete_buttons" : true,
+	      "up_down_buttons" : false,
+	      "unique_keys" : true,
+	      "changed_column" : true]
+	, $[
+	    "init" : HostsInit,
+	    "handle" : HostsHandle,
+	    "ids" : HostsContents,
+	    "option_delete" : HostsDelete,
+	    "help" : HELPS["hosts"]:"",
+	    "fallback": $[
+		"summary" : HostDocumentRootSummary,
+		"changed" : HostIsDefault,
+		"label_func" : HostName,
+	    ],
+	]);
+
+  /**
+   * Handle host widget
+   * @param table string
+   * @param event map
+   * @return symbol (`add, `edit)
+   */
+global symbol HostsHandle (string table, map event)
+{
+    if (size((list)UI::QueryWidget(`_tp_table, `Items))==0)
+						changeButtons(false);
+	else changeButtons(true);
+
+    if ( event["ID"]:nil == `_tp_add )
+    {
+	return `add;
+    }
+
+    else if (event["ID"]:nil == `_tp_edit)
+    {
+	currenthost = (string)UI::QueryWidget (`_tp_table, `CurrentItem);
+	return `edit;
+    }
+    
+    else if (event["ID"]:nil == `set_default)
+    {
+	string host = (string)UI::QueryWidget (`_tp_table, `CurrentItem);
+	if (host == "default")
+	{
+	    // popup - it is already the default host
+	    Popup::Message (_("The host is already default.") );
+	    return nil;
+	}
+
+	y2milestone ("Changing default host to '%1'", host);
+
+	list< map<string,any> > defhost_options = YaST::HTTPDData::GetHost("main");
+	string servername = (string) get_host_value( "ServerName", defhost_options, "");
+	string ip = (string) get_host_value( "HostIP", defhost_options, "");
+	if (ip == "" || servername != "")
+	{
+	    // we must set a new server name and ip for the old default host
+	    map res = AskNewInfo (servername, ip);
+	    if (res == nil)
+	    {
+		// cancel the change
+		return nil;
+	    }
+
+	ip =res["ip"]:ip;
+	servername = res["name"]:ip;
+	    defhost_options = set_host_value( "HostIP", defhost_options, ip);
+	    defhost_options = set_host_value( "ServerName", defhost_options, servername);
+	}
+	// move the old default host elsewhere
+	YaST::HTTPDData::CreateHost ( ip+"/"+servername, defhost_options );
+	// replace the values of the default host by the new one
+	YaST::HTTPDData::ModifyHost ("main", YaST::HTTPDData::GetHost(host) );
+	// remove the old non-default host
+	YaST::HTTPDData::DeleteHost (host);
+
+	HttpServer::modified = true;
+
+	TablePopup::TableInit(hosts_widget, table);
+    }
+    else
+    {
+	return TablePopup::TableHandle(hosts_widget, table, event);
+    }
+    return nil;
+}
+
+  /**
+   * Initialize hosts table widget
+   * @param widget string
+   */
+global void HostsInit (string widget)
+{
+    init_tab = "hosts";
+    TablePopup::TableInit(hosts_widget, widget);
+    vhost_descr = [];
+						    // menu button label
+    UI::ReplaceWidget( `id(`_tp_table_repl), `PushButton( `id( `set_default ), _("Set as De&fault") ) );
+
+}
+/******************************************************************************************/
+
+//global string summaryGenericList(string key, any id );
+global symbol handleHostTable(string key, map event );
+global void HostStore (string key, map event);
+global list HostTableContents (map descr);
+global void DefaultHostPopupInit (any opt_id, string opt_key);
+global void DefaultHostPopupStore (any opt_id, string opt_key);
+global string HostTableEntrySummary (any opt_id, string opt_key);
+global boolean HostTableEntryDelete (any opt_id, string opt_key);
+global string HostId2Key( map desc, any id );
+
+global void initModules (string key);
+global symbol handleModules (string key, map event);
+global boolean validateModules (string key, map event);
+global void initListenSettings (string key);
+global symbol handleListenSettings (string key, map event);
+global void initServiceStatus (string key);
+global symbol handleServiceStatus (string key, map event);
+global void storeServiceStatus (string key, map event);
+global void initAdaptFirewall (string key);
+global void storeAdaptFirewall (string opt_id, map event);
+
+	// wizard widget functions
+global void initOpenPort (string key);
+global symbol handleOpenPort(string key, map event);
+global boolean validateOpenPort(string key, map event);
+global void initListenInterfaces (string key);
+global boolean validateListenInterfaces(string key, map event);
+global void initFwOpen (string key);
+global void storeFwOpen (string opt_id, map event);
+global symbol handleExpertConf (string key, map event);
+void initScriptModules(string key);
+void initSummaryText(string key);
+global symbol handleBooting (string key, map event);
+global map getHostOptions(boolean is_main_server);
+boolean getServiceAutoStart();
+void setServiceAutoStart(boolean enable);
+void checkLoadedModuleFor(string new);
+
+global void setHostOptions(map < integer, map <string,any> > host_options);
+
+
+string mode_replace_point_key = "replace_point";
+
+/**
+ * Map of popups for CWM
+ */
+global map<string,map> popups = $[
+	    "ServerName" : $[
+		"table" : $[
+		    // table cell description
+		    "label" : _("Server Name"),
+		    "optional" : false,
+		    "unique" : true,
+		],
+		"popup" : $[
+		    // table cell description
+		    "label"  : _("Server Name"),
+		    "widget" : `textentry,
+		],
+	    ],
+	    "DocumentRoot" : $[
+		"table" : $[
+		    // table cell description
+		    "label" : _("Document Root"),
+		    "optional" : false,
+		    "unique" : true,
+		],
+		"popup" : $[
+		    "widget" : `textentry,
+		],
+            ],
+	    "ServerAdmin" : $[
+		"table" : $[
+		    // table cell description
+		    "label" : _("Server Administrator E-Mail"),
+		    "optional" : false,
+		    "unique" : true,
+		],
+		"popup" : $[
+		    "widget" : `textentry,
+		],
+            ],
+	    "VirtualByName" : $[
+		"table" : $[
+		    // table cell description
+		    "label"  : _("Server Resolution"),
+		    "optional" : false,
+		    "unique" : true,
+		],
+		"popup" : $[
+		    "widget" : `radio_buttons,
+		    "items" : [
+			// translators: radio button for name-based virtual hosts
+			[ "1", _("Determine Request Server by HTTP &Headers") ],
+			// translators: radio button for IP-based virtual hosts
+			[ "0", _("Determine Request Server by Server IP &Address") ],
+		    ],
+		]
+	    ],
+	    "HostIP" : $[
+		"table" : $[
+		    // table cell description
+		    "label"  : _("IP Address"),
+		    "optional" : false,
+		    "unique" : true,
+		],
+	    ],
+	    "SSL" : $[
+		"table" : $[
+		    "handle" : `ssl,
+		    "optional" : false,
+		    "unique" : true,
+		]
+	    ],
+	    "Directory" : $[
+		"table" : $[
+		"handle"   : `dir,
+		"optional" : true,
+		"unique"   : true,
+		],
+	    ],
+	];
+
+global void HostInit (string key);
+
+global map<string, any> hostwidget = (map<string, any>)TablePopup::CreateTableDescr (
+	    $["add_delete_buttons" : true, 
+	      "up_down_buttons" : false, 
+	      "unique_keys" : false]
+	, $[
+	    "init" : HostInit,
+	    "handle" : handleHostTable,
+	    "store" : HostStore,
+	    "validate_type" : `function,
+	    "validate_function" : validate_server_fnc,
+	    "options" : getHostOptions(false),
+	    "ids" : HostTableContents,
+	    "id2key" : HostId2Key,
+	    "fallback" : $[
+		"init" : DefaultHostPopupInit,
+		"store" : DefaultHostPopupStore,
+		"summary" : HostTableEntrySummary,
+	    ],
+	    "option_delete" : HostTableEntryDelete,
+	    "add_items" : 
+		maplist( string key, any value, (map<string,any>) getHostOptions(false), ``(key) ),
+	    "help" : HELPS["global_table"]:"",
+	]);
+
+  /**
+   * Initialize host widget
+   * @param key string
+   */
+global define void HostInit (string key) ``{
+    if (key == "MAIN_HOST") {
+			     init_tab = "main_host";
+			     currenthost="main";
+			    }
+    TablePopup::TableInit (hostwidget, key);
+}
+
+  /**
+   * Get host options
+   * @return map host options
+   */
+global define map getHostOptions(boolean mainhost)
+{
+ map used = $[];
+ list <string> directives = [];
+	foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
+		foreach(map<string,any> option, mod["directives"]:[], {
+			list<list<string> > opt_list = [];
+			foreach(string value, option["values"]:[], {opt_list = add(opt_list, [ value ]);});
+			if (contains(option["context"]:[] ,"Server") && !contains(option["context"]:[] ,"SSL")) 
+				if (opt_list != []) used[option["option"]:""]= $["popup":$[ "widget" : `combobox, "items":opt_list ] ];
+					else used[option["option"]:""]=$[];
+			});
+	});
+ if (mainhost) used = union(used, filter(string key,map val, popups, { return(key!="SSL"); }));
+	else used = union(used, popups);
+ return used;
+}
+  /**
+   * Get SSL options
+   * @return map ssl options
+   */
+define map getSSLOptions()
+{
+ map used = $[];
+ list <string> directives = [];
+        foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
+                foreach(map<string,any> option, mod["directives"]:[], {
+                        list<list<string> > opt_list = [];
+                        foreach(string value, option["values"]:[], {opt_list = add(opt_list, [ value ]);});
+                        if (contains(option["context"]:[] ,"SSL")) 
+				if (opt_list != []) used[option["option"]:""]= $["popup":$[ "widget" : `combobox, "items":opt_list ] ];
+                        		else used[option["option"]:""]=$[];
+                        });
+        });
+ return used;
+}
+
+
+global symbol handleSSLTable(string key, map event );
+global list SSLTableContents (map descr);
+global void SSLInit (string key);
+global void SSLStore(string key, map event);
+global void SSLTypeStore (any option_id, string option_type);
+
+global void DirInit(string key);
+global symbol handleDirTable(string key, map event );
+global map getDirOptions();
+global list DirTableContents (map descr);
+global void DirStore(string key, map event);
+global void DirPopupInit (any opt_id, string opt_key);
+
+map<integer, map<string, any> > host_options = nil;
+
+map<string, any> sslwidget = (map<string, any>)TablePopup::CreateTableDescr (
+	    $["add_delete_buttons" : true, 
+	      "up_down_buttons" : false, 
+	      "unique_keys" : true]
+	, $[
+	    "init" : SSLInit,
+	    "handle" : handleSSLTable,
+	    "store" : SSLStore,
+	    "options" : (map<string, any>) getSSLOptions(),
+	    "ids" : SSLTableContents,
+	    "id2key" : HostId2Key,
+	    "fallback" : $[
+		"init" : DefaultHostPopupInit,
+		"store" : DefaultHostPopupStore,
+		"summary" : HostTableEntrySummary,
+	    ],
+	    "option_delete" : HostTableEntryDelete,
+	    "add_items" : maplist( string key, any value, (map<string, any>) getSSLOptions(), ``(key) ),
+	    "help" : HELPS["ssl"]:"",
+	]);
+
+
+map<string, any> dirwidget = (map<string, any>)TablePopup::CreateTableDescr (
+	    $["add_delete_buttons" : true, 
+	      "up_down_buttons" : false, 
+	      "unique_keys" : true]
+	, $[
+	    "init" : DirInit,
+	    "handle" : handleDirTable,
+	    "store" : DirStore,
+	    "options" : (map<string, any>) getDirOptions(), 
+	    "ids" : DirTableContents,
+	    "id2key" : HostId2Key,
+	    "fallback" : $[
+		"init" : DirPopupInit,
+		"store" : DefaultHostPopupStore,
+		"summary" : HostTableEntrySummary,
+	    ],
+	    "option_delete" : HostTableEntryDelete,
+	    "add_items" : 
+		maplist( string key, any value, (map<string,any>) getDirOptions(), ``(key) ),
+	    "help" : HELPS["dir"]:"",
+	]);
+
+  /**
+   * Initialize directory table
+   * @param widget string
+   */
+global void DirInit (string widget)
+{
+   TablePopup::TableInit(dirwidget, widget);
+UI::ChangeWidget(`dir_name, `Value, dir_value);
+}
+
+  /**
+   * Get directory options
+   * @return map directory options
+   */
+global define map getDirOptions()
+{
+ map used = $[];
+ list <string> directives = [];
+        foreach (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), {
+                foreach(map<string,any> option, mod["directives"]:[], {
+                        list<list<string> > opt_list = [];
+                        foreach(string value, option["values"]:[], {opt_list = add(opt_list, [ value ]);});
+                        if (contains(option["context"]:[] ,"Directory") && !contains(option["context"]:[] ,"SSL"))
+                                if (opt_list != []) used[option["option"]:""]= $["popup":$[ "widget" : `combobox, "items":opt_list ] ];
+                                        else used[option["option"]:""]=$[];
+                        });
+        });
+ return used;
+}
+
+  /**
+   * Handle directory table
+   * @param key string
+   * @param  event map
+   * @return symbol tablehandle
+   */
+global symbol handleDirTable( string key, map event )
+{
+    if (event["ID"]:nil == `back ) host_options = nil;
+
+    return TablePopup::TableHandle( dirwidget, key, event );
+}
+
+  /**
+   * Initialize directory popup
+   * @param option_id any
+   * @param option_type string
+   */
+   global define void DirPopupInit (any option_id, string option_type) ``{
+        any value = host_options[(integer)option_id, "VALUE"]:"";
+    }
+
+
+  /**
+   * Store directory map
+   * @param key string
+   * @param event map
+   */
+global void DirStore (string key, map event)
+ {
+	list< map<string,any> > options = [];
+	string new_dir=(string)UI::QueryWidget(`dir_name, `Value);
+	boolean dir_before=false;
+            list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+            foreach (map<string, any> option, host, ``{
+                if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory"
+								&& option["SECTIONPARAM"]:"unknown" == dir_value)
+                {
+		 dir_before = true;
+		   list < map<string,any> > newlist = [];
+		  foreach(integer key, map<string,any> value, host_options, {newlist = add(newlist, value);});
+		option["VALUE"] = newlist;
+		option["SECTIONPARAM"] = new_dir;
+                }
+		options = add(options, option);
+            });
+ if (!dir_before){
+
+		   list < map<string,any> > newlist = [];
+		  foreach(integer key, map<string,any> value, host_options, {newlist = add(newlist, value);});
+//		options = add(options, $["VALUE":newlist]);
+  options = add(host, $["KEY":"_SECTION",
+		"SECTIONNAME":"Directory",
+		"SECTIONPARAM":new_dir,
+		"VALUE":newlist]);
+	}
+	YaST::HTTPDData::ModifyHost (currenthost, options );
+	setHostOptions(nil);
+	HttpServer::modified = true;
+ }
+
+global void initVhostRes(string key){
+  map<string, any> vhost = YaST::HTTPDData::GetVhostType(currenthost);
+ if (vhost_descr!=[]){
+  vhost=$[];
+  foreach(map row, vhost_descr, {
+  if (row["KEY"]:""=="HostIP") vhost["id"] = row["VALUE"]:"";
+  if (row["KEY"]:""=="VirtualByName") vhost["type"] = (row["VALUE"]:"0"=="0")?"ip-based":"name-based";
+  });
+ }
+
+  if (vhost["type"]:""=="ip-based") UI::ChangeWidget(`resolution, `CurrentButton, `ip_based);
+	else UI::ChangeWidget(`resolution, `CurrentButton, `name_based);
+  UI::ChangeWidget(`virtual_host, `Value, vhost["id"]:"");
+  UI::ChangeWidget(`virtual_host, `Enabled, false);
+}
+
+global void initVhostId(string key){
+	if (vhost_descr!=[]){
+                string servername = ""; foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "ServerName") servername = row["VALUE"]:"";});
+                string documentroot = ""; foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "DocumentRoot") documentroot = row["VALUE"]:"";});
+                string admin = ""; foreach(map<string,any> row, vhost_descr,{if (row["KEY"]:"" == "ServerAdmin") admin = row["VALUE"]:"";});
+		if (size(servername)>0) UI::ChangeWidget(`servername, `Value, Punycode::DecodeDomainName(servername));
+		if (size(documentroot)>0) UI::ChangeWidget(`documentroot, `Value, documentroot);
+		if (size(admin)>0) UI::ChangeWidget(`admin, `Value, admin);
+	}
+
+	UI::SetFocus (`servername);
+}
+
+global define symbol handleVhostId (string key, map event){
+ if (event["EventType"]:""=="WidgetEvent" && event["WidgetID"]:nil==`browse){
+   string dir = UI::AskForExistingDirectory ("/srv", _("Choose Document Root") );
+   if (dir != nil ) UI::ChangeWidget (`documentroot, `Value, dir );
+ }
+ return nil;
+}
+
+global boolean validateVhostId(string key, map event) ``{
+ // FIXME: Do checks about the IP address availability
+ string ip = (string) UI::QueryWidget ( `virtual_host, `Value );
+ string servername = Punycode::EncodeDomainName( (string) UI::QueryWidget( `servername, `Value ) );
+ string documentroot = (string) UI::QueryWidget( `documentroot, `Value );
+ string admin = (string) UI::QueryWidget( `admin, `Value );
+ boolean virtualbyname = (boolean) UI::QueryWidget( `name_based, `Value );
+
+    if (! validate_servername(servername)) return false;
+
+//     if (! validate_serverip("", "ipaddress", nil)) return false;
+
+     if ( size(admin) == 0 )
+     {
+         // translators: error popup
+         Popup::Error ( _("Administrator E-Mail cannot be empty.") );
+         return nil;
+     }
+
+     vhost_descr = [
+             $[ "KEY": "DocumentRoot", "VALUE" : documentroot ],
+             $[ "KEY": "ServerName", "VALUE" : servername ],
+             $[ "KEY": "ServerAdmin", "VALUE" : admin ],
+             $[ "KEY": "VirtualByName", "VALUE" : virtualbyname ? "1" : "0" ],
+             $[ "KEY": "HostIP", "VALUE" : ip ],
+		$[
+		   "KEY"       : "_SECTION",
+		    "SECTIONNAME": "Directory",
+		    "SECTIONPARAM": documentroot,
+		    "VALUE" : [
+				$["KEY":"AllowOverride", "VALUE":"None"],
+				$["KEY":"Order", "VALUE":"allow,deny"],
+				$["KEY":"Allow", "VALUE":"from all"]
+			      ],
+		    "OVERHEAD" : ""]
+         ];
+     if ( !validate_server (nil, vhost_descr) ) return false;
+ return true;
+}
+
+global define void storeVhostId (string opt_id, map event) ``{
+}
+
+define string changeVHostPopup(string value){
+ string vhost="";
+ list items = maplist( string ip, string dev, HttpServer::ip2device, {
+  if (IP::Check6(ip)) return sformat("[%1]", ip);
+	  else return ip;
+  } );
+ UI::OpenDialog(
+  `RadioButtonGroup(`id(`rb),
+	 `VBox(
+		`Left( `RadioButton(`id(`all_addr),`opt(`notify), _("All addresses (*)"), true)),
+		`Left(`RadioButton(`id(`multiselect),`opt(`notify), "")),
+		  `MultiSelectionBox( `id(`ipaddress),
+			_("IP Adresses"), items )
+			,
+		`Left(`RadioButton(`id(`custom),`opt(`notify), "")),
+		  `TextEntry(`id(`serv_name), _("ServerName"))
+			,
+		    `VSpacing(),
+		    `HBox(
+			`PushButton( `id(`ok),     Label::OKButton() ),
+			`PushButton( `id(`cancel), Label::CancelButton() )
+		     )
+	      )
+	     )
+ );
+ if (value=="*" || value=="") UI::ChangeWidget(`serv_name, `Value, value);
+  else {
+	list<term> it=[];
+	foreach(string ip, (list<string>)items, {
+	 it=add(it, `item(`id(ip), ip, contains(splitstring(value, " "), ip)) );
+	 });
+	boolean unknown = false;
+	foreach(string ip, splitstring(value, " "), {
+	 if (!contains(items, ip))  unknown = true;
+	});
+	if (unknown){
+	 UI::ChangeWidget(`serv_name, `Value, value);
+	 UI::ChangeWidget(`rb, `CurrentButton, `custom);
+	 } else {
+		UI::ChangeWidget(`ipaddress, `Items, it);
+		UI::ChangeWidget(`rb, `CurrentButton, `multiselect);
+		 }
+	}
+
+ symbol ret = nil;
+ do{
+    symbol rb = (symbol)UI::QueryWidget(`id(`rb), `CurrentButton);
+	  UI::ChangeWidget(`id(`ipaddress), `Enabled, rb==`multiselect);
+	  UI::ChangeWidget(`id(`serv_name), `Enabled, rb==`custom);
+    ret = (symbol) UI::UserInput();
+   } while( ret != `ok && ret != `cancel );
+  if( ret == `ok ) {
+   switch((symbol)UI::QueryWidget(`id(`rb), `CurrentButton)){
+    case `all_addr:
+	vhost="*";
+	break;
+    case `multiselect:
+	list<string> selected=(list<string>)UI::QueryWidget(`id(`ipaddress), `SelectedItems);
+	  vhost = mergestring(selected, " ");
+	break;
+    case `custom:
+	vhost=(string)UI::QueryWidget(`id(`serv_name), `Value);
+	break;
+    default:
+	vhost="";
+	y2warning("unrecognized selection");
+	}
+   }
+  UI::CloseDialog();
+ return vhost;
+}
+
+
+global define symbol handleVhostRest (string key, map event){
+ if (event["EventReason"]:""=="Activated" && event["ID"]:nil ==`change_vhost){
+  string vhost = changeVHostPopup((string)UI::QueryWidget(`virtual_host, `Value));
+  if (size(vhost)>0) UI::ChangeWidget(`id(`virtual_host), `Value, vhost);
+ }
+ return nil;
+}
+
+
+global boolean validateVhostRes(string key, map event) ``{
+ string vhost=(string)UI::QueryWidget(`id( `virtual_host ), `Value);
+ if (size(vhost)==0) {
+	 Popup::Error(_("Name for VirtualHost ID cannot be empty."));
+	 return false;
+	}
+
+ // for name-based vhost only IP address is allowed
+ // or regexp (* or *:port) or list of IP addresses
+ if (UI::QueryWidget(`resolution, `Value)==`name_based) {
+			// regexp matches '*' and '*:80'
+  if (regexpmatch(vhost, "^\\*$\|^\\*:[[:digit:]]\+$")) return true;
+  boolean ok=true;
+  foreach(string ip, splitstring(vhost, " "), {
+   if (!IP::Check4(ip)) ok=false;
+  });
+  if (!ok) Popup::Warning(_("To use name-based virtual hosting,
+you must designate the IP address on the server
+that will be accepting requests for the hosts.
+Also * for all addresses and *:port are acceptable."));
+  return ok;
+ }
+ return true;
+}
+
+string dns_zone = "";
+global void initVhostDetails(string key){
+
+  map <string, any> servername = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "ServerName"));
+  map <string, any> ip = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "HostIP"));
+
+  dns_zone="";
+
+  if (HttpServer::configured_dns)
+   {
+   if (IP::Check4(ip["VALUE"]:""))
+       {
+	foreach(string key, map<string, any> value, (map<string, map<string, any> >) DnsServerAPI::GetZones(), {
+	 if ( value["type"]:"" == "master" ){
+	  if (regexpmatch(servername["VALUE"]:"", "\\."+key+"$" ) && (size(key)>size(dns_zone)) ) dns_zone=key;
+			   y2milestone(_("Master Zone %1"), key);
+	 } else y2warning("Zone %1 is not type master", key);
+	});
+	if (size(dns_zone)>0)
+	 {
+	  y2milestone("Matching zone %1", dns_zone);
+	  boolean exists=false;
+	  foreach(map<string, any> records, DnsServerAPI::GetZoneRRs(dns_zone), {
+	   if (records["key"]:"" == servername["VALUE"]:"" || records["key"]:"" == servername["VALUE"]:""+".") exists=true;
+	  });
+	  if (exists == true)
+	   {
+	    y2milestone(_("Record %1 already exists in zone %2."), servername["VALUE"]:"", dns_zone);
+	   } else {
+              UI::ReplaceWidget(`replace, `Frame(_("DNS Settings"),
+                                              `Left(
+                                                `HBox(
+                                                 `Label(servername["VALUE"]:""),
+                                                 `PushButton(`id(`dns_add_rec), _("Add to Zone"))
+                                                    ))));
+
+				}
+
+	 } else {
+	    list <string> opts = splitstring(servername["VALUE"]:"", ".");
+	    opts[0] = nil;
+            list <string> newList=[];
+            foreach(string it, opts, {
+             if (it !=nil){
+              list <string> tmpList=[];
+              foreach(string itzone, newList, {
+	       if (!contains(Map::Keys(DnsServerAPI::GetZones()), itzone+"."+it)) tmpList = add(tmpList, itzone+"."+it);
+		else y2warning("%1 is already configured zone",  itzone+"."+it);
+              });
+              newList=tmpList;
+              newList = add(newList, it);
+             }
+            });
+
+	     if (size(opts)>0)
+	       UI::ReplaceWidget(`replace, `Frame(_("DNS Settings"),
+                                              `Left(
+                                                `HBox(
+                                                 `Label(servername["VALUE"]:""),
+						 `ComboBox(`id(`new_zone), _("Zone Name"), newList),
+                                                 `PushButton(`id(`dns_create_zone), _("Create New Zone"))
+                                                    ))));
+
+	}
+   } else y2warning("%1 is not valid IP4 address", ip["VALUE"]:"");
+  }
+
+ // disable using SSL for name-based virtual host
+ foreach(map<string, any> row, vhost_descr, {
+  if (row["KEY"]:"" == "VirtualByName" && row["VALUE"]:"0" =="1") UI::ChangeWidget(`ssl_support, `Enabled, false);
+ });
+}
+
+global define symbol handleVhostDetails (string key, map event){
+ map <string, any> documentroot = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "DocumentRoot"));
+ map <string, any> ip = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "HostIP"));
+ map <string, any> servername = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "ServerName"));
+
+ if ((boolean)UI::QueryWidget(`cgi_support, `Value)) 
+  {
+   UI::ChangeWidget(`cgi_dir, `Enabled, true);
+   UI::ChangeWidget(`browse_cgi_dir, `Enabled, true);
+  } else {
+	  UI::ChangeWidget(`cgi_dir, `Enabled, false);
+	  UI::ChangeWidget(`browse_cgi_dir, `Enabled, false);
+	}
+ if ((boolean)UI::QueryWidget(`ssl_support, `Value)) 
+  {
+   UI::ChangeWidget(`certfile, `Enabled, true);
+   UI::ChangeWidget(`browse_cert, `Enabled, true);
+   UI::ChangeWidget(`keyfile, `Enabled, true);
+   UI::ChangeWidget(`browse_key, `Enabled, true);
+  } else {
+	  UI::ChangeWidget(`certfile, `Enabled, false);
+	  UI::ChangeWidget(`browse_cert, `Enabled, false);
+	  UI::ChangeWidget(`keyfile, `Enabled, false);
+	  UI::ChangeWidget(`browse_key, `Enabled, false);
+	}
+
+
+ if (event["WidgetClass"]:nil ==`PushButton)
+ switch ((symbol)event["ID"]:nil){
+  case `dns_add_rec :
+         {
+          y2milestone("Add record %1 to zone %2", servername["VALUE"]:"", dns_zone);
+          UI::ChangeWidget(`dns_add_rec, `Enabled, false);
+          DnsServerAPI::AddZoneRR(dns_zone, "A", servername["VALUE"]:""+".", ip["VALUE"]:"");
+	  break;
+         }
+
+  case `dns_create_zone :
+         {
+          y2milestone("Create new zone ... %1", UI::QueryWidget(`new_zone, `Value));
+          UI::ChangeWidget(`dns_create_zone, `Enabled, false);
+          UI::ChangeWidget(`new_zone, `Enabled, false);
+           dns_zone = (string)UI::QueryWidget(`new_zone, `Value);
+          DnsServerAPI::AddZone(dns_zone, "master", $[]);
+          DnsServerAPI::AddZoneRR(dns_zone, "A", servername["VALUE"]:""+".", ip["VALUE"]:"");
+	  break;
+         }
+
+  case `browse_cgi_dir :
+   {
+    string cgi_dir = UI::AskForExistingDirectory("/srv/www/cgi-bin", _("CGI Directory") );
+    if (cgi_dir != nil) UI::ChangeWidget (`cgi_dir, `Value, cgi_dir );
+    break;
+   }
+
+  case `browse_cert :
+    {
+	string cert_file = UI::AskForExistingFile("/etc/apache2/ssl.crt", "*.crt *.pem", _("Choose Certificate File") );
+        if (cert_file != nil && SCR::Execute(.target.bash, sformat("openssl x509 -in %1", cert_file))==0) UI::ChangeWidget (`certfile, `Value, cert_file );
+		else
+		 {
+		    UI::ChangeWidget (`certfile, `Value, "");
+                    // translators: error popup
+                    Popup::Error ( _("Enter the certificate file.") );
+		 }
+	break;
+    }
+
+  case `browse_key :
+    {
+	string key_file = UI::AskForExistingFile("/etc/apache2/ssl.key", "*.key *.pem", _("Choose Certificate Key File") );
+//   boolean keyfile = (SCR::Execute(.target.bash, sformat("openssl rsa -in %1", cert_file))==0)?true:false;
+        if (key_file != nil && SCR::Execute(.target.bash, sformat("openssl rsa -in %1", key_file))==0) UI::ChangeWidget (`keyfile, `Value, key_file );
+		else
+		 {
+		    UI::ChangeWidget (`keyfile, `Value, "");
+                    // translators: error popup
+                    Popup::Error ( _("Enter the key file.") );
+		 }
+	break;
+    }
+  }
+
+ return nil;
+}
+
+global define void storeVhostDetails (string key, map events) ``{
+
+ map <string, any> ip = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "HostIP"));
+ map <string, any> servername = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "ServerName"));
+ map <string, any> documentroot = find(map<string,any> row, vhost_descr,``(row["KEY"]:"" == "DocumentRoot"));
+
+ if (UI::QueryWidget(`cgi_support, `Value) == true)
+ {
+  string alias = "/cgi-bin/ " + (string) UI::QueryWidget(`cgi_dir, `Value);
+  vhost_descr = add(vhost_descr, $["KEY":"ScriptAlias", "VALUE":alias]);
+  vhost_descr = add(vhost_descr,  $[
+   "KEY"       : "_SECTION",
+    "SECTIONNAME": "Directory",
+    "SECTIONPARAM": UI::QueryWidget(`cgi_dir, `Value),
+    "VALUE" : [
+		$["KEY":"AllowOverride", "VALUE":"None"],
+		$["KEY":"Options", "VALUE":"+ExecCGI -Includes"],
+		$["KEY":"Order", "VALUE":"allow,deny"],
+		$["KEY":"Allow", "VALUE":"from all"]
+	      ],
+    "OVERHEAD" : ""]);
+  y2milestone("CGI support for virtual host added");
+ }
+
+ map <string, any> ssl_values = $[];
+ if (UI::QueryWidget(`ssl_support, `Value) == true)
+  {
+   string cert_file = tostring(UI::QueryWidget(`certfile, `Value));
+   string key_file = tostring(UI::QueryWidget(`keyfile, `Value));
+
+   if (size(cert_file)>0 && size(key_file)>0){
+	YaST::HTTPDData::ModifyModuleList ([ "ssl" ], true);
+	ssl_values = $[
+	 "KEY":"_SECTION",
+	 "SECTIONNAME":"IfDefine",
+	 "SECTIONPARAM":"SSL",
+	 "VALUE":[ 	$["KEY":"SSLCertificateFile", "VALUE":cert_file],
+			$["KEY":"SSLCertificateKeyFile", "VALUE":key_file],
+			$["KEY":"SSLEngine", "VALUE":"on"] ]
+		];
+	} else y2error("%1 is not valid Certificate File!", cert_file);
+  }
+
+  if (size(ssl_values)>0) vhost_descr = add(vhost_descr, ssl_values);
+
+
+//		  vhost_descr = YaST::HTTPDData::GetHost(ip["VALUE"]:""+"/"+servername["VALUE"]:"");
+		  string directory_index=(string)UI::QueryWidget(`dir_index, `Value);
+
+		  if ( size(directory_index)>0 ){
+		  list< map<string, any> > tmp_descr = [];
+
+		  foreach(map<string, any>value, vhost_descr, {
+			  if (value["KEY"]:"" == "_SECTION" && 
+				value["SECTIONNAME"]:"" == "Directory" && 
+				(search(value["SECTIONPARAM"]:"", documentroot["VALUE"]:""))!=nil) 
+				 {
+//				  if (size(directory_index)>0)	
+						value["VALUE"]=add(value["VALUE"]:[], $["KEY":"DirectoryIndex", "VALUE":directory_index]);
+				 }
+		  tmp_descr  = add(tmp_descr, value);
+//			vhost_descr = add(vhost_descr, value);
+			 });
+			vhost_descr = tmp_descr;
+			}
+//		 }
+	if ( UI::QueryWidget(`pub_html, `Value)==true )
+		vhost_descr=add(vhost_descr, $["KEY":"UserDir", "VALUE":"public_html"]);
+  if ( YaST::HTTPDData::CreateHost ( ip["VALUE"]:""+"/"+servername["VALUE"]:"", vhost_descr )==nil )
+	{
+         map<string,string> error = (map<string,string>) YaST::HTTPDData::Error ();
+	 Popup::Error ( error["summary"]:"" );
+	}
+  HttpServer::modified = true;
+  vhost_descr = [];
+}
+
+
+
+/**
+ * Map of widgets for CWM
+ */
+global map<string, map <string, any> > widgets = $[
+	    "server_enable" : $[
+		"widget" : `radio_buttons,
+		// translator: server enable/disable radio button group
+		"label"	 : _("HTTP &Service"),
+		"items"	 : [
+		    // translators: service status radio button label
+		    [ "disabled", _("Disabled") ],
+		    // translators: service status radio button label
+		    [ "enabled", _("Enabled") ]
+		],
+		"init"	: initServiceStatus,
+		"handle" : handleServiceStatus,
+		"store"	 : storeServiceStatus,
+		"handle_events" : [ "enabled", "disabled" ],
+		"opt" : [ `notify ],
+		"help" : HELPS["server_enable"]:"",
+	    ],
+	    "firewall_adapt" : CWMFirewallInterfaces::CreateOpenFirewallWidget ($[
+                "services" : [ "service:apache2", "service:apache2-ssl" ],
+		"help" : HELPS["firewall_adapt"]:"",
+                "display_details" : true,
+              ]),
+	    "host" : hostwidget,
+        "LISTEN" : $[
+            "widget" : `custom,
+            "custom_widget" : `VBox (
+                // translators: radio button group label
+                `Left(`Label( _("Listen on Ports:") ) ),
+                `Table (`id (`listen), `header (
+                    // table header
+                    _("Network Address"),
+                    // table header
+                    _("Port")
+                ), []),
+                `HBox (
+                    `PushButton (`id (`add), `opt (`key_F3),
+                        Label::AddButton ()),
+                    `PushButton (`id (`edit), `opt (`key_F4),
+                        Label::EditButton ()),
+                    `PushButton (`id (`delete), `opt (`key_F5),
+                        Label::DeleteButton ()),
+                    `HStretch ()
+                )
+            ),
+            "init" : initListenSettings,
+            "handle" : handleListenSettings,
+            "help" : HELPS["listen"]:"",
+          ],
+        "MODULES" : $[
+                     "widget" : `custom,
+            "custom_widget" : `VBox (
+                `Table (`id (`modules), `header (
+                    // table header: module name
+                    _("Name"),
+                    // table header: module status
+                    _("Status")+"    ",
+                    // table header: module description
+                    _("Description")
+                ), []),
+                `HBox (
+                    `PushButton (`id (`toggle),
+                    // translators: toggle button label
+                        _("&Toggle Status") ),
+                    `HStretch (),
+                    `PushButton (`id (`add_user),
+                    // translators: add user-defined module button label
+                        _("&Add Module") )
+                )
+            ),
+            "init" : initModules,
+            "handle" : handleModules,
+	    "validate_type" : `function,
+	    "validate_function" : validateModules,
+            "help" : HELPS["modules"]:"",
+
+         ],
+
+        "MAIN_HOST" :
+           TablePopup::CreateTableDescr (
+            $["add_delete_buttons" : true, "up_down_buttons" : false, "unique_keys" : false],
+             $[
+              "init" : HostInit,
+              "handle" : handleHostTable,
+              "store" : HostStore,
+              "validate_type" : `function,
+              "validate_function" : validate_server_fnc,
+              "options" : getHostOptions(true),
+              "ids" : HostTableContents,
+              "id2key" : HostId2Key,
+              "fallback" : $[
+                "init" : DefaultHostPopupInit,
+                "store" : DefaultHostPopupStore,
+                "summary" : HostTableEntrySummary,
+                        ],
+              "option_delete" : HostTableEntryDelete,
+              "add_items" : maplist( string key, any value, (map<string,any>) getHostOptions(true), ``(key) ),
+              "help" : HELPS["global_table"]:""
+             ]
+            ),
+
+        "HOSTS" : TablePopup::CreateTableDescr (
+        $["add_delete_buttons" : true,
+              "up_down_buttons" : false,
+              "unique_keys" : true,
+              "changed_column" : true]
+        , $[
+            "init" : HostsInit,
+            "handle" : HostsHandle,
+            "ids" : HostsContents,
+            "option_delete" : HostsDelete,
+            "help" : HELPS["hosts"]:"",
+            "fallback": $[
+                "summary" : HostDocumentRootSummary,
+                "changed" : HostIsDefault,
+                "label_func" : HostName,
+            ],
+         ]),
+	    "logs" : overview_widget,
+	    "hosts"	: hosts_widget,
+	    "ssl" : sslwidget,
+	    "dir" : dirwidget,
+	    "dir_name" : $[
+               "widget" : `custom,
+               "custom_widget" : `VBox(
+		 `TextEntry(`id(`dir_name), _("Directory"))
+		)
+
+			],
+		// wizard widgets
+	    "open_port" : $[
+		"widget" : `textentry,
+		// translators: text entry
+		"label"	 : _("&Port:"),
+		"init"	 : initOpenPort,
+		"validate_type" : `function, 
+		"validate_function" : validateOpenPort,
+		"help" : HELPS["open_port"]:""
+		],
+	   "listen_interfaces" : $[
+		"widget" : `custom,
+		// translators: multi selection box
+		"custom_widget" : `ReplacePoint( `id(mode_replace_point_key),`MultiSelectionBox( _("&Listen on Interfaces"), [])),
+		"init"	 : initListenInterfaces,
+                "validate_type" : `function,
+                "validate_function" : validateListenInterfaces,
+		"help" : HELPS["listen_interfaces"]:""
+		],
+	   "fw_open" : $[
+		"widget" : `checkbox,
+		//translators: checkbox 
+		"label"  : _("Open &Firewall for Selected Ports"),
+		"init"	 : initFwOpen,
+		"store"	 : storeFwOpen,
+		"help"   : HELPS["fw_open"]:""
+		],
+	  "booting" 	 : CWMServiceStart::CreateAutoStartWidget ($[
+		"get_service_auto_start" : getServiceAutoStart,
+		"set_service_auto_start" : setServiceAutoStart,
+		//translators: radiobutton - to start Apache2 service automatically
+		"start_auto_button"	 : _("Start Apache2 Server When Booting"),
+		//translators: radiobutton - to don't start Apache2 service 
+		"start_manual_button"	 : _("Start Apache2 Server Manually")
+
+		]),
+	  "expert_conf"  : $[
+		"widget" : `push_button,
+		//translators: button to enter expert configuration
+		"label"  : _("&HTTP Server Expert Configuration..."),
+//		"init"	 : initExpertConf,
+		"handle" : handleExpertConf,
+		"help"	 : HELPS["expert_conf"]:""
+		],
+	  "script_modules" : $[
+		"widget" : `custom,
+		"custom_widget" : `ReplacePoint(`id(`scr_mod_replace), 
+			`Label("") 
+	                ),
+		"init"   : initScriptModules,
+		"help"	 : HELPS["script_modules"]:""
+		],
+	   "vhost_id" : $[
+		"widget" : `custom,
+                "custom_widget" :
+	    `Frame(
+		// translators: frame title for new hsot identification details
+		_("Server Identification"),
+		`VBox(
+		    // translators: textentry, new host server name
+		    `TextEntry( `id( `servername ), _("Server &Name:") ),
+		    `HBox(
+			// translators: textentry, document root for the new host
+			`TextEntry( `id( `documentroot ), _("Server &Contents Root:") ),
+			`VBox(
+                	    `Label(""),
+			    `PushButton( `id( `browse ), Label::BrowseButton () )
+			)
+		    ),
+		    // translators: textentry, administrator's e-mail for the new host
+		    `TextEntry( `id( `admin ), _("&Administrator E-Mail:") )
+		)),
+		"help" : HELPS["vhost_id"]:"",
+		"init" : initVhostId,
+		"handle" : handleVhostId,
+		"validate_type" : `function,
+		"validate_function" : validateVhostId,
+		"store" : storeVhostId
+			],
+	   "vhost_res" : $[
+		"widget" : `custom,
+                "custom_widget" :
+	    `Frame(
+		// translators: frame title for method of incoming request resolution
+		_("Server Resolution"),
+		`HBox(
+		  `VBox(
+			// translators: IP address for the new host
+			`Left( `TextEntry( `id( `virtual_host ), _("VirtualHost") ) ),
+			`Left(`PushButton(`id(`change_vhost), _("Change VirtualHost ID")))
+		     ),
+		`RadioButtonGroup(
+		    `id ( `resolution ),
+		    `VBox (
+			// translators: radio button for name-based virtual hosts
+			`Left(`RadioButton ( `id ( `name_based ), `opt(`notify), _("Determine Request Server by HTTP &Headers"), true ) ),
+			// translators: radio button for IP-based virtual hosts
+			`Left(`RadioButton ( `id ( `ip_based ),`opt(`notify), _("Determine Request Server by Server IP &Address") ) )
+		    )
+		))),
+		"init" : initVhostRes,
+		"handle" : handleVhostRest,
+		"validate_type" : `function,
+		"validate_function" : validateVhostRes,
+		"help" : HELPS["vhost_res"]:""
+		],
+	   "vhost_details" : $[
+		"widget" : `custom,
+		"custom_widget" :
+		`HBox( `HSpacing(0.5), `VBox (
+           `ReplacePoint(`id(`replace), `Empty()
+                ),
+                `VSpacing(1),
+            `Frame(
+                // translators: frame title for virtual host identification details
+                _("CGI Options"),
+                `VBox(
+                 `Left(
+                   `CheckBox(`id(`cgi_support), `opt(`notify), _("Enable &CGI for This Virtual Host"))),
+                   `HBox(
+                        // translators: textentry, certificate file path
+                        `TextEntry( `id( `cgi_dir ), _("CGI &Directory Path") ),
+                        `VBox(
+                            `Label(""),
+                            `PushButton(`id(`browse_cgi_dir ), Label::BrowseButton () )
+                        ))
+
+                )),
+                `VSpacing (1),
+               `Frame(
+                _("SSL Support"),
+                 `VBox(
+                  `Left(
+                   `CheckBox(`id(`ssl_support), `opt(`notify), _("Enable &SSL Support for This Virtual Host"))),
+                    `VBox(
+                        // translators: textentry, certificate file path
+                        `HBox(
+			`Label(""),
+                        `TextEntry( `id( `certfile ), _("&Certificate File Path") ),
+                            `PushButton(`id(`browse_cert ), Label::BrowseButton () )
+                        ),
+                        `HBox(
+			`Label(""),
+                        `TextEntry( `id( `keyfile ), _("&Certificate Key File Path") ),
+                            `PushButton(`id(`browse_key ), Label::BrowseButton () )
+                         )
+			)
+
+                )),
+                `VSpacing (1),
+                `Frame(
+                 _("Directory Options"),
+                 `Left(
+                       `TextEntry( `id( `dir_index ), _("&Directory Index") )
+                      )),
+               `VSpacing (1),
+                `Frame(
+                 _("Public HTML"),
+                 `Left(
+                       `CheckBox( `id( `pub_html ), _("Enable &Public HTML") )
+                      ))
+                )
+        ),
+		"init" : initVhostDetails,
+		"handle" : handleVhostDetails,
+		"store" : storeVhostDetails,
+		"help" : HELPS["vhost_details"]:""
+		],
+	   "summary_text" : $[
+		"widget"  : `custom,
+		"custom_widget" : `ReplacePoint(`id(`summary_text_rp), `RichText("")),
+		"init"	  : initSummaryText,
+		"help"	  : HELPS["summary_text"]:""
+		]
+	];
+
+
+/******************************** SSL widget ****************************/
+
+  /**
+   * Handle SSL widget table
+   * @param key string
+   * @param event map
+   * @return symbol sslhandle
+   */
+global symbol handleSSLTable( string key, map event )
+{
+    if ( event["ID"]:nil == `import_certificate )
+    {
+				//translators: dialog to set *.pem file with certificate
+	string pem = UI::AskForExistingFile ("/", "*.pem", _("Select Certificate"));
+	if (pem == nil)
+	{
+	    // cancel
+	    return nil;
+	}
+
+	string cert = (string) SCR::Read ( .target.string, pem );
+	if (cert != nil)
+	{
+	    // pass the data to the backend
+	    YaST::HTTPDData::SetCert ( currenthost, "CERT", cert );
+
+	    // get the correct host name
+	    list<map<string,any> > host = YaST::HTTPDData::GetHost (currenthost);
+	    host = set_host_value( "SSLCertificateFile", host,
+		"/etc/apache2/ssl.crt/"
+		+ (string)get_host_value ("ServerName", host, "default")
+		+ "-cert.pem");
+	    YaST::HTTPDData::ModifyHost (currenthost, host);
+	    TablePopup::TableInitWrapper(key);
+	    return nil;
+	}
+
+	// translators: error message un failed certificate import
+	Report::Error ( sformat( _("Cannot import certificate
+%1"), pem));
+    }
+    else if (event["ID"]:nil == `common_certificate )
+    {
+	string pem = "/etc/ssl/servercerts/servercert.pem";
+	if ( !CheckCommonServerCertificate () )
+	{
+			//translators: dialog to set *.pem file with certificate
+	    pem = UI::AskForExistingFile ("/etc/ssl/servercerts", "*.pem", _("Select Certificate"));
+	    if (pem == nil)
+	    {
+		// cancelled
+		return nil;
+	    }
+	}
+	else
+	{
+	    list<map<string,any> > host = YaST::HTTPDData::GetHost (currenthost);
+	    host = set_host_value( "SSLCertificateFile", host, "/etc/ssl/servercerts/servercert.pem");
+	    host = set_host_value( "SSLCertificateKeyFile", host, "/etc/ssl/servercerts/serverkey.pem");
+	    YaST::HTTPDData::ModifyHost (currenthost, host);
+	}
+
+	TablePopup::TableInitWrapper(key);
+	return nil;
+    }
+    else if (event["ID"]:nil == `back )
+    {
+        host_options = nil;
+    }
+
+    return TablePopup::TableHandle( sslwidget, key, event );
+}
+
+  /**
+   * Initialize SSL widget
+   * @param widget string
+   */
+global void SSLInit (string widget)
+{
+    TablePopup::TableInit(sslwidget, widget);
+}
+
+  /**
+   * Store SSL setting
+   * @param key string
+   * @param event map
+   */
+global void SSLStore (string key, map event)
+ {
+	boolean found = false ;
+        list < map<string,any> > forssl = [];
+        list < map<string,any> > fordir = [];
+
+
+        foreach(integer key, map<string,any> value, host_options, {
+      foreach(map<string,any> val, YaST::HTTPDData::GetKnownModules(), {
+	   if ( val["name"]:"" == "ssl" )
+	    {
+		foreach(map<string, any> pom, val["directives"]:[], {
+			if (pom["option"]:"" == value["KEY"]:"")
+			 {
+				if ( contains(pom["context"]:[], "Directory")) { fordir = add(fordir, value); }
+                                if ( contains(pom["context"]:[], "Server"))    { forssl = add(forssl, value); }
+			 }
+		});
+	    }
+          });
+	});
+
+
+        list< map<string,any> > options = [];
+
+  map<string, any> vhost = YaST::HTTPDData::GetVhostType(currenthost);
+  if (vhost["type"]:""=="ip-based") options = add(options, $["KEY":"VirtualByName", "VALUE":"0"]);
+		else options = add(options, $["KEY":"VirtualByName", "VALUE":"1"]);
+  options = add(options, $["KEY":"HostIP", "VALUE": vhost["id"]:""]);
+
+            foreach (map<string, any> option, YaST::HTTPDData::GetHost(currenthost), ``{
+                if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONPARAM"]:"unknown" == "SSL")
+                {
+		   found = true;
+                option["VALUE"] = forssl;
+		  if ( size(forssl)>0 ) options = add(options, option);
+                } else if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory")
+		 {
+		  list< map<string, any> > temp_dir = [];
+		  foreach(map<string, any> value, option["VALUE"]:[], {
+			if (!(value["KEY"]:"unknown" == "_SECTION" && value["SECTIONPARAM"]:"unknown" == "SSL")) temp_dir = add(temp_dir, value);
+			});
+		  if (fordir != []) option["VALUE"] = add(temp_dir, $["KEY":"_SECTION", "SECTIONNAME":"IfDefine", "SECTIONPARAM":"SSL", "VALUE":fordir]);
+			else 
+			 {
+			  list< map<string, any> > dir_newlist = [];
+			  foreach(map< string, any > dir_item, 
+					option["VALUE"]:[], 
+					{
+					if (!(dir_item["KEY"]:"" == "_SECTION" && dir_item["SECTIONPARAM"]:"" == "SSL")) 
+						dir_newlist = add(dir_newlist, dir_item);
+					});
+				option["VALUE"] = dir_newlist;
+			 }
+
+		options = add(options, option);
+		 } else options = add(options, option);
+            });
+	if (!found) { options = add(options, $["KEY":"_SECTION", "SECTIONNAME":"IfDefine", "SECTIONPARAM":"SSL", "VALUE":forssl]); }
+//TODO::SSLWrite()
+	YaST::HTTPDData::ModifyHost (currenthost, options );
+        setHostOptions(nil);
+        HttpServer::modified = true;
+ }
+
+/******************************** Listen popup ****************************/
+
+/**
+ * Convert a Listen string to an item for table. Splits by the colon.
+ *
+ * @param arg		the Listen map
+ * @param id		the id of this item
+ * @return term		term for the table
+ */
+global define term listen2item( map<string,any> arg, integer id ) ``{
+
+	//translators: all network addresses Listen type
+    string address = arg["ADDRESS"]: _("All Addresses");
+        //translators: all network addresses Listen type
+    if (address == "") address = _("All Addresses");
+    string port = arg["PORT"]:"80";
+    
+    return `item( `id(id), address, port );
+}
+
+    /**
+     * Show a popup for editing Listen statement.
+     *
+     * @param network string initial value for the network part of the statement
+     *                  If empty or _("All Addresses"), considered for all Listen for all interfaces.
+     * @param port string initial value for a port number
+     * @return map<string,string>	the new Listen statement or nil if Cancel was pressed
+     */
+    define map<string,string> AskListen( string network, string port ) ``{
+	// translators: all network addresses Listen type
+	boolean adr_type = ( network == _("All Addresses") || network == "" );
+	if( port == nil ) port = "";
+
+	// translators: Listen type for all addresses;
+	string aa =  _("All Addresses");
+
+	list ips = union( [ aa ], maplist( string ip, string dev, HttpServer::ip2device,
+	 {
+	  if (IP::Check6(ip)) return sformat("[%1]", ip);
+		else return ip;
+	 } ) );
+	UI::OpenDialog( `VBox(
+	    `TextEntry( `id(`port), Label::Port(), port ),
+	    // translators: combo box label for list of configured IPs
+	    `Left( `ComboBox( `id("address"), `opt( `editable ), _("Network &Address:"), ips ) ),
+	    `VSpacing(),
+	    `HBox( 
+		`PushButton( `id(`ok), Label::OKButton() ),
+		`PushButton( `id(`cancel), Label::CancelButton() )
+	     )
+	));
+
+	if( !adr_type ) {
+	    UI::ChangeWidget( `id( "address" ), `Value, network );
+	}
+
+	symbol ret = nil;
+	map<string,string> res = $[];
+	do {
+
+	    ret = (symbol) UI::UserInput();
+
+	    if( ret == `ok ) {
+		res["ADDRESS"] = (string)UI::QueryWidget( `id("address"), `Value );
+		res["PORT"] = (string)UI::QueryWidget( `id(`port), `Value );
+		if ( res["ADDRESS"]:nil == aa ) 
+		{
+		    // on all addresses, cleanup the value
+		    res["ADDRESS"] = "";
+		}
+		else
+		{
+		    // validate
+		    if (! validate_serverip ("address", nil, nil) )
+		    {
+			ret = nil;
+			continue;
+		    }
+		}
+
+		// validation
+		if( ! regexpmatch( res["PORT"]:"", "^[ \t]*[0-9]+[ \t]*$" ) ) {
+		    // translators: error message when validating Listen statement
+		    Popup::Error( _("Invalid port number.") );
+		    ret = nil;
+		    continue;
+		}
+
+	    }
+	} while( ret != `ok && ret != `cancel );
+
+	if( ret == `cancel ) res = nil;
+
+	UI::CloseDialog();
+
+	return res;
+    }
+
+// *************************************** log popups **************************
+
+
+// ************************************ default host table ********************
+
+    integer option_counter = 0;
+    list<integer> deleted_options = [];
+
+  /**
+   * Validate server function
+   * @param id string
+   * @param key map
+   * @return boolean validate
+   */
+    global boolean validate_server_fnc (string id, map key) 
+    {
+	// convert the map to list
+	list< map<string, any> > val = maplist (integer index, map<string, any> data
+	    , host_options, ``(data));
+ if (currenthost!="main"){
+  val=add(val, $["KEY":"HostIP", "VALUE":(string)UI::QueryWidget(`id(`virtual_host), `Value)] );
+  val=add(val, $["KEY":"VirtualByName", "VALUE": (UI::QueryWidget(`id(`resolution), `Value)==`ip_based)?"0":"1" ] );
+ }
+	return validate_server ( currenthost, val );
+    }
+
+  /**
+   * Get value from id
+   * @param desc map
+   * @param option_id any
+   * @return string value
+   */
+    global string HostId2Key( map desc, any option_id )
+    {
+	return host_options [ (integer)option_id, "KEY" ]: "";
+    }
+
+  /**
+   * find modules of all directives and check if are loaded
+   * @param new string
+   */
+    void checkLoadedModuleFor(string new)
+    {
+	list<string> loaded = YaST::HTTPDData::GetModuleList();
+      foreach(map<string,any> value, YaST::HTTPDData::GetKnownModules(), {
+	 if (contains(value["directives"]:[], new) && !contains(loaded, value["name"]:"")) 
+	  {
+	   YaST::HTTPDData::ModifyModuleList([value["name"]:""], true);
+	   y2milestone("loading module mod_%1 ...", value["name"]:"");
+	  }
+	});
+
+    }
+
+  /**
+   * Store host settings
+   * @param key string
+   * @param event map
+   */
+    global void HostStore (string key, map event)
+    {
+	list< map<string,any> > options = []; 
+       foreach (integer key, map<string,any> values, host_options,
+        ``{
+	   if (haskey(values, "DATA"))
+	    {
+
+		//In main host SSL can't be used
+	     if (values["KEY"]:"" == "SSL") 
+		{
+		 options = add(options, $[
+                   "KEY"       : "_SECTION",
+                    "SECTIONNAME": "IfDefine",
+                    "SECTIONPARAM": "SSL",
+                    "VALUE" : values["DATA"]: [],
+                    "OVERHEAD" : values["OVERHEAD"]:""]);
+		 y2milestone("SSL section - %1", options);
+		}
+
+             if (values["KEY"]:"" == "Directory") 
+		{
+                options = add(options, $[
+                   "KEY"       : "_SECTION",
+                    "SECTIONNAME": "Directory",
+                    "SECTIONPARAM": values["VALUE"]:"",
+                    "VALUE" : values["DATA"]: [],
+                    "OVERHEAD" : values["OVERHEAD"]:""]);
+		 y2milestone("Directory section - %1", values);
+		}
+
+             if (values["KEY"]:"" == "mod_userdir.c") 
+		{
+                options = add(options, $[
+                   "KEY"       : "_SECTION",
+                    "SECTIONNAME": "IfModule",
+                    "SECTIONPARAM": "mod_userdir.c",
+                    "VALUE" : values["DATA"]: [],
+                    "OVERHEAD" : values["OVERHEAD"]:""]);
+		 y2milestone("Directory section - %1", values);
+		}
+	    } else 
+		{
+		 options = add(options, values);
+		 y2milestone("Global section - %1", values);
+		}
+	  });
+
+	options = filter (map <string,any> option, options, ``( option != nil ));
+
+	// for all host options check whether module from directive is loaded
+        foreach (map<string, any> values, options, ``{ checkLoadedModuleFor(values["KEY"]:""); });
+
+       if (currenthost!="main")
+        {
+	 options=add(options, $["KEY":"HostIP", "VALUE":(string)UI::QueryWidget(`id(`virtual_host), `Value)] );
+	 options=add(options, $["KEY":"VirtualByName", "VALUE": (UI::QueryWidget(`id(`resolution), `Value)==`name_based)?"1":"0" ] );
+	}
+	YaST::HTTPDData::ModifyHost (currenthost, options );
+
+	setHostOptions(nil);
+    }
+
+  /**
+   * Set host options
+   * @param new_options map < integer, map < string,any > >
+   */
+    global void setHostOptions( map < integer, map < string,any > > new_options)
+     {
+	host_options = new_options;
+     }
+    
+    /**
+      * Function for getting contents of the default host table
+      * @param descr map description map of the table
+      * @return list of items for the table
+      */
+    global define list HostTableContents (map descr) ``{
+	if (host_options == nil)
+	{
+	    // fill the data
+	    option_counter = 0;
+	    host_options = $[];
+	    deleted_options = [];
+	    list res = [];
+	    
+	    // flags, whether the required entries are present
+	    boolean servername = false;
+	    boolean serveradmin = false;
+	    boolean documentroot = false;
+    
+	    list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+	    foreach (map<string, any> option, host, ``{
+		string key = option["KEY"]: "unknown";
+		
+		if (key == "ServerName") servername = true;
+		if (key == "ServerAdmin") serveradmin = true;
+		if (key == "DocumentRoot") documentroot = true;
+	    
+		if ( key == "_SECTION" && option["SECTIONNAME"]:"" == "Directory" )
+		{
+		    host_options[option_counter] = $[
+			"KEY" : "Directory",
+			"VALUE" : option["SECTIONPARAM"]:"",
+			"DATA": option["VALUE"]:[],
+			"OVERHEAD" : option["OVERHEAD"]:""
+		    ];
+		    res = add (res, option_counter);
+		    option_counter = option_counter + 1;
+		}
+
+		if ( key == "_SECTION" && option["SECTIONPARAM"]:"" == "SSL" )
+		{
+			    host_options[option_counter] = $[
+				"KEY" : "SSL",
+				"VALUE" :  "", 
+				"DATA": option["VALUE"]:[],
+				"OVERHEAD" : option["OVERHEAD"]:""
+		 		];
+		    res = add (res, option_counter);
+		    option_counter = option_counter + 1;
+		}
+
+		// skip SECTIONS
+		if ( key == "_SECTION" ) 
+		{
+		 if (option["SECTIONNAME"]:"" == "IfModule")
+		  {
+		    host_options[option_counter] = $[
+                                "KEY" : option["SECTIONPARAM"]:"",
+                                "VALUE" :  "",
+                                "DATA": option["VALUE"]:[],
+                                "OVERHEAD" : option["OVERHEAD"]:""
+                                ];
+                    res = add (res, option_counter);
+                    option_counter = option_counter + 1;
+
+		  } else{
+			    option_counter = option_counter + 1;
+			    continue;
+			}
+		}
+		// skip HostIP for default host
+		else if (currenthost == "main" && key == "HostIP")
+		{
+		    host_options[option_counter] = option;
+		    option_counter = option_counter + 1;
+		    continue;
+		}
+		else
+		{
+		    host_options[option_counter] = option;
+		    res = add (res, option_counter);
+		    option_counter = option_counter + 1;
+		}
+	    });
+	    
+	    
+	    // required entries
+	    if (!servername)
+	    {
+		y2milestone ("Adding missing ServerName");
+		host_options[option_counter] = $[
+		    "KEY" : "ServerName",
+		    "VALUE" : ""
+		];
+		res = add (res, option_counter);
+		option_counter = option_counter + 1;
+	    }
+	    
+	    if (!serveradmin)
+	    {
+		y2milestone ("Adding missing ServerAdmin");
+		host_options[option_counter] = $[
+		    "KEY" : "ServerAdmin",
+		    "VALUE" : ""
+		];
+		res = add (res, option_counter);
+		option_counter = option_counter + 1;
+	    }
+	    
+	    if (!documentroot)
+	    {
+		y2milestone ("Adding missing DocumentRoot");
+		host_options[option_counter] = $[
+		    "KEY" : "DocumentRoot",
+		    "VALUE" : ""
+		];
+		res = add (res, option_counter);
+		option_counter = option_counter + 1;
+	    }
+	    return res;
+	}
+	else
+	{
+	    // just generate the list of ids
+	    return maplist( integer id, map<string,any> value, host_options,
+		``(id));
+	}
+    }
+    
+    /**
+      * Function for getting contents of the default host table
+      * @param descr map description map of the table
+      * @return list of items for the table
+      */
+    global define list SSLTableContents (map descr) ``{
+       if (host_options == nil)
+        {
+            // fill the data
+            option_counter = 0;
+            host_options = $[];
+            deleted_options = [];
+            list res = [];
+
+            list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+            foreach (map<string, any> option, host, ``{
+                string key = option["KEY"]: "unknown";
+                // skip non-SSL options
+                if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONPARAM"]:"unknown" == "SSL")
+                {
+                        foreach(map<string, any> value, option["VALUE"]:[], {
+                        host_options[option_counter] = value;
+                        res = add (res, option_counter);
+                        option_counter = option_counter + 1;
+                        });
+                }
+                else
+                {
+		    if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory")
+		     {
+			foreach(map<string, any> value, option["VALUE"]:[], {
+			  if (value["KEY"]:"unknown" == "_SECTION" && value["SECTIONPARAM"]:"unknown" == "SSL" && value["VALUE"]:[] != [])
+			   {
+				foreach(map<string, any> directive, value["VALUE"]:[],{
+					boolean found=false;
+					foreach(integer key, any val, host_options, {if ( val == directive ) found=true;});
+					if (found == false)
+					 {
+		                          host_options[option_counter] =  directive;
+			                  res = add (res, option_counter);
+				          option_counter = option_counter + 1;
+					 }
+				});
+			   }
+                        });
+		     }
+                    option_counter = option_counter + 1;
+                    continue;
+                }
+            });
+            return res;
+        }
+        else
+        {
+            // just generate the list of ids
+            return maplist( integer id, map<string,any> value, host_options, ``(id));
+        }
+
+    }
+    /**
+      * Delete function of the global table
+      * @param opt_id any option id of selected option
+      * @param opt_key any option key of selected option
+      * @return boolean true if was really deleted
+      */
+    global define boolean HostTableEntryDelete (any opt_id, string opt_key) ``{
+	if (! Confirm::DeleteSelected()) {
+	    return false;
+	}
+	    
+	host_options = filter ( integer opt, map<string,any> value
+	    , host_options, ``(opt != opt_id) );
+	    
+	deleted_options = add (deleted_options, (integer)opt_id);
+	
+	HttpServer::modified = true;
+	return true;
+    }
+
+    /**
+     *  Handler for editing default host. Handles additional buttons, like logs and modules.
+     *  Rest is passed to TablePopup::TableHandle.
+     *
+     *  @param key	the key modified
+     *  @param event	event description
+     *  @return symbol 	the result of the handling
+     */
+    global define symbol handleHostTable(string key, map event ) ``{
+	if ( event["EventType"]:"" == "WidgetEvent" && event["WidgetID"]:nil == `_tp_add ) dir_value="";
+		else dir_value = host_options[(integer)UI::QueryWidget (`_tp_table, `CurrentItem), "VALUE"]:"";
+
+	// handle menu button entries
+/*
+	if( event["ID"]:nil == `show_access_log ) {
+	    return showAccessLogPopup( key, event );
+	}
+	else if( event["ID"]:nil == `show_error_log ) {
+	    return showErrorLogPopup( key, event );
+	}
+*/
+	symbol res = TablePopup::TableHandleWrapper ( key, event );
+/*
+	if (update_contents)
+	{
+	    update_contents = false;
+	    TablePopup::TableInit( hostwidget, key);
+	}
+*/
+	return res;
+    }
+
+    /**
+      * Fallback initialization function of a table entry / popup
+      * @param option_id any unique option id
+      * @param option_type string the name of the key in the option list description
+      */
+    global define void DefaultHostPopupInit (any option_id, string option_type) ``{
+	any value = host_options[(integer)option_id, "VALUE"]:"";
+	
+	if (option_type == "VirtualByName")
+	{
+	    UI::ChangeWidget (`id (option_type), `CurrentButton, value);
+	} else if (option_type == "ServerName"){
+                 UI::ChangeWidget (`id (option_type), `Value, Punycode::DecodeDomainName((string)value) );
+		}
+	else
+	{
+	    UI::ChangeWidget (`id (option_type), `Value, value);
+	}
+    }
+
+    /**
+      * Fallback store function of a table entry / popup
+      * @param option_id any option id
+      * @param option_type string option key
+      */
+    global define void DefaultHostPopupStore (any option_id, string option_type) ``{
+	symbol property = (option_type == "VirtualByName") ? `CurrentButton : `Value;
+	
+	if (option_id == nil)
+	{
+	    // new option
+	    host_options[ option_counter ] = $[
+		"KEY": option_type,
+	    ];
+	    option_id = option_counter;
+	    option_counter = option_counter + 1;
+	}
+        string value = (string)UI::QueryWidget (`id (option_type), property);
+        if (option_type=="ServerName") value = Punycode::EncodeDomainName(value);
+        host_options[ (integer)option_id, "VALUE" ] = value;
+        HttpServer::modified = true;
+    }
+
+    /**
+      * Fallback summary function of a table entry / popup
+      * @param option_id any option unique id
+      * @param option_type string option type
+      * @return string table entry summary
+      */
+    global define string HostTableEntrySummary (any option_id, string option_type) ``{
+	if (option_type == "VirtualByName")
+	{
+	    if (host_options[ (integer)option_id, "VALUE"]:"" == "1")
+	    {
+		// translators: table entry text for name-based vhosts
+		return _("Resolution via HTTP Headers");
+	    }
+	    else
+	    {
+		// translators: table entry text for IP-based vhosts
+		return _("Resolution via IP Address Used");
+	    }
+	}
+	else if (option_type == "Directory")
+	{
+	    return host_options[ (integer)option_id, "VALUE" ]:"" + "...";
+	} else if (option_type == "ServerName"){
+                return Punycode::DecodeDomainName(host_options[ (integer)option_id, "VALUE" ]: "");
+		}
+	else
+	{
+	    return host_options[ (integer)option_id, "VALUE" ]: "";
+	}
+    }
+
+  /**
+   * Store SSL type
+   * @param option_id any
+   * @param option_type string
+   */
+    global void SSLTypeStore (any option_id, string option_type)
+    {
+	// it is a radio button group
+	host_options[(integer)option_id, "VALUE"] = 
+	    UI::QueryWidget( `id(option_type), `CurrentButton );
+	HttpServer::modified = true;
+    }
+
+  /**
+   * Contents of host table
+   * @param descr map
+   * @return list host contents
+   */
+    global define list DirTableContents (map descr) ``{
+	if (host_options == nil)
+	{
+	    // fill the data
+	    option_counter = 0;
+	    host_options = $[];
+	    deleted_options = [];
+	    list res = [];
+
+	    list< map<string, any> > host = YaST::HTTPDData::GetHost(currenthost);
+	    foreach (map<string, any> option, host, ``{
+		string key = option["KEY"]: "unknown";
+
+		if ( option["KEY"]:"unknown" == "_SECTION" && option["SECTIONNAME"]:"unknown" == "Directory" 
+									&& option["SECTIONPARAM"]:"unknown"==dir_value)
+		{
+			foreach(map<string, any> value, option["VALUE"]:[], {
+			if (!(value["KEY"]:""=="_SECTION" && value["SECTIONPARAM"]:""=="SSL"))
+			 {
+			  host_options[option_counter] = value;
+			  res = add (res, option_counter);
+			  option_counter = option_counter + 1;
+			 }
+			});
+		}
+		else
+		{
+		    option_counter = option_counter + 1;
+		    continue;
+		}
+	    });
+	    return res;
+	}
+	else
+	{
+	    // just generate the list of ids
+	    return maplist( integer id, map<string,any> value, host_options, ``(id));
+	}
+    }
+
+// ************************************ modules list ***************************
+
+    /**
+      * Initialize function of a widget
+      * @param key any widget key of widget that is processed
+      */
+    global define void initModules (string key) ``{
+	list< map<string,any> > known = YaST::HTTPDData::GetKnownModules();
+	list<string> modules = YaST::HTTPDData::GetModuleList();
+	integer index = -1;
+       // create temporary list of maps from modules
+       list< map<string, any > > listmodules = maplist(string name , modules,{
+                       return( mapmap(string k,any v, $["default":"1", "name":name, "summary":_("unknown"), "requires":""],
+                               {return ($[k:v]); }));
+       });
+       // add to known modules list modules from temporary list
+       foreach(map<string, any> mapmodules, listmodules, {
+        boolean finded=false;
+        foreach(map<string, any> mapknownmodules, known, {
+		//translators: list of known and unknown modules
+         if ( mapknownmodules["name"]:_("unknown") ==  mapmodules["name"]:_("unknown") ) finded=true;
+
+        });
+         if (!finded) known=add(known, mapmodules);
+       });
+	list<term> items = maplist (map<string,any> mod, known , ``{
+	    index = index + 1;
+	    // translators: server module status unknown
+	    string name = mod["name"]:_("unknown");
+//	if ((mod["default"]:"0" == "1") && (!contains(modules, name))) YaST::HTTPDData::ModifyModuleList ([name], true);
+	    // translators: server module status
+	    return `item (`id (index), name, (contains( modules, name)) ? _("Enabled") 
+		// translators: server module status
+		: _("Disabled"), mod["summary"]:"" );
+	});
+	UI::ChangeWidget (`id (`modules), `Items, items);
+	UI::SetFocus (`id (`modules));
+    }
+
+    global boolean validateModules(string id, map key){
+	boolean valid=true;
+	list<string> selected = [];
+	foreach(term i, (list<term>)UI::QueryWidget(`modules, `Items), {
+		if (i[2]:""==_("Enabled")) selected=add(selected, i[1]:"");
+	});
+	map<string, any> all_modules =$[];
+	foreach(map row, YaST::HTTPDData::GetKnownModules(), {
+		all_modules[row["name"]:""] = remove(row, "name");
+	});
+	foreach(string mod, selected, {
+	  string require =  all_modules[mod, "requires"]:"";
+	  if (size(require)>0){
+	    if (!contains(selected, require)){
+		string message = sformat("%1:\n %2 %3 %4\n%5", _("Modules dependency problem"), mod, _("requires"), require, _("Enable required module or disable first one."));
+		Popup::Error(message);
+		y2warning("Error message: %1", message);
+		valid=false;
+	    }
+	  }
+	});
+	return valid;
+    }
+
+    /**
+      * Handle function of a widget
+      * @param key any widget key of widget that is processed
+      * @param event any event that occured
+      * @return symbol symbol for WS or nil
+      */
+    global define symbol handleModules (string key, map event) ``{
+	UI::SetFocus (`id (`modules));
+        if (event["ID"]:nil == `toggle)
+        {
+	    integer ci = (integer) UI::QueryWidget( `id( `modules ), `CurrentItem );
+
+//	    string status = (string) select( (term) UI::QueryWidget( `id(`modules), `Item(ci) ), 2, _("Enabled") );
+	    string status = ((term)UI::QueryWidget( `id(`modules), `Item(ci) ))[2]: _("Enabled") ;
+//	    string name = (string) select( (term) UI::QueryWidget( `id(`modules), `Item(ci) ), 1, nil );
+	    string name = ((term) UI::QueryWidget( `id(`modules), `Item(ci) ))[1]:"";	
+	    y2debug( "Status of module: %1", status );
+	    if( status == _("Enabled") ) status = _("Disabled");
+	 	   else status = _("Enabled");
+	    UI::ChangeWidget( `id( `modules ), `Item( ci , 1 ) , status );
+	foreach(map<string, any> mods, YaST::HTTPDData::GetKnownModules(), {
+	 if (name == mods["name"]:"" && status == _("Enabled") && mods["exclude"]:nil != nil) 
+	  {
+		foreach(string exclude, mods["exclude"]:[], {
+		 YaST::HTTPDData::ModifyModuleList ([exclude], false);
+		  foreach (any excl_row, (list)UI::QueryWidget( `id(`modules), `Items ), {
+		    if (exclude == ((term)excl_row)[1]:"" ) {
+			integer row = (integer)((term)    ((term)excl_row)[0]:nil)[0]:nil;
+			if (row != nil) UI::ChangeWidget( `id( `modules ), `Item( row , 1 ) , _("Disabled") );
+			};
+		  });
+		 y2milestone("Disabling module %1 excluded by %2", exclude, name);
+		});
+	 }
+ 
+	});
+	    YaST::HTTPDData::ModifyModuleList ([name], status == _("Enabled"));
+	    HttpServer::modified = true;
+        }
+	else if (event["ID"]:nil == `add_user)
+        {
+
+	string module_dirs=sformat("/usr/lib*/apache2/ /usr/lib*/apache2-%1/", (PackageSystem::Installed("apache2-prefork"))?"prefork":"worker");
+	// list of all installed modules
+	    list <string> all_modules = splitstring(((map<string, any>) SCR::Execute(.target.bash_output,
+		sformat("ls %1|grep \".so$\"|cut -d. -f1|cut -d_ -f2-", module_dirs)))["stdout"]:"", "\n");
+	    list<string> existing = maplist (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), ``(
+		mod["name"]:_("unknown")));
+	// extract unknown modules from all installed
+	    list<string> unknown_modules = [];
+	    foreach(string single_module, all_modules, {
+		if ((!contains(existing, single_module))&&(single_module != "")) unknown_modules=add(unknown_modules, single_module);
+	    });
+	y2milestone("List of new modules %1", unknown_modules);
+	   UI::OpenDialog(
+            `VBox(
+		// translators: combo box for selsect module from installed unknown modules
+		`ComboBox(`id(`mod), _("New Module &Name:"),  unknown_modules ),
+                `HBox(
+                    `PushButton(`id(`ok), `opt(`default), Label::OKButton() ),
+                    `PushButton(`id(`cancel), Label::CancelButton() )
+            	    )
+        	)
+    	    );
+	    
+	    UI::SetFocus( `id( `mod ) );
+
+	    symbol ret = (symbol) UI::UserInput();
+	    
+	    if( ret == `ok ) {
+		string mod = String::CutBlanks( (string) UI::QueryWidget( `id(`mod), `Value ) );
+		if( mod == "" ) {
+		    // translators: error message
+		    Report::Error( _("A name for the module to add is required.") );
+		} else if( contains( existing, mod )  ) {
+		    // translators: error message
+		    Report::Error( _("The module is already in the list.") );
+		} else {
+		    YaST::HTTPDData::ModifyModuleList( [mod], true );
+		    HttpServer::modified = true;
+		}
+	    }
+	    UI::CloseDialog();
+	    initModules(nil);
+        }
+
+    }
+
+// ************************************ listen settings ************************
+
+    /**
+      * Initialize function of a widget
+      * @param key any widget key of widget that is processed
+      */
+    global define void initListenSettings (string key) ``{
+
+	integer id = -1;
+	list< map<string,any> > listen = YaST::HTTPDData::GetCurrentListen();
+	y2milestone ("Listen: %1", listen);
+	list<term> items = maplist( map<string,any> litem, listen, ``{ id = id+1; return listen2item(litem, id); } );
+	UI::ChangeWidget (`id (`listen), `Items, items);
+	
+	// enable/disable buttons - at least single Listen must be present
+	UI::ChangeWidget (`id (`delete), `Enabled, size( listen ) > 1 );
+	
+	// set focus
+	UI::SetFocus (`id (`listen));
+    }
+
+    /**
+      * Handle function of a widget
+      * @param key any widget key of widget that is processed
+      * @param event map event that occured
+      * @return symbol symbol for WS or nil
+      */
+    global define symbol handleListenSettings (string key, map event) ``{
+	UI::SetFocus (`id (`listen));
+	integer current = (integer) UI::QueryWidget (`id (`listen), `CurrentItem);
+	term currentitem = current != nil ? (term) UI::QueryWidget( `id(`listen), `Item(current) ) : `item( -1, "", "");
+	string network = (string) currentitem[1]:nil;
+	// translators: all network addresses Listen type
+	if( network == _("All Addresses") ) network = "";
+	string port = currentitem[2]:"";
+
+        if (event["ID"]:nil == `add)
+        {
+	    // translators: all network addresses Listen type
+	    map<string,string> res = AskListen( _("All Addresses"), "" );
+	    if( res != nil ) {
+		if (false) // FIXME: CreateListen error reporting
+		{
+		    // translators: error message for adding a new Listen statement
+		    Popup::Error( sformat(_("The entry '%1' already exists."), res) );
+		} 
+		else
+		{
+//		  if (IP::Check6(res["ADDRESS"]:"")) res["ADDRESS"]=sformat("[%1]", res["ADDRESS"]:"");
+		    YaST::HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
+			res["ADDRESS"]:"" );
+y2internal("get %1", YaST::HTTPDData::GetCurrentListen());
+		    HttpServer::modified = true;
+		}
+	    }
+        }
+	else if( event["ID"]:nil == `delete )
+	{
+	    boolean validate = size( YaST::HTTPDData::GetCurrentListen() ) != 0;
+
+	    y2debug( "Validation result: %1", validate );
+	
+	    if( !validate ) {
+		// translators: error message
+		Popup::Error(_("The list of the ports to which the server should
+listen cannot be empty.") );
+	    return nil;
+	    }
+	    // remove the entry
+	    YaST::HTTPDData::DeleteListen( tointeger(port), tointeger(port), network );
+	    HttpServer::modified = true;
+	}
+	else if( event["ID"]:nil == `edit )
+	{
+	    map<string,string> res = AskListen( network, port );
+	    if( res != nil ) {
+		// remove the old one
+		YaST::HTTPDData::DeleteListen( tointeger(port), tointeger(port),
+			network );
+		// create the new one
+		YaST::HTTPDData::CreateListen( tointeger(res["PORT"]:"80"), tointeger(res["PORT"]:"80"),
+			res["ADDRESS"]:"" );
+		HttpServer::modified = true;
+	    }
+	}
+	
+	initListenSettings(nil);
+    }
+
+    
+// ************************************ server status ***********************
+
+    /**
+      * Initialize function of a widget
+      * @param key any widget key of widget that is processed
+      */
+    global define void initServiceStatus (string key) ``{
+	if( YaST::HTTPDData::GetService()!=nil && YaST::HTTPDData::GetService()  ) {
+	    UI::ChangeWidget (`id ("enabled"), `Value, true);
+	}
+	else 
+	{
+	    UI::ChangeWidget (`id ("disabled"), `Value, true);
+	}
+    }
+
+    /**
+      * Store function of a widget
+      * @param key any widget key of widget that is processed
+      * @param event map event that occured
+      */
+    global define void storeServiceStatus (string key, map event) ``{
+	YaST::HTTPDData::ModifyService( (boolean) UI::QueryWidget ( `id("enabled"), `Value ) );
+	HttpServer::modified = true;
+    }
+  /**
+   * Handling service status
+   * @param key string
+   * @param event map
+   * @return symbol (`overview_table, `edit. `menu)
+   */
+    global symbol handleServiceStatus (string key, map event)
+    {
+	// enable/disable overview widget
+	boolean enable = (boolean)UI::QueryWidget (`id("enabled"), `Value );
+
+	UI::ChangeWidget (`overview_table, `Enabled, enable);	
+	UI::ChangeWidget (`edit, `Enabled, enable);	
+	UI::ChangeWidget (`menu, `Enabled, enable);
+	
+	return nil;
+    }
+
+/* these are for future use: */
+
+// error message - the entered ip address is not found
+string __nonconfigured_ipaddress = _("The IP address is not configured
+on this machine.");
+
+// *********************** Wizard Dialog 1 Widgets *****************************************
+
+  /**
+   * Initialize open port
+   * @param key string
+   */
+  global define void initOpenPort (string key) ``{
+	string port=nil;
+
+	foreach(map listens, YaST::HTTPDData::GetCurrentListen(), 
+		{
+		if ( port != "80" ) port = listens["PORT"]:"80";
+
+		} );
+ if ( port == nil ) port="80";
+ y2milestone("Port finally :  %1", port);
+ UI::ChangeWidget(`id(key), `Value, port);
+ }
+
+  /**
+   * Handling open port
+   * @param key string
+   * @param event map
+   * @return symbol nil
+   */
+global symbol handleOpenPort(string key, map event) ``{
+ return nil;
+}
+
+  /**
+   * Validation open port
+   * @param key string
+   * @param event string
+   * @return boolean validate open port
+   */
+global boolean validateOpenPort(string key, map event) ``{
+ string value = (string) UI::QueryWidget(`id(key), `Value);
+ y2milestone("validate open port ... %1", value);
+ if( ! regexpmatch( value, "^[ \t]*[0-9]+[ \t]*$" ) ) {
+	//translators: popup error
+	Popup::Error(_("Invalid port number."));
+	 UI::SetFocus(`id(key));
+	 return false;
+	} else return true;
+}
+
+  /**
+   * Initialize listen interfaces
+   * @param key string
+   */
+
+global define void initListenInterfaces (string key) ``{
+
+ y2milestone("Initializing Listen Interfaces ... %1", key);
+ boolean all = false;
+ foreach(map listens, YaST::HTTPDData::GetCurrentListen(),
+  {
+   if ( listens["ADDRESS"]:"" == "" ) all = true;
+
+  } );
+
+ list<term> ips =  maplist( string ip, string dev, HttpServer::ip2device, { 
+	if (all) return `item(ip, true);
+	 else {
+	boolean checked = false;
+	foreach(map listens, YaST::HTTPDData::GetCurrentListen(), {if ( listens["ADDRESS"]:"" == ip ) checked=true;});
+	return `item(ip, checked);
+	}
+	} ) ;
+//translators: multi selection box
+ UI::ReplaceWidget(`id(mode_replace_point_key), `MultiSelectionBox(`id("multi_sel_box"),_("&Listen on Interfaces"),ips));
+}
+
+  /**
+   * 
+   * @param key string
+   * @param event map
+   * @return boolean validate interfaces
+   */
+global boolean validateListenInterfaces(string key, map event) ``{
+ if( size((list)UI::QueryWidget( `id("multi_sel_box"), `SelectedItems )) < 1 ) {
+	//translators: popup error - multi selection box with server network adresses
+        Popup::Error(_("At least one interface must be selected."));
+         UI::SetFocus(`id(key));
+         return false;
+        } else return true;
+}
+
+
+
+// *********************** Wizard Dialog 2 Widgets *****************************************
+  /**
+   * Initialization of checkboxes
+   * @param key string
+   */
+define void initScriptModules(string key) ``{
+	boolean enable_php5=false;
+	boolean enable_perl=false;
+	boolean enable_python=false;
+//	boolean enable_ruby=false;
+list<string> modules = YaST::HTTPDData::GetModuleList();
+	if (contains(modules, "php5")) enable_php5 = true;
+	if (contains(modules, "perl")) enable_perl = true;
+	if (contains(modules, "python")) enable_python = true;
+//	if (contains(modules, "ruby")) enable_ruby = true;
+
+	UI::ReplaceWidget (`id (`scr_mod_replace),
+		    `HBox(`HSpacing(6),
+		     `VBox(
+		     `VSpacing(3),	//translators: checkbox - support for php script language
+                      `Left(`CheckBox(`id(`scr_mod_php5),_("Enable &PHP5 Scripting"), enable_php5)),
+			`VSpacing(1),   //translators: checkbox - support for perl script language
+                      `Left(`CheckBox(`id(`scr_mod_perl), _("Enable P&erl Scripting"), enable_perl)),
+                        `VSpacing(1),   //translators: checkbox - support for python script language
+                      `Left(`CheckBox(`id(`scr_mod_python), _("Enable P&ython Scripting"), enable_python)),
+//                        `VSpacing(1),   //translators: checkbox - support for ruby script language
+//                      `Left(`CheckBox(`id(`scr_mod_ruby), _("Enable &Ruby Scripting"), enable_ruby)),
+		     `VSpacing(2) 
+			)));
+	y2milestone("initializing script modules");
+}
+
+// *********************** Wizard Dialog 5 Widgets *****************************************
+
+  /**
+   * Handler for expert configuration
+   * @param key string
+   * @param event map
+   * @return symbol (nil, `expert)
+   */
+global define symbol handleExpertConf (string key, map event) ``{
+ if (event["ID"]:nil == "expert_conf" )  
+		{
+		 init_tab="listen";
+		 return (symbol) `expert;
+		}
+	else return (symbol) nil;
+ }
+  /**
+   * Get service start
+   * @return status boolean
+   */
+
+boolean getServiceAutoStart() ``{
+ if (YaST::HTTPDData::GetService()!=nil && YaST::HTTPDData::GetService()) return true;
+	else return false;
+}
+
+  /**
+   * Set service start
+   * @param status boolean
+   */
+void setServiceAutoStart(boolean status) ``{
+ YaST::HTTPDData::ModifyService(status);
+}
+
+ /**
+  * Initialize widget with summary text
+  * @param key string
+  */
+define void initSummaryText (string key) ``{
+
+   UI::ReplaceWidget(`id(`summary_text_rp), `RichText( HttpServer::Summary()[0]:"error" ));
+}
+
+/* EOF */
+}
+
