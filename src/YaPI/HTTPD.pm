@@ -526,7 +526,7 @@ sub createVH (){
  if ($byname eq 0){
 	 push(@{$vhost_files->{'ip-based'}},  {HOSTID => "$ip/$servername", HostIP => $ip, DATA => \@newdata});
 	} else {
-		 $vhost_files->{$ip} =  [{HOSTID => "$ip/$servername", HostIP => $ip, DATA => \@newdata}];
+		 $vhost_files->{$servername} =  [{HOSTID => "$ip/$servername", HostIP => $ip, DATA => \@newdata}];
 		}
 }
 
@@ -546,12 +546,11 @@ sub deleteVH (){
 		 }
 		}
 	 case "main" { delete $vhost_files->{'main'} if ($hostid eq 'main'); }
-	 else { 
-	       foreach my $hostList ( $vhost_files->{$key} ) {
-	           foreach my $hostentryHash ( @$hostList ) { delete ($vhost_files->{$key}) if ($hostentryHash->{HOSTID} eq $hostid); }
-		  }
-	      }
-	 }	
+	 else {
+		my $vhost = $vhost_files->{$key}->[0]->{'HOSTID'};
+		delete $vhost_files->{$key} if ($vhost eq $hostid);
+	 }
+	 }
       }
 }
 
@@ -867,28 +866,21 @@ sub DeleteHost {
 
 sub writeHosts (){
     my $self = shift;
-    my @vhosts = ();
 
-    @vhosts = @{$vhost_files->{'ip-based'}} if (defined $vhost_files->{'ip-based'}); 
+    # default server
+    my %data = ( 'default-server.conf' =>$vhost_files->{'main'});
 
-     foreach my $key ( keys(%{$vhost_files}) ) {
-	switch($key)
-	 {
-	 case "ip-based" {
-		}
-	 case "main" {}
-	 else { 
-	       foreach my $hostList ( $vhost_files->{$key} ) {
-	           foreach my $hostentryHash ( @$hostList ) {
-	               push( @vhosts, $hostentryHash ) ;
-	           }
-		  }
-	      }
-	 }	
-     }
+    #ip based vhost
+    my @ip_vhosts = @{$vhost_files->{'ip-based'}} if (defined $vhost_files->{'ip-based'}); 
+    my $size = @ip_vhosts;
+    $data{'ip-based_vhosts.conf'} = \@ip_vhosts if ($size>0);
 
- my %data = ( 'default-server.conf' =>$vhost_files->{'main'});
- $data{'yast2_vhosts.conf'} = \@vhosts ;
+    #name based vhost
+    foreach my $vhost ( keys(%{$vhost_files}) ) {
+      next if ($vhost eq 'main' || $vhost eq 'ip-based');
+      my @name_vhost = @{$vhost_files->{$vhost}};
+      $data{"$vhost.conf"} = \@name_vhost;
+    }
 
  SCR->Write(".http_server.vhosts", \%data);
 }
