@@ -1371,6 +1371,13 @@ EXAMPLE
 
 =cut
 
+# http://httpd.apache.org/docs/2.2/mod/mpm_common.html#listen
+# We support 3 possible values for Listen :
+# [IPv6]:port
+# IPv4:port
+# port
+#
+
 BEGIN { $TYPEINFO{GetCurrentListen} = ["function", ["list", [ "map", "string", "any" ] ] ]; }
 sub GetCurrentListen {
     my $self = shift;
@@ -1380,17 +1387,16 @@ sub GetCurrentListen {
         return $self->SetError( %{SCR->Error(".http_server.listen")} );
     }
     foreach my $new ( @{$data[0]} ) {
-     my ($ip, $fp, $tp, $port) = ('', '', '', '');
+     my ($ip, $port) = ('', '');
      if ($new =~ m/\[([\w\W]*)\]([\w\W]*)/){
       $ip="[$1]";
-      if ($2 =~ m/([\d\:]*)/){
-       ($fp, $tp) = split(/:/, $1);
-      } else{
-             ( $ip, $fp, $tp ) = split(/:/, $new);
-            }
-      $fp=$tp if ($fp eq '');
-      $port = ($fp eq $tp)?($fp):($fp.'-'.$tp);
-     } elsif ($new =~/[\D]*([\d]*)[\D]*/){
+      $new=$2;
+     } elsif ($new =~ m/([\d\.]*):([\w\W]*)/){
+	$ip=$1;
+	$new=$2;
+     }
+
+     if ($new =~/[\D]*([\d]*)[\D]*/){
       $port=$1;
      }
     push(@ret, {ADDRESS => $ip, PORT=>$port});
