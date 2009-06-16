@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Jun 16 14:27:16 CEST 2009 - mvidner@suse.cz
+
+- Using autodocs-ycp.ami, which contains a fix for automake 1.11.
+
+-------------------------------------------------------------------
 Thu Apr 23 18:38:08 CEST 2009 - mzugec@suse.cz
 
 - fixed listen.conf parsing problem (bnc#495429)
