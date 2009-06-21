@@ -11,7 +11,8 @@ BuildArchitectures:	noarch
 Summary:	YaST2 - HTTP Server Configuration
 
 %description
--
+This package contains the YaST2 component for HTTP server (Apache2)
+configuration.
 
 @PREP@
 
