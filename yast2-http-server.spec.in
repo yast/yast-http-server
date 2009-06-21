@@ -8,7 +8,7 @@ Requires:       yast2 >= 2.16.73
 
 BuildArchitectures:	noarch
 
-Summary:	Configuration of http-server
+Summary:	YaST2 - HTTP Server Configuration
 
 %description
 -
