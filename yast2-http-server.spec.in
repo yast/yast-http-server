@@ -1,6 +1,7 @@
 @HEADER-COMMENT@
 
 @HEADER@
+Group:	System/YaST
 License: GPL v2 or later
 BuildRequires:	yast2-network docbook-xsl-stylesheets doxygen libxslt perl-XML-Writer popt-devel sgml-skel update-desktop-files yast2 yast2-devtools yast2-packagemanager-devel yast2-perl-bindings yast2-testsuite libzio
 Requires:	yast2-network yast2-perl-bindings libzio
