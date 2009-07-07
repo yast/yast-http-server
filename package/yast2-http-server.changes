@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Jul  7 13:19:02 CEST 2009 - mzugec@suse.de
+
+- modules ordering problem (bnc#518816)
+- validation of modules dependency
+- 2.13.35 
+
+-------------------------------------------------------------------
 Fri Mar 20 19:25:33 CET 2009 - mzugec@suse.de
 
 - improved IP addr.validation for ip-based vhosts (bnc#486476)
