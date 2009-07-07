@@ -630,6 +630,7 @@ global string HostId2Key( map desc, any id );
 
 global void initModules (string key);
 global symbol handleModules (string key, map event);
+global boolean validateModules (string key, map event);
 global void initListenSettings (string key);
 global symbol handleListenSettings (string key, map event);
 global void initServiceStatus (string key);
@@ -1450,6 +1451,8 @@ global map<string, map <string, any> > widgets = $[
             ),
             "init" : initModules,
             "handle" : handleModules,
+	    "validate_type" : `function,
+	    "validate_function" : validateModules,
             "help" : HELPS["modules"]:"",
 
          ],
@@ -2422,7 +2425,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	integer index = -1;
        // create temporary list of maps from modules
        list< map<string, any > > listmodules = maplist(string name , modules,{
-                       return( mapmap(string k,any v, $["default":"1", "name":name, "summary":_("unknown"), "required":"0", "suggested":"0"],
+                       return( mapmap(string k,any v, $["default":"1", "name":name, "summary":_("unknown"), "requires":""],
                                {return ($[k:v]); }));
        });
 
@@ -2449,6 +2452,30 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	});
 	UI::ChangeWidget (`id (`modules), `Items, items);
 	UI::SetFocus (`id (`modules));
+    }
+
+    global boolean validateModules(string id, map key){
+	boolean valid=true;
+	list<string> selected = [];
+	foreach(term i, (list<term>)UI::QueryWidget(`modules, `Items), {
+		if (i[2]:""==_("Enabled")) selected=add(selected, i[1]:"");
+	});
+	map<string, any> all_modules =$[];
+	foreach(map row, YaST::HTTPDData::GetKnownModules(), {
+		all_modules[row["name"]:""] = remove(row, "name");
+	});
+	foreach(string mod, selected, {
+	  string require =  all_modules[mod, "requires"]:"";
+	  if (size(require)>0){
+	    if (!contains(selected, require)){
+		string message = sformat("%1:\n %2 %3 %4\n%5", _("Modules dependency problem"), mod, _("requires"), require, _("Enable required module or disable first one."));
+		Popup::Error(message);
+		y2warning("Error message: %1", message);
+		valid=false;
+	    }
+	  }
+	});
+	return valid;
     }
 
     /**

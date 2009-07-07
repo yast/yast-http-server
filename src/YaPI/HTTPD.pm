@@ -954,7 +954,9 @@ EXAMPLE
 BEGIN { $TYPEINFO{GetModuleList} = ["function", [ "list", "string" ] ]; }
 sub GetModuleList {
     my $self = shift;
-    my $data = SCR->Read('.sysconfig.apache2.APACHE_MODULES'); # FIXME: Error handling
+#    my $data = SCR->Read('.sysconfig.apache2.APACHE_MODULES'); # FIXME: Error handling
+    my $data = SCR->Execute('.target.bash_output', 'a2enmod -l')->{'stdout'}; # FIXME: Error handling
+
     $data =~ s/mod_//g;
 
     return [ split(/\s+/, $data) ];
@@ -1069,8 +1071,12 @@ sub ModifyModuleList {
     }
     @newList = (@known, @unknown);
 
-    SCR->Write('.sysconfig.apache2.APACHE_MODULES', join(' ',@newList));
-    SCR->Write('.sysconfig.apache2', undef);
+    SCR->Execute('.target.bash', 'for module in $(a2enmod -l);do a2enmod -d $module; done');
+    foreach my $module (@newList){
+    	SCR->Execute('.target.bash', "a2enmod $module");
+    }
+#    SCR->Write('.sysconfig.apache2.APACHE_MODULES', join(' ',@newList));
+#    SCR->Write('.sysconfig.apache2', undef);
     return 1;
 }
 
