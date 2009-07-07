@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jul  7 12:26:55 CEST 2009 - mzugec@suse.cz
+
+- defined proxy_ajp in HTTPModules.pm (bnc#518816)
+- 2.18.9 
+
+-------------------------------------------------------------------
 Tue Jun 16 14:27:16 CEST 2009 - mvidner@suse.cz
 
 - Using autodocs-ycp.ami, which contains a fix for automake 1.11.

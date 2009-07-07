@@ -559,6 +559,13 @@ textdomain "http-server";
 												"values" => [ "On", "Off", "Full", "Block" ] }
                                 ]
     },
+    'proxy_ajp' => {
+                    summary   => __("AJP support module for mod_proxy"),
+                    packages  => [],
+                    default   => 0,
+		    requires  => "proxy",
+                    position  => 395,
+    },
     'proxy_connect' => {
                     summary   => __("mod_proxy extension for CONNECT request handling"),
                     packages  => [],
