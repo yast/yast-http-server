@@ -121,13 +121,16 @@ sub parse_vhost_files {
      foreach my $vhost ( @$conf )        {
      if ($file eq 'default-server.conf'){
       $hash_table{'main'} = $vhost;
-#      foreach my $data ( @{$vhost->{'DATA'}} )
-#       { if ($data->{'KEY'} eq 'NameVirtualHost'){ $hash_table{ $data->{'VALUE'} } = []; }
-#       }
       } else {
+	   my $key='ip-based';
+           if (defined($vhost->{'VirtualByName'}) && $vhost->{'VirtualByName'} eq '1'){
+	     foreach my $row ( @{$vhost->{'DATA'}} ){
+	       $key=$row->{'VALUE'} if($row->{'KEY'} eq 'ServerName');	  
+	    }
+	  }
 	   if (exists $vhost->{'HostIP'}){
-             if ( exists $hash_table{  $vhost->{'HostIP'}} ){ push(@{$hash_table{  $vhost->{'HostIP'}}}, $vhost); }
-                 else { push(@{$hash_table{'ip-based'}}, $vhost); }
+             if ( defined $hash_table{  $key} ){ push(@{$hash_table{  $key }}, $vhost); }
+                 else { push(@{$hash_table{$key}}, $vhost); }
 			}
          }
       }
@@ -152,41 +155,6 @@ sub parse_listen_conf {
                                  code    => "OPEN_FAILED"
         );
     }
-}
-
-#sub parse_module_selection() {
-#    my $class = shift;
-#    my $dir = Directory::vardir();
-#    my $dir = "/var/lib/YaST2/"; # FIXME: calling Directory::vardir later
-#    my @ret = ();
-
-#    if( open(FILE, "< $dir/httpd_active_module_selections.conf") ) {
-#        @ret = <FILE>;
-#        chomp(@ret);
-#       close(FILE);
-#    } ELse {
-#        return $class->SetError( summary => sprintf(_("unable to open file %s/httpd_active_module_selections.conf for reading: %s"),$dir,$!),
-#                                 code    => "OPEN_FAILED"
-#        );
-#    }
-
-#    return \@ret;
-#}
-
-sub write_module_selection {
-    my $class = shift;
-    my $newSelection = shift;
-    my $dir = "/var/lib/YaST2/"; # FIXME: calling Directory::vardir later
-
-    if( open(FILE, "> $dir/httpd_active_module_selections.conf") ) {
-        print FILE join("\n",@$newSelection);
-        close(FILE);
-    } else {
-        return $class->SetError( summary => sprintf(_("unable to open file %s/httpd_active_module_selections.conf for writing: %s"),$dir,$!),
-                                 code    => "OPEN_FAILED"
-        );
-    }
-    return 1;
 }
 
 # generic apache2 configfile format parser
@@ -245,6 +213,11 @@ sub section2string {
 sub writeVH {
     my $class = shift;
     my $data = shift;
+
+    # remove old files first
+    for my $remove ( </etc/apache2/vhosts.d/*.conf> ) {
+    	unlink $remove;
+    }
 
     foreach my $file ( keys(%{$data}) ) {
         next if( $file eq 'default-server.conf' ); # skip the default server here
@@ -410,10 +383,6 @@ sub Write {
                 $listen{$key} = 1;
             }
             return $class->write_listen_conf();
-        }
-    } elsif( $path eq '.moduleselection' ) {
-        if( ref($args[0]) eq 'ARRAY' ) {
-            return $class->write_module_selection( $args[0] );
         }
     } else {
         # not implemented
