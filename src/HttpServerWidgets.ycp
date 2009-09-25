@@ -222,15 +222,14 @@ global boolean validate_server (string hostid, list < map<string,any> > server )
 	}
 
 	map<string, any> vhost = YaST::HTTPDData::GetVhostType(host);
-
 		if (! FileUtils::CheckAndCreatePath( documentroot )){
                     res = false;
                     break;
 		  }
 	if (vhost["id"]:"" == ip)
 	{
-	    // this is valid only if both of them are name-based, not ip-based
-	    if ( YaST::HTTPDData::GetVhostType(host)["type"]:""=="name-based" && namebased )
+	    // this is valid only if both of them are name-based, not ip-based (bnc#486476)
+	    if ( !(YaST::HTTPDData::GetVhostType(host)["type"]:""=="name-based" && namebased) )
 	    {
 		// error message - the entered ip address is already 
 		// configured for another virtual host
@@ -629,6 +628,7 @@ global string HostId2Key( map desc, any id );
 
 global void initModules (string key);
 global symbol handleModules (string key, map event);
+global boolean validateModules (string key, map event);
 global void initListenSettings (string key);
 global symbol handleListenSettings (string key, map event);
 global void initServiceStatus (string key);
@@ -1469,6 +1469,8 @@ global map<string, map <string, any> > widgets = $[
             ),
             "init" : initModules,
             "handle" : handleModules,
+	    "validate_type" : `function,
+	    "validate_function" : validateModules,
             "help" : HELPS["modules"]:"",
 
          ],
@@ -2467,7 +2469,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	integer index = -1;
        // create temporary list of maps from modules
        list< map<string, any > > listmodules = maplist(string name , modules,{
-                       return( mapmap(string k,any v, $["default":"1", "name":name, "summary":_("unknown"), "required":"0", "suggested":"0"],
+                       return( mapmap(string k,any v, $["default":"1", "name":name, "summary":_("unknown"), "requires":""],
                                {return ($[k:v]); }));
        });
        // add to known modules list modules from temporary list
@@ -2492,6 +2494,30 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	});
 	UI::ChangeWidget (`id (`modules), `Items, items);
 	UI::SetFocus (`id (`modules));
+    }
+
+    global boolean validateModules(string id, map key){
+	boolean valid=true;
+	list<string> selected = [];
+	foreach(term i, (list<term>)UI::QueryWidget(`modules, `Items), {
+		if (i[2]:""==_("Enabled")) selected=add(selected, i[1]:"");
+	});
+	map<string, any> all_modules =$[];
+	foreach(map row, YaST::HTTPDData::GetKnownModules(), {
+		all_modules[row["name"]:""] = remove(row, "name");
+	});
+	foreach(string mod, selected, {
+	  string require =  all_modules[mod, "requires"]:"";
+	  if (size(require)>0){
+	    if (!contains(selected, require)){
+		string message = sformat("%1:\n %2 %3 %4\n%5", _("Modules dependency problem"), mod, _("requires"), require, _("Enable required module or disable first one."));
+		Popup::Error(message);
+		y2warning("Error message: %1", message);
+		valid=false;
+	    }
+	  }
+	});
+	return valid;
     }
 
     /**
@@ -2536,10 +2562,10 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	else if (event["ID"]:nil == `add_user)
         {
 
-	string modules_dir=sformat("/usr/%1/apache2-%2/", (Arch::ia64()||Arch::mips64()||Arch::ppc64()||Arch::s390_64()||Arch::sparc64()||Arch::x86_64())?"lib64":"lib", (PackageSystem::Installed("apache2-prefork"))?"prefork":"worker");
+	string module_dirs=sformat("/usr/lib*/apache2/ /usr/lib*/apache2-%1/", (PackageSystem::Installed("apache2-prefork"))?"prefork":"worker");
 	// list of all installed modules
 	    list <string> all_modules = splitstring(((map<string, any>) SCR::Execute(.target.bash_output,
-		sformat("ls %1|grep so|cut -d. -f1|cut -d_ -f2-", modules_dir)))["stdout"]:"", "\n");
+		sformat("ls %1|grep \".so$\"|cut -d. -f1|cut -d_ -f2-", module_dirs)))["stdout"]:"", "\n");
 	    list<string> existing = maplist (map<string,any> mod,  YaST::HTTPDData::GetKnownModules(), ``(
 		mod["name"]:_("unknown")));
 	// extract unknown modules from all installed
