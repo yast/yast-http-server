@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jan  4 17:43:07 CET 2010 - mzugec@suse.cz
+
+- determine vhost by HostIP instead of ServerName (bnc#567027)
+- 2.19.0 
+
+-------------------------------------------------------------------
 Tue Jul  7 12:26:55 CEST 2009 - mzugec@suse.cz
 
 - defined proxy_ajp in HTTPModules.pm (bnc#518816)
