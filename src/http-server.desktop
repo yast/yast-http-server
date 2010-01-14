@@ -19,9 +19,8 @@ X-SuSE-YaST-AutoInstClonable=true
 X-SuSE-YaST-AutoInstSchema=http-server.rnc
 
 Icon=yast-http-server
-Exec=/sbin/yast2 http-server 
+Exec=xdg-su -c "/sbin/yast2 http-server"
 
 Name=HTTP Server
 GenericName=Configure an Apache 2 server
-X-KDE-SubstituteUID=true
 StartupNotify=true
