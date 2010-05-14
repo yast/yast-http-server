@@ -393,6 +393,7 @@ textdomain "http-server";
                     packages  => [],
                     default   => 0,
                     position  => 280,
+		    requires  => "cache",
                     directives=> [ { option =>"CacheDirLength",		"context" => [ "Server", "Virtual" ] },
 				   { option =>"CacheDirLevels",         "context" => [ "Server", "Virtual" ] },
                                    { option =>"CacheMaxFileSize",       "context" => [ "Server", "Virtual" ] },
@@ -426,6 +427,7 @@ textdomain "http-server";
                     packages  => [],
                     default   => 0,
                     position  => 310,
+		    requires  => "cache",
                     directives=> [ { option =>"CacheFile",      "context" => [ "Server" ] },
                                    { option =>"MMapFile",	"context" => [ "Server" ] }
                                 ]
@@ -494,6 +496,7 @@ textdomain "http-server";
                     packages  => [],
                     default   => 0,
                     position  => 370,
+		    requires  => "cache",
                     directives=> [ { option =>"MCacheMaxObjectCount",         "context" => [ "Server" ] },
 				   { option =>"MCacheMaxObjectSize",          "context" => [ "Server" ] },
                                    { option =>"MCacheMaxStreamingBuffer",     "context" => [ "Server" ] },

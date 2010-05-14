@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri May 14 09:04:39 CEST 2010 - mzugec@suse.cz
+
+- cache module dependency (bnc#592424)
+- 2.19.1 
+
+-------------------------------------------------------------------
 Wed Jan 13 18:56:03 CET 2010 - kmachalkova@suse.cz
 
 - Adjusted .desktop file(s) to wrap /sbin/yast2/ calls in xdg-su
