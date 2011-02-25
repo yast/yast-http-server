@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Feb 25 13:53:54 CET 2011 - jsrain@suse.cz
+
+- fixed server flags handling (bnc#656589)
+
+-------------------------------------------------------------------
 Wed Mar 25 14:06:28 CET 2009 - mzugec@suse.cz
 
 - for name-based vhosts split configuration files (bnc#427427)
