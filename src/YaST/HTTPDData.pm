@@ -419,8 +419,26 @@ sub WriteModuleList {
     my $use_ssl = 0;
     foreach( @{GetModuleList()} ){  $use_ssl = 1 if /^ssl$/ }
 
-    if ($use_ssl == 1) {YaPI::HTTPD->SetServerFlags("SSL");}
-	else {YaPI::HTTPD->SetServerFlags("");}
+    my @flags = split(' ', YaPI::HTTPD->GetServerFlags());
+    my $flags_have_ssl = 0;
+    @flags = grep {
+        if ($_ eq "SSL") {
+            if ($use_ssl) {
+                $flags_have_ssl = 1;
+            } else {
+                0;
+            }
+        } else {
+            1;
+        }
+    } @flags;
+
+    if ($use_ssl == 1 && $flags_have_ssl == 0) {
+        push @flags, "SSL"
+    }
+
+    YaPI::HTTPD->SetServerFlags(join(" ", @flags));
+
     return 1;
 }
 
