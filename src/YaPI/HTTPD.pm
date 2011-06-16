@@ -296,7 +296,7 @@ B<Example Code using the API>
 =cut
 
 package YaPI::HTTPD;
-use Switch;
+use feature "switch";
 use Data::Dumper;
 use YaPI;
 use YaST::YCP qw(:LOGGING sformat);
@@ -349,31 +349,33 @@ BEGIN { $TYPEINFO{GetHostsList} = ["function", [ "list", "string"] ]; }
 sub GetHostsList {
     my $self = shift;
     my @ret = ();
- if (!defined $vhost_files ){
- my @data = $self->readHosts();
- $vhost_files = $data[0];
-}
+    if (!defined $vhost_files) {
+	my @data = $self->readHosts();
+	$vhost_files = $data[0];
+    }
 
-     foreach my $key ( keys(%{$vhost_files}) ) {
-	switch($key)
-	 {
-	 case "ip-based" {
-	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
-	           foreach my $hostentryHash ( @$hostList ) {
-	               push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
-	          }
-		 }
+    foreach my $key (keys (%{$vhost_files})) {
+	given($key) {
+	    when ("ip-based") {
+		foreach my $hostList ($vhost_files->{'ip-based'}) {
+		    foreach my $hostentryHash (@$hostList) {
+			push (@ret, $hostentryHash->{HOSTID}) if ($hostentryHash->{HOSTID});
+		    }
 		}
-	 case "main" { push( @ret, $vhost_files->{'main'}{HOSTID} ) if( defined($vhost_files->{'main'}{HOSTID}) ); }
-	 else { 
-	       foreach my $hostList ( $vhost_files->{$key} ) {
-	           foreach my $hostentryHash ( @$hostList ) {
-	               push( @ret, $hostentryHash->{HOSTID} ) if( $hostentryHash->{HOSTID} );
-	           }
-		  }
-		 }
-	 }	
-     }
+	    }
+	    when ("main") {
+		push (@ret, $vhost_files->{'main'}{HOSTID}) if (defined ($vhost_files->{'main'}{HOSTID}));
+	    }
+	    default {
+		foreach my $hostList ( $vhost_files->{$key} ) {
+		    foreach my $hostentryHash ( @$hostList ) {
+			push (@ret, $hostentryHash->{HOSTID}) if ($hostentryHash->{HOSTID});
+		    }
+		}
+	    }
+	}
+    }
+
     return \@ret;
 }
 
@@ -412,44 +414,38 @@ sub GetHost {
     # will read all vhost files, even if the vhost is found
     # in the first file.
 
- if (!defined $vhost_files ){
- my @data = $self->readHosts();
- $vhost_files = $data[0];
-}
-#    my @data = $self->readHosts();
+    if (!defined $vhost_files) {
+	my @data = $self->readHosts();
+	$vhost_files = $data[0];
+    }
 
-#    if( ref($vhost_files) eq 'HASH' ) { $vhost_files = $data[0]; } 
-#	else { return $self->SetError( %{SCR->Error(".http_server.vhosts")} ); }
     my $ret=undef;
-    foreach my $key ( keys( %{$vhost_files} ) ){
-	switch($key)
-	 {
-	 case "ip-based" {
-	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
-	           foreach my $hostentryHash ( @$hostList ) {
-	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)){
-				$ret = $hostentryHash;
-				}
-	          }
-		 }
+
+    foreach my $key (keys (%{$vhost_files})) {
+	given ($key) {
+	    when ("ip-based") {
+		foreach my $hostList ( $vhost_files->{'ip-based'} ) {
+		    foreach my $hostentryHash (@$hostList) {
+			$ret = $hostentryHash if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
+		    }
 		}
-	 case "main" { if (( defined($vhost_files->{'main'}{HOSTID}) ) && ($vhost_files->{'main'}{HOSTID} eq $hostid)) {$ret = $vhost_files->{'main'};  } }
-	 else { 
-	       foreach my $hostList ( $vhost_files->{$key} ) {
-	           foreach my $hostentryHash ( @$hostList ) {
-	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)){
-				$ret = $hostentryHash;
-				}
-	           }
-		  }
-		 }
-	 }	
-      }
-  if (defined $ret){
-    return [ @{$ret->{'DATA'}} ];
-   } else {
-	return [];
-	}
+	    }
+	    when ("main") {
+		$ret = $vhost_files->{'main'}
+		    if ((defined $vhost_files->{'main'}{HOSTID}) && ($vhost_files->{'main'}{HOSTID} eq $hostid));
+	    }
+	    default {
+		foreach my $hostList ($vhost_files->{$key}) {
+		    foreach my $hostentryHash (@$hostList) {
+			$ret = $hostentryHash if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
+		    }
+		}
+	    }
+	 }
+    }
+
+    return [@{$ret->{'DATA'}}] if (defined $ret);
+    return [];
 }
 
 BEGIN { $TYPEINFO{getVhType} = ["function", [ "map", "string", "any" ], "string"]; }
@@ -457,38 +453,34 @@ sub getVhType {
     my $self = shift;
     my $hostid = shift;
 
-    my %ret= ();
-    foreach my $key ( keys( %{$vhost_files} ) ){
-	switch($key)
-	 {
-	 case "ip-based" {
-	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
-	           foreach my $hostentryHash ( @$hostList ) {
-	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid)) 
-			{
-			 %ret = (type => 'ip-based', id => $hostentryHash->{HostIP});
-			}
-	          }
-		 }
+    my %ret = ();
+
+    foreach my $key (keys (%{$vhost_files})) {
+	given($key) {
+	    when ("ip-based") {
+		foreach my $hostList ($vhost_files->{'ip-based'}) {
+		    foreach my $hostentryHash (@$hostList) {
+			%ret = (type => 'ip-based', id => $hostentryHash->{HostIP})
+			    if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
+		    }
 		}
-	 case "main" { if (( defined($vhost_files->{'main'}{HOSTID}) ) && ($vhost_files->{'main'}{HOSTID} eq $hostid)) 
-			{
-			 %ret = (type => 'main');
-			}
-		     }
-	 else { 
-	       foreach my $hostList ( $vhost_files->{$key} ) {
-	           foreach my $hostentryHash ( @$hostList ) {
-	               if (( $hostentryHash->{HOSTID} ) && ($hostentryHash->{HOSTID} eq $hostid))
-			{
-			 %ret = (type => 'name-based',id => $hostentryHash->{HostIP});
-			}
-	           }
-		  }
-		 }
-	 }	
-      }
-   return \%ret;
+	    }
+	    when ("main") {
+		%ret = (type => 'main')
+		    if ((defined $vhost_files->{'main'}{HOSTID}) && ($vhost_files->{'main'}{HOSTID} eq $hostid));
+	    }
+	    default {
+		foreach my $hostList ($vhost_files->{$key}) {
+		    foreach my $hostentryHash (@$hostList) {
+			%ret = (type => 'name-based',id => $hostentryHash->{HostIP})
+			    if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
+		    }
+		}
+	    }
+	}
+    }
+
+    return \%ret;
 }
 
 sub createVH (){
@@ -533,27 +525,30 @@ sub createVH (){
 }
 
 
-sub deleteVH (){
+sub deleteVH () {
     my $self = shift;
     my $hostid = shift;
 
-    foreach my $key ( keys( %{$vhost_files} ) ){
-	switch($key)
-	 {
-	 case "ip-based" {
-	       foreach my $hostList ( $vhost_files->{'ip-based'} ) {
-		   my @tmp_list = ();
-	           foreach my $hostentryHash ( @$hostList ) { push(@tmp_list, $hostentryHash) if ($hostid ne $hostentryHash->{HOSTID}); }
-			$vhost_files->{'ip-based'} = \@tmp_list;
-		 }
+    foreach my $key (keys (%{$vhost_files})) {
+	given($key) {
+	    when ("ip-based") {
+		foreach my $hostList ($vhost_files->{'ip-based'}) {
+		    my @tmp_list = ();
+		    foreach my $hostentryHash (@$hostList) {
+			push(@tmp_list, $hostentryHash) if ($hostid ne $hostentryHash->{HOSTID});
+		    }
+		    $vhost_files->{'ip-based'} = \@tmp_list;
 		}
-	 case "main" { delete $vhost_files->{'main'} if ($hostid eq 'main'); }
-	 else {
+	    }
+	    when ("main") {
+		delete $vhost_files->{'main'} if ($hostid eq 'main');
+	    }
+	    default {
 		my $vhost = $vhost_files->{$key}->[0]->{'HOSTID'};
 		delete $vhost_files->{$key} if ($vhost eq $hostid);
-	 }
-	 }
-      }
+	    }
+	}
+    }
 }
 
 
@@ -561,7 +556,7 @@ sub modifyMain {
     my $self = shift;
     my $data = shift;
 
-   $vhost_files->{'main'}{'DATA'} = $data;
+    $vhost_files->{'main'}{'DATA'} = $data;
 }
 
 sub modifyVH {
@@ -570,12 +565,10 @@ sub modifyVH {
     my $data = shift;
 
 
- my $params = $self->getVhType($hostid);
+    my $params = $self->getVhType($hostid);
 
- $self->deleteVH($hostid);
- $self->createVH($hostid, $data, $params);
-# $self->validateNVH();
-
+    $self->deleteVH($hostid);
+    $self->createVH($hostid, $data, $params);
 }
 
 sub validateNVH (){

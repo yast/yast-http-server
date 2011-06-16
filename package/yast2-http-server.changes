@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Jun 16 09:43:37 CEST 2011 - locilka@suse.cz
+
+- Fixed 'do not use switch/case' error by replacing with
+  'given/when' (BNC #695698)
+- Partly fixed indentation in YaPI/HTTPD.pm
+- 2.21.1
+
+-------------------------------------------------------------------
 Fri Feb 25 13:53:54 CET 2011 - jsrain@suse.cz
 
 - fixed server flags handling (bnc#656589)
