@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Jul  4 11:29:10 CEST 2011 - snwint@suse.de
+
+- fixed typos (bnc #703114)
+
+-------------------------------------------------------------------
 Thu Jun 16 09:43:37 CEST 2011 - locilka@suse.cz
 
 - Fixed 'do not use switch/case' error by replacing with

@@ -345,7 +345,7 @@ map cmdline_description = $[
 	    "handler"	: HostsHandler
 	],
 	"mode"		: $[
-	    "help"	: _("Enable or disable wizardmode."),
+	    "help"	: _("Enable or disable wizard mode."),
 	    "handler"	: ModeHandler
 	],
     ],
@@ -411,7 +411,7 @@ map cmdline_description = $[
 	],
 	"wizard"	: $[
             "type"      : "string",
-	    "help"	: _("Set wizardmode \"on\" or \"off\".")
+	    "help"	: _("Set wizard mode \"on\" or \"off\".")
 	]
     ],
     "mappings"		: $[

@@ -88,11 +88,11 @@ global boolean isWizardMode(){
 global void setWizardMode(boolean w_mode){
   if(w_mode==true){
    SCR::Execute(.target.bash, sformat("rm %1%2", Directory::vardir, "/http_server"));
-   y2milestone("Set wizardmode on");
+   y2milestone("Set wizard mode on");
   }
   else{
    SCR::Write ( .target.string, Directory::vardir + "/http_server", "");
-   y2milestone("Set wizardmode off");
+   y2milestone("Set wizard mode off");
   }
 }
 
