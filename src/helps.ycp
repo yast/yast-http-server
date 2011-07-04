@@ -70,7 +70,7 @@ use <b>Add Module</b>.</p>
 
 	// apache service enabling help 1/1
 	"server_enable" : _("<p><b><big>HTTP Server Settings</big></b><br>
-Activate the HTTP server by choosing <b>Enabled</b>. To deactive it, choose
+Activate the HTTP server by choosing <b>Enabled</b>. To deactivate it, choose
 <b>Disabled</b>.</p>
 ") ,
 

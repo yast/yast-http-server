@@ -1061,7 +1061,7 @@ define string changeVHostPopup(string value){
 		`Left( `RadioButton(`id(`all_addr),`opt(`notify), _("All addresses (*)"), true)),
 		`Left(`RadioButton(`id(`multiselect),`opt(`notify), "")),
 		  `MultiSelectionBox( `id(`ipaddress),
-			_("IP Adresses"), items )
+			_("IP Addresses"), items )
 			,
 		`Left(`RadioButton(`id(`custom),`opt(`notify), "")),
 		  `TextEntry(`id(`serv_name), _("ServerName"))
