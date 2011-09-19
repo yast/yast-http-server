@@ -12,8 +12,6 @@
 textdomain "http-server";
 
 import "Wizard";
-//import "Wizard_hw";
-
 import "HttpServer";
 import "YaST::HTTPDData";
 
