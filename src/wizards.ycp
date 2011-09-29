@@ -230,7 +230,7 @@ boolean HttpServerSequence() {
     ];
 
     Wizard::CreateDialog();
-    Wizard::SetDesktopIcon("http-server");
+    Wizard::SetDesktopTitleAndIcon("http-server");
 
     boolean w_mode=HttpServer::isWizardMode();
     if (w_mode) sequence["read", `next] = "wizard";
@@ -254,7 +254,7 @@ symbol HttpServerAutoSequence() {
     term contents = `Label(_("Initializing ..."));
 
     Wizard::CreateDialog();
-    Wizard::SetDesktopIcon("http-server");
+    Wizard::SetDesktopTitleAndIcon("http-server");
     Wizard::SetContentsButtons(caption, contents, "",
 	    Label::BackButton(), Label::NextButton());
 
