@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Dec 22 09:39:32 UTC 2011 - jsrain@suse.cz
+
+- removed superfluous spaces from .desktop-file (bnc#712052)
+- 2.17.13
+
+-------------------------------------------------------------------
 Fri Feb 25 13:53:54 CET 2011 - jsrain@suse.cz
 
 - fixed server flags handling (bnc#656589)
