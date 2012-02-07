@@ -538,6 +538,7 @@ sub createVH (){
 #   $vhost_files->{$ip} = @newdata;
 #  }
 
+ $self->validateNVH();
 }
 
 
@@ -588,29 +589,28 @@ sub modifyVH {
 #	 	push(@newdata, $row);
 #	}
 # }
-my $params = $self->getVhType($hostid);
+    my $params = $self->getVhType($hostid);
 
- $self->deleteVH($hostid);
- $self->createVH($hostid, $data, $params);
- $self->validateNVH();
-
+    $self->deleteVH($hostid);
+    $self->createVH($hostid, $data, $params);
 }
 
 sub validateNVH (){
-    my @nb = ();
+    my %nb = ();
     foreach my $key ( keys( %{$vhost_files} ) ){
      if(($key ne 'ip-based') && ($key ne 'main')){
-	push(@nb, $key);
+        my $host_ip=$vhost_files->{$key}->[0]->{'HostIP'};
+          $nb{$host_ip}=1;
        }
       }
+
  my @tmp_data=();
  foreach my $row (@{$vhost_files->{main}{DATA}}){
-  push(@tmp_data, $row) if ($row->{KEY} ne 'NameVirtualHost');
+   push(@tmp_data, $row) if ($row->{KEY} ne 'NameVirtualHost');
  }
  $vhost_files->{main}{DATA} = \@tmp_data;
 
-
- foreach my $ip (@nb){
+ foreach my $ip (keys %nb){
   push(@{$vhost_files->{main}{DATA}}, {KEY=>'NameVirtualHost', VALUE=>$ip} );
  }
 
