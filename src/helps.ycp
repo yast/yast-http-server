@@ -178,12 +178,13 @@ address for feedback about this host.</p>
 	+ _("<p><big><b>Server Resolution</b></big><br>
 Apache2 must be able to determine which virtual host
 settings it should use to create a response for an HTTP request. 
-In principle, there are two basic approaches. If using HTTP headers
+There are two basic approaches. If using HTTP headers
 from the incoming request, the server looks up the host name specified by
 the HTTP request headers. The other possibility is to determine the virtual host
 by the IP address used by the client when connecting to the server.
-If you plan to configure SSL based vhost, use <b>Resolution via IP address</b>
-Consult the Apache2 manual for further details.</p>\n"),
+If you plan to configure SSL-based vhost, use <b>Resolution via IP address</b>
+Consult the Apache2 manual for further details.</p>
+"),
 	// advanced new host dialog 1/5
 	"set_vhost"	: _("<p><b><big>Details for New Host</big></b><br>
 This dialog allows you to specify additional information about a new virtual host.</p>")
@@ -191,8 +192,11 @@ This dialog allows you to specify additional information about a new virtual hos
 	+_("<p>Select <b>Enable CGI Support</b>
 to run CGI scripts in the path in <b>CGI Directory Path</b> using the alias <tt>/cgi-bin/</tt>.</p>")
 	// advanced new host dialog 3/5
-	+_("<p>For HTTPS access to this virtual host, select <b>Enable SSL Support</b>.\n
-Then enter the path for the certificate file in <b>Certificate File Path</b>.This option is available only for IP based vhosts.</p>")
+	+_("<p>For HTTPS access to this virtual host, select <b>Enable SSL Support</b>.
+
+Then enter the path for the certificate file in <b>Certificate File
+Path</b>.This option is only available for IP-based vhosts.</p>
+")
 	// advanced new host dialog 4/5
 	+_("<p>In <b>Directory Index</b>, enter a space-separated list of files that Apache should look for and provide when a URL for a directory (one that ends in <tt>/</tt>) is requested.  The first matching file found is provided.</p>")
 	// advanced new host dialog 5/5
