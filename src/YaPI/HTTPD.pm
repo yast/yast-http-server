@@ -676,7 +676,7 @@ sub ModifyHost {
                 } 
 		elsif( $hostid ne 'default' and $tmp->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
                     # illegal keys in vhost
-                    return $self->SetError( summary => sprintf( __("Illegal key in vhost '%s'."),$tmp->{KEY}),
+                    return $self->SetError( summary => sprintf( __("Illegal key in virtual host '%s'."),$tmp->{KEY}),
                                             code    => "CHECK_PARAM_FAILED" );
                 } else {
                     push( @tmp, $tmp );
@@ -759,7 +759,7 @@ sub CreateHost {
         } 
 if( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
             # illegal keys in vhost
-            return $self->SetError( summary => sprintf(__("Illegal key in vhost '%s'."), $key->{KEY}),
+            return $self->SetError( summary => sprintf(__("Illegal key in virtual host '%s'."), $key->{KEY}),
                                     code    => "CHECK_PARAM_FAILED" );
         } else {
             push( @tmp, $key );
