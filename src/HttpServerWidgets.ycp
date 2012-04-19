@@ -1067,7 +1067,7 @@ define string changeVHostPopup(string value){
 		  `TextEntry(`id(`serv_name), _("ServerName"))
 			,
 		    `VSpacing(),
-		    `HBox(
+		    `ButtonBox(
 			`PushButton( `id(`ok),     Label::OKButton() ),
 			`PushButton( `id(`cancel), Label::CancelButton() )
 		     )
@@ -1901,7 +1901,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
 	    // translators: combo box label for list of configured IPs
 	    `Left( `ComboBox( `id("address"), `opt( `editable ), _("Network &Address:"), ips ) ),
 	    `VSpacing(),
-	    `HBox( 
+	    `ButtonBox( 
 		`PushButton( `id(`ok), Label::OKButton() ),
 		`PushButton( `id(`cancel), Label::CancelButton() )
 	     )
@@ -2578,7 +2578,7 @@ global define term listen2item( map<string,any> arg, integer id ) ``{
             `VBox(
 		// translators: combo box for selsect module from installed unknown modules
 		`ComboBox(`id(`mod), _("New Module &Name:"),  unknown_modules ),
-                `HBox(
+                `ButtonBox(
                     `PushButton(`id(`ok), `opt(`default), Label::OKButton() ),
                     `PushButton(`id(`cancel), Label::CancelButton() )
             	    )
