@@ -699,7 +699,7 @@ textdomain "http-server";
     },
     'php5' => {
                     summary   => __("Provides support for PHP5 dynamically generated pages"),
-                    packages  => ["apache2-mod_php5"],
+                    packages  => ["mod_php_any"],
                     default   => 0,
                     position  => 490
     },
