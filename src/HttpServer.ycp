@@ -332,6 +332,21 @@ global define boolean Write() ``{
 
     list<string> rpms = YaPI::HTTPD::GetModulePackages();
 
+    // handling of multiple versions of mod_php5 (to assure not to install the "provide" symbol
+    // or one of the packages if other installed (bnc#777248)
+    rpms = maplist (string pkgname, rpms, {
+        if (pkgname == "mod_php_any") {
+            if (Package::Installed ("apache2-mod_php5") || Package::Installed ("apache2-mod_php53"))
+                pkgname = nil;
+            else
+                pkgname = "apache2-mod_php5";
+        }
+        return pkgname;
+    });
+    rpms = filter (string pkgname, rpms, {
+        return pkgname != nil;
+    });
+
     // install required RPMs for modules
     Package::InstallAllMsg( rpms, _("The enabled modules require
 installation of some of these additional packages:
