@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jul  1 13:46:18 CEST 2013 - jsuchome@suse.cz
+
+- sort array to get deterministic test output
+- 2.24.0 
+
+-------------------------------------------------------------------
 Thu Apr 19 10:56:50 UTC 2012 - jsrain@suse.cz
 
 - use the ButtonBox widget (bnc#684863)
