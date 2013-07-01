@@ -444,7 +444,7 @@ sub GetHost {
 	 }
     }
 
-    return [@{$ret->{'DATA'}}] if (defined $ret);
+    return [sort @{$ret->{'DATA'}}] if (defined $ret);
     return [];
 }
 
