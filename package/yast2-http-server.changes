@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jul  2 09:54:05 CEST 2013 - jsuchome@suse.cz
+
+- removed unused widget definitions
+- 2.24.1
+
+-------------------------------------------------------------------
 Mon Jul  1 13:46:18 CEST 2013 - jsuchome@suse.cz
 
 - sort array to get deterministic test output

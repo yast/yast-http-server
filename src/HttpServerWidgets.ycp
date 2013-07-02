@@ -643,8 +643,6 @@ global symbol handleOpenPort(string key, map event);
 global boolean validateOpenPort(string key, map event);
 global void initListenInterfaces (string key);
 global boolean validateListenInterfaces(string key, map event);
-global void initFwOpen (string key);
-global void storeFwOpen (string opt_id, map event);
 global symbol handleExpertConf (string key, map event);
 void initScriptModules(string key);
 void initSummaryText(string key);
@@ -1544,14 +1542,6 @@ global map<string, map <string, any> > widgets = $[
                 "validate_type" : `function,
                 "validate_function" : validateListenInterfaces,
 		"help" : HELPS["listen_interfaces"]:""
-		],
-	   "fw_open" : $[
-		"widget" : `checkbox,
-		//translators: checkbox 
-		"label"  : _("Open &Firewall for Selected Ports"),
-		"init"	 : initFwOpen,
-		"store"	 : storeFwOpen,
-		"help"   : HELPS["fw_open"]:""
 		],
 	  "booting" 	 : CWMServiceStart::CreateAutoStartWidget ($[
 		"get_service_auto_start" : getServiceAutoStart,
