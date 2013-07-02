@@ -42,8 +42,6 @@ An additional dialog informs you whether it is safe to do so.</p>
 	"open_port" : _("<p>The <b>Port</b> value defines the port on which Apache2 listens. The default is 80.</p>"), 
         //translators: Wizard dialog 1/5
 	"listen_interfaces" : _("<p><b>Listen on Interfaces</b> contains the list of all IP addresses configured for this host. Checked IP addresses are those on which Apache2 listens. If you are unsure, check all.</p>"),
-        //translators: Wizard dialog 1/5
-	"fw_open" : _("<p>When the firewall is enabled, you can check whether to enable Apache2 ports on the firewall.</p>"),
         //translators: Wizard dialog 2/5
 	"script_modules" : _("<p>Here, enable the script languages the Apache2 server should support.</p>"), 
         //translators: Wizard dialog 5/5

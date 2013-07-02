@@ -23,7 +23,6 @@ import "HttpServer";
 symbol WizardSequence1(){
 	string caption=_("HTTP Server Wizard (1/5)--Network Device Selection");
     term contents =
-//        `Top (
             `HBox (
 		`HStretch(),
 		  `VBox(
@@ -32,14 +31,12 @@ symbol WizardSequence1(){
                       `VSpacing(0.5),
 			"listen_interfaces",
                       `VSpacing(0.5),
-//			"firewall_first",
 			"firewall_adapt",
                       `VSpacing(8)
 			),
 		`HStretch()
-  //          )
         );
-    list<string> widget_names = ["open_port", "listen_interfaces", /*"firewall_first"*/"firewall_adapt"];
+    list<string> widget_names = ["open_port", "listen_interfaces", "firewall_adapt"];
     list<map<string,any> > w = CWM::CreateWidgets (widget_names, HttpServerWidgets::widgets);
     string help = "<h3>" + _("Network Device Selection") + "</h3>" + CWM::MergeHelps (w);
     contents = CWM::PrepareDialog (contents, w);
@@ -219,13 +216,11 @@ symbol WizardSequence5(){
         string caption=_("HTTP Server Wizard (5/5)--Summary");
 
         term contents =
-//        `Top (
           `VBox (
 
 		   "booting",
                 "summary_text",
                 "expert_conf"
-//                )
              );
     list<string> widget_names = ["booting", "summary_text", "expert_conf"];
     list<map<string,any> > w = CWM::CreateWidgets (widget_names, HttpServerWidgets::widgets);
