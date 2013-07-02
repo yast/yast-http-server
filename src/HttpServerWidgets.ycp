@@ -1545,14 +1545,6 @@ global map<string, map <string, any> > widgets = $[
                 "validate_function" : validateListenInterfaces,
 		"help" : HELPS["listen_interfaces"]:""
 		],
-	   "fw_open" : $[
-		"widget" : `checkbox,
-		//translators: checkbox 
-		"label"  : _("Open &Firewall for Selected Ports"),
-		"init"	 : initFwOpen,
-		"store"	 : storeFwOpen,
-		"help"   : HELPS["fw_open"]:""
-		],
 	  "booting" 	 : CWMServiceStart::CreateAutoStartWidget ($[
 		"get_service_auto_start" : getServiceAutoStart,
 		"set_service_auto_start" : setServiceAutoStart,
