@@ -421,7 +421,7 @@ sub GetHost {
 
     my $ret=undef;
 
-    foreach my $key (keys (%{$vhost_files})) {
+    foreach my $key (sort keys (%{$vhost_files})) {
 	given ($key) {
 	    when ("ip-based") {
 		foreach my $hostList ( $vhost_files->{'ip-based'} ) {
@@ -444,7 +444,7 @@ sub GetHost {
 	 }
     }
 
-    return [sort @{$ret->{'DATA'}}] if (defined $ret);
+    return [@{$ret->{'DATA'}}] if (defined $ret);
     return [];
 }
 
