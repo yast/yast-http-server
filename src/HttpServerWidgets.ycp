@@ -643,8 +643,6 @@ global symbol handleOpenPort(string key, map event);
 global boolean validateOpenPort(string key, map event);
 global void initListenInterfaces (string key);
 global boolean validateListenInterfaces(string key, map event);
-global void initFwOpen (string key);
-global void storeFwOpen (string opt_id, map event);
 global symbol handleExpertConf (string key, map event);
 void initScriptModules(string key);
 void initSummaryText(string key);
