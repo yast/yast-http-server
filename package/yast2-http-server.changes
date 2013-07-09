@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Jul  9 13:18:46 CEST 2013 - jsuchome@suse.cz
+
+- sort keys in getHostsList as well
+- 2.24.2 
+
+-------------------------------------------------------------------
 Tue Jul  2 09:54:05 CEST 2013 - jsuchome@suse.cz
 
 - removed unused widget definitions
