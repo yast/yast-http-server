@@ -18,3 +18,8 @@ stamp-h
 http-server.pot
 autom4te.cache
 Makefile.am.common
+*.spec
+*.bz2
+.dep
+*.ybc
+*.ami

@@ -354,7 +354,7 @@ sub GetHostsList {
 	$vhost_files = $data[0];
     }
 
-    foreach my $key (keys (%{$vhost_files})) {
+    foreach my $key (sort keys (%{$vhost_files})) {
 	given($key) {
 	    when ("ip-based") {
 		foreach my $hostList ($vhost_files->{'ip-based'}) {
