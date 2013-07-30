@@ -11,6 +11,8 @@ Requires:       yast2 >= 2.21.22
 
 BuildArchitectures:	noarch
 
+Requires:       yast2-ruby-bindings >= 1.0.0
+
 Summary:	YaST2 - HTTP Server Configuration
 
 %description
@@ -30,8 +32,8 @@ configuration.
 %dir @yncludedir@/http-server
 @schemadir@/autoyast/rnc/http-server.rnc
 @yncludedir@/http-server/*
-@clientdir@/http-server.ycp
-@clientdir@/http-server_*.ycp
+@clientdir@/http-server.rb
+@clientdir@/http-server_*.rb
 @moduledir@/*
 @desktopdir@/http-server.desktop
 @scrconfdir@/*
