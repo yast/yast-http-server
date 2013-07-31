@@ -1,49 +1,45 @@
-#
-# Makefile.am for devtools/devtools/skeletons/config/src
-#
+# Sources for http-server
+
+module_DATA = \
+  modules/HttpServer.rb \
+  modules/HttpServerWidgets.rb
+
+module1dir = @moduledir@/YaPI
+module1_DATA = \
+  modules/YaPI/HTTPDModules.pm \
+  modules/YaPI/HTTPD.pm
+
+module2dir = @moduledir@/YaST
+module2_DATA = \
+  modules/YaST/HTTPDData.pm \
+  modules/YaST/httpdUtils.pm
+
+client_DATA = \
+  clients/http-server_auto.rb \
+  clients/http-server.rb
 
 yncludedir = @yncludedir@/http-server
-rncdir =  $(schemadir)/autoyast/rnc
-rnc_DATA = http-server.rnc
+ynclude_DATA = \
+  include/http-server/wizard-dialog.rb \
+  include/http-server/wizards.rb \
+  include/http-server/dialogs.rb \
+  include/http-server/complex.rb \
+  include/http-server/routines.rb \
+  include/http-server/helps.rb
 
-client_DATA =			\
-	http-server.ycp		\
-	http-server_auto.ycp	
+scrconf_DATA = \
+  scrconf/cfg_http_server.scr
 
-ynclude_DATA =			\
-	helps.ycp		\
-	wizards.ycp		\
-	wizard-dialog.ycp	\
-	dialogs.ycp		\
-	complex.ycp		\
-	routines.ycp
+agent_SCRIPTS = \
+  servers_non_y2/ag_http_server
 
-desktop_DATA =			\
-	http-server.desktop
+schemafilesdir = $(schemadir)/autoyast/rnc
+schemafiles_DATA = \
+  autoyast-rnc/http-server.rnc
 
-module_DATA =			\
-	HttpServerWidgets.ycp	\
-	HttpServer.ycp		
+desktop_DATA = \
+  desktop/http-server.desktop
 
-http-server:
-	ln -sf . http-server
-
-YaPI_perldir = @moduledir@/YaPI
-
-YaPI_perl_DATA = \
-	YaPI/HTTPD.pm		\
-	YaPI/HTTPDModules.pm
-
-YaST_perldir = @moduledir@/YaST
-
-YaST_perl_DATA = \
-	YaST/HTTPDData.pm \
-	YaST/httpdUtils.pm
-
-ycpchook = http-server
-
-YCPCFLAGS=-I.
-
-EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(module_DATA) $(ydata_DATA) $(desktop_DATA) $(YaPI_perl_DATA) $(YaST_perl_DATA) $(rnc_DATA)
+EXTRA_DIST = $(module_DATA) $(module1_DATA) $(module2_DATA) $(client_DATA) $(ynclude_DATA) $(scrconf_DATA) $(agent_SCRIPTS) $(schemafiles_DATA) $(desktop_DATA)
 
 include $(top_srcdir)/Makefile.am.common
