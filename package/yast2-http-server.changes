@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Jul 31 08:29:36 UTC 2013 - yast-devel@opensuse.org
+
+- converted from YCP to Ruby by YCP Killer
+  (https://github.com/yast/ycp-killer)
+- version 3.0.0
+
+-------------------------------------------------------------------
 Tue Jul  9 13:18:46 CEST 2013 - jsuchome@suse.cz
 
 - sort keys in getHostsList as well
