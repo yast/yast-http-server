@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Aug  9 12:55:36 UTC 2013 - dmajda@suse.cz
+
+- fixed empty include files produced because of a YCP Killer bug
+  (gh#yast/ycp-killer#619)
+- 3.0.1
+
+-------------------------------------------------------------------
 Wed Jul 31 08:29:36 UTC 2013 - yast-devel@opensuse.org
 
 - converted from YCP to Ruby by YCP Killer
