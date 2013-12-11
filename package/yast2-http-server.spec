@@ -26,7 +26,7 @@ Source0:        %{name}-%{version}.tar.bz2
 Group:          System/YaST
 License:        GPL-2.0
 BuildRequires:	yast2-network docbook-xsl-stylesheets doxygen libxslt perl-XML-Writer popt-devel sgml-skel update-desktop-files yast2 yast2-packagemanager-devel yast2-perl-bindings yast2-testsuite libzio
-BuildRequires:  yast2-devtools >= 3.0.6
+BuildRequires:  yast2-devtools >= 3.1.10
 Requires:	yast2-network yast2-perl-bindings libzio
 # DnsServerApi moved to yast2.rpm (bnc#392606)
 # Wizard::SetDesktopTitleAndIcon
