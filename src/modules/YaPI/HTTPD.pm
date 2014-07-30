@@ -296,7 +296,6 @@ B<Example Code using the API>
 =cut
 
 package YaPI::HTTPD;
-use feature "switch";
 use Data::Dumper;
 use YaPI;
 use YaST::YCP qw(:LOGGING sformat);
@@ -355,25 +354,23 @@ sub GetHostsList {
     }
 
     foreach my $key (sort keys (%{$vhost_files})) {
-	given($key) {
-	    when ("ip-based") {
-		foreach my $hostList ($vhost_files->{'ip-based'}) {
-		    foreach my $hostentryHash (@$hostList) {
-			push (@ret, $hostentryHash->{HOSTID}) if ($hostentryHash->{HOSTID});
-		    }
-		}
-	    }
-	    when ("main") {
-		push (@ret, $vhost_files->{'main'}{HOSTID}) if (defined ($vhost_files->{'main'}{HOSTID}));
-	    }
-	    default {
-		foreach my $hostList ( $vhost_files->{$key} ) {
-		    foreach my $hostentryHash ( @$hostList ) {
-			push (@ret, $hostentryHash->{HOSTID}) if ($hostentryHash->{HOSTID});
-		    }
-		}
-	    }
-	}
+        if($key eq "ip-based") {
+            foreach my $hostList ($vhost_files->{'ip-based'}) {
+                foreach my $hostentryHash (@$hostList) {
+                    push (@ret, $hostentryHash->{HOSTID}) if ($hostentryHash->{HOSTID});
+                }
+            }
+        }
+        elsif($key eq "main") {
+            push (@ret, $vhost_files->{'main'}{HOSTID}) if (defined ($vhost_files->{'main'}{HOSTID}));
+        }
+        else {
+            foreach my $hostList ( $vhost_files->{$key} ) {
+                foreach my $hostentryHash ( @$hostList ) {
+                    push (@ret, $hostentryHash->{HOSTID}) if ($hostentryHash->{HOSTID});
+                }
+            }
+        }
     }
 
     return \@ret;
@@ -422,26 +419,24 @@ sub GetHost {
     my $ret=undef;
 
     foreach my $key (sort keys (%{$vhost_files})) {
-	given ($key) {
-	    when ("ip-based") {
-		foreach my $hostList ( $vhost_files->{'ip-based'} ) {
-		    foreach my $hostentryHash (@$hostList) {
-			$ret = $hostentryHash if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
-		    }
-		}
-	    }
-	    when ("main") {
-		$ret = $vhost_files->{'main'}
-		    if ((defined $vhost_files->{'main'}{HOSTID}) && ($vhost_files->{'main'}{HOSTID} eq $hostid));
-	    }
-	    default {
-		foreach my $hostList ($vhost_files->{$key}) {
-		    foreach my $hostentryHash (@$hostList) {
-			$ret = $hostentryHash if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
-		    }
-		}
-	    }
-	 }
+        if($key eq "ip-based") {
+            foreach my $hostList ( $vhost_files->{'ip-based'} ) {
+                foreach my $hostentryHash (@$hostList) {
+                    $ret = $hostentryHash if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
+                }
+            }
+        }
+        elsif($key eq "main") {
+            $ret = $vhost_files->{'main'}
+            if ((defined $vhost_files->{'main'}{HOSTID}) && ($vhost_files->{'main'}{HOSTID} eq $hostid));
+        }
+        else {
+            foreach my $hostList ($vhost_files->{$key}) {
+                foreach my $hostentryHash (@$hostList) {
+                    $ret = $hostentryHash if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
+                }
+            }
+        }
     }
 
     return [@{$ret->{'DATA'}}] if (defined $ret);
@@ -456,28 +451,26 @@ sub getVhType {
     my %ret = ();
 
     foreach my $key (keys (%{$vhost_files})) {
-	given($key) {
-	    when ("ip-based") {
-		foreach my $hostList ($vhost_files->{'ip-based'}) {
-		    foreach my $hostentryHash (@$hostList) {
-			%ret = (type => 'ip-based', id => $hostentryHash->{HostIP})
-			    if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
-		    }
-		}
-	    }
-	    when ("main") {
-		%ret = (type => 'main')
-		    if ((defined $vhost_files->{'main'}{HOSTID}) && ($vhost_files->{'main'}{HOSTID} eq $hostid));
-	    }
-	    default {
-		foreach my $hostList ($vhost_files->{$key}) {
-		    foreach my $hostentryHash (@$hostList) {
-			%ret = (type => 'name-based',id => $hostentryHash->{HostIP})
-			    if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
-		    }
-		}
-	    }
-	}
+        if($key eq "ip-based") {
+            foreach my $hostList ($vhost_files->{'ip-based'}) {
+                foreach my $hostentryHash (@$hostList) {
+                    %ret = (type => 'ip-based', id => $hostentryHash->{HostIP})
+                        if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
+                }
+            }
+        }
+        elsif($key eq "main") {
+            %ret = (type => 'main')
+                if ((defined $vhost_files->{'main'}{HOSTID}) && ($vhost_files->{'main'}{HOSTID} eq $hostid));
+        }
+        else {
+            foreach my $hostList ($vhost_files->{$key}) {
+                foreach my $hostentryHash (@$hostList) {
+                    %ret = (type => 'name-based',id => $hostentryHash->{HostIP})
+                        if (($hostentryHash->{HOSTID}) && ($hostentryHash->{HOSTID} eq $hostid));
+                }
+            }
+        }
     }
 
     return \%ret;
@@ -530,24 +523,22 @@ sub deleteVH () {
     my $hostid = shift;
 
     foreach my $key (keys (%{$vhost_files})) {
-	given($key) {
-	    when ("ip-based") {
-		foreach my $hostList ($vhost_files->{'ip-based'}) {
-		    my @tmp_list = ();
-		    foreach my $hostentryHash (@$hostList) {
+        if($key eq "ip-based") {
+            foreach my $hostList ($vhost_files->{'ip-based'}) {
+                my @tmp_list = ();
+                foreach my $hostentryHash (@$hostList) {
 			push(@tmp_list, $hostentryHash) if ($hostid ne $hostentryHash->{HOSTID});
-		    }
-		    $vhost_files->{'ip-based'} = \@tmp_list;
-		}
-	    }
-	    when ("main") {
-		delete $vhost_files->{'main'} if ($hostid eq 'main');
-	    }
-	    default {
-		my $vhost = $vhost_files->{$key}->[0]->{'HOSTID'};
-		delete $vhost_files->{$key} if ($vhost eq $hostid);
-	    }
-	}
+                }
+                $vhost_files->{'ip-based'} = \@tmp_list;
+            }
+        }
+        elsif($key eq "main") {
+            delete $vhost_files->{'main'} if ($hostid eq 'main');
+        }
+        else {
+            my $vhost = $vhost_files->{$key}->[0]->{'HOSTID'};
+            delete $vhost_files->{$key} if ($vhost eq $hostid);
+        }
     }
 }
 
