@@ -243,7 +243,7 @@ module Yast
         end
       end
 
-      Progress.set(false) #off();
+      old_progress = Progress.set(false) #off();
       SuSEFirewall.Read
       if Package.Installed("bind")
         if Ops.greater_than(
@@ -271,7 +271,7 @@ module Yast
         Builtins.y2warning("Package bind is not installed.")
       end
       Builtins.y2internal("DNS running and configured: %1", @configured_dns)
-      Progress.set(true) #on();
+      Progress.set(old_progress) #on();
 
       # read current settings from httpd.conf and sysconfig
       Progress.NextStage
@@ -310,7 +310,7 @@ module Yast
       Progress.NextStage
 
       # read current settings for firewall and network
-      Progress.set(false) #off();
+      old_progress = Progress.set(false) #off();
       NetworkInterfaces.Read
 
       # generate the map: static IP -> device
@@ -361,7 +361,7 @@ module Yast
       )
 
 
-      Progress.set(true) #on();
+      Progress.set(old_progress) #on();
 
       # translators: progress step
       ProgressNextStage(_("Finished"))
@@ -380,7 +380,7 @@ module Yast
       # HttpServer read dialog caption
       caption = _("Saving HTTP Server Configuration")
 
-      steps = 2
+      steps = 3
 
       # We do not set help text here, because it was set outside
       Progress.New(
@@ -431,7 +431,7 @@ module Yast
       YaST::HTTPDData.WriteHosts
       Progress.NextStage
       Yast.import "SuSEFirewall"
-      Progress.set(false) #    Progress::off ();
+      old_progress = Progress.set(false) # off();
 
       # always adapt firewall
       if YaST::HTTPDData.WriteListen(false) == nil
@@ -452,7 +452,7 @@ module Yast
 
       SuSEFirewall.Write
       DnsServerAPI.Write if @configured_dns
-      Progress.set(true)
+      Progress.set(old_progress)
       YaST::HTTPDData.WriteModuleList
       # in autoyast, quit here
       # Wrong, service still has to be enabled...
@@ -583,13 +583,25 @@ module Yast
       end
 
       # setup hosts
-      #    foreach (string host, list<map<string, any> > desc, s["hosts"]:$[], ``{ YaST::HTTPDData::CreateHost(host,desc); }); // check host name
       Builtins.foreach(Ops.get_list(s, "hosts", [])) do |row|
-        YaST::HTTPDData.CreateHost(
-          Ops.get_string(row, "KEY", ""),
-          Ops.get_list(row, "VALUE", [])
-        )
-      end # check host name
+        # "main" defines the default server configured in
+        # /etc/apache2/default-server.conf. This has already been
+        # defined in YaPI::HTTPD and has to be updated only.
+        # With the CreateHost call an own entry in /etc/apache2/vhosts.d
+        # will be generated.
+        # (bnc#893100)
+        if row["KEY"] == "main"
+          YaST::HTTPDData.ModifyHost(
+            row["KEY"],
+            row["VALUE"] || []
+          )
+        else
+          YaST::HTTPDData.CreateHost(
+            row["KEY"] || "",
+            row["VALUE"] || []
+          )
+        end
+      end
 
       # setup service
       if Builtins.haskey(s, "service")
