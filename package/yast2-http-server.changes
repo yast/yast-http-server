@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Fri Aug 29 14:36:49 CEST 2014 - schubi@suse.de
+
+- Autoyast conifuration: "main" defines the default server configured in
+  /etc/apache2/default-server.conf. This has already been
+  defined in YaPI::HTTPD and has to be updated only.
+  (bnc#893100)
+- 3.1.2
+
+-------------------------------------------------------------------
 Wed Jul 30 15:03:11 UTC 2014 - cwh@suse.com
 
 - replaced given/when by regular if/elsif cascades to get rid of
