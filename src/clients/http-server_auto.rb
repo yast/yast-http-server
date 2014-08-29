@@ -75,16 +75,17 @@ module Yast
       # Read current state
       elsif @func == "Read"
         Yast.import "Progress"
+        old_progress = Progress.set(false) #off();
         Progress.off
         @ret = HttpServer.Read
-        Progress.on
+        Progress.set(old_progress)
       # Write givven settings
       elsif @func == "Write"
         Yast.import "Progress"
-        Progress.off
+        old_progress = Progress.set(false) #off();
         HttpServer.write_only = true
         @ret = HttpServer.Write
-        Progress.on
+        Progress.set(old_progress)
       else
         Builtins.y2error("Unknown function: %1", @func)
         @ret = false
