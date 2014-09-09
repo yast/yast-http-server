@@ -583,6 +583,7 @@ module Yast
       end
 
       # setup hosts
+      default_server = nil
       Builtins.foreach(Ops.get_list(s, "hosts", [])) do |row|
         # "main" defines the default server configured in
         # /etc/apache2/default-server.conf. This has already been
@@ -591,16 +592,25 @@ module Yast
         # will be generated.
         # (bnc#893100)
         if row["KEY"] == "main"
-          YaST::HTTPDData.ModifyHost(
-            row["KEY"],
-            row["VALUE"] || []
-          )
+          default_server = row
         else
           YaST::HTTPDData.CreateHost(
             row["KEY"] || "",
             row["VALUE"] || []
           )
         end
+      end
+
+      # Every YaST::HTTPDData.CreateHost resets the NameVirtualHost
+      # entry in default-server.conf. I do not really know the
+      # reason for, but in that case it is not intent (schubi).
+      # So, the default server will be modified AFTER all other
+      # hosts have been created to get the correct NameVirtualHost entry
+      if default_server
+        YaST::HTTPDData.ModifyHost(
+          default_server["KEY"],
+          default_server["VALUE"] || []
+        )
       end
 
       # setup service
