@@ -499,8 +499,8 @@ sub createVH (){
  }
 
  if ($ip eq '' && $byname eq ''){
-  $ip = $params->{'id'};
-  if ($params->{'type'} eq "ip-based"){
+  $ip = $params->{'id'} if defined($params->{'type'});
+  if (defined($params->{'type'}) && $params->{'type'} eq "ip-based"){
    $byname = "0";
   } else {
 	 $byname = "1";
@@ -565,11 +565,11 @@ sub modifyVH {
 sub validateNVH (){
     my %nb = ();
     foreach my $key ( keys( %{$vhost_files} ) ){
-     if(($key ne 'ip-based') && ($key ne 'main')){
+       if(($key ne 'ip-based') && ($key ne 'main')){
 	my $host_ip=$vhost_files->{$key}->[0]->{'HostIP'};
-	  $nb{$host_ip}=1;
+	$nb{$host_ip}=1 if ($host_ip);
        }
-      }
+    }
 
   my @tmp_data=();
   foreach my $row (@{$vhost_files->{main}{DATA}}){

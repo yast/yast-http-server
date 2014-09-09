@@ -578,7 +578,7 @@ sub WriteListen {
      my ($ip, $fp, $tp, $port) = ('', '', '', '');
 #     if (
       $new =~ m/\[([\w\W]*)\]/; #){
-      $ip=$1;
+      $ip=$1 if ($1);
       if ($new =~ m/\[$ip\]:([\d\:]*)/){
        ($fp, $tp) = split(/:/, $1);
       } else{
