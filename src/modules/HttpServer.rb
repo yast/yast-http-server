@@ -594,9 +594,19 @@ module Yast
         if row["KEY"] == "main"
           default_server = row
         else
+          value = row["VALUE"] || []
+          key_split = row["KEY"].split("/")
+          if value.select{|item| item.has_key?("HostIP")}.empty? &&
+            key_split.size > 1
+            # Set HostIP which is given in the KEY (e.g. *:443/sleposbuilder3.suse.cz.conf)
+            # values in order to set VirtualHost in /etc/apache2/vhosts.d/<hostname>
+            # (bnc#895127)
+            host_ip = key_split.first
+            value << {"KEY" => "HostIP", "VALUE" => host_ip}
+          end
           YaST::HTTPDData.CreateHost(
             row["KEY"] || "",
-            row["VALUE"] || []
+            value
           )
         end
       end
