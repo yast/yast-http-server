@@ -596,7 +596,7 @@ module Yast
         else
           value = row["VALUE"] || []
           key_split = row["KEY"].split("/")
-          if value.none? {|item| item.has_key?("HostIP")} && key_split.size > 1
+          if value.none? {|item| item["KEY"] == "HostIP"} && key_split.size > 1
             # Set HostIP which is given in the KEY (e.g. *:443/sleposbuilder3.suse.cz.conf)
             # values in order to set VirtualHost in /etc/apache2/vhosts.d/<hostname>
             # (bnc#895127)
