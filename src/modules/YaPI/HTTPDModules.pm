@@ -14,9 +14,7 @@ textdomain "http-server";
                     packages  => [],
                     default   => 1,
                     position  => 10,
-		    directives=> [ { option => "Allow", "context" => [ "Directory" ] }, 
-				   { option => "Deny",  "context" => [ "Directory" ] },
-				   { option =>  "Order",     "context" => [ "Directory" ], "values" => [ "Deny,Allow", "Allow,Deny", "Mutual-failure" ] }
+		    directives=> [ { option => "Require", "context" => [ "Directory", "Files", "Location" ] }
 				 ]
     },
     'actions' => {

@@ -88,12 +88,8 @@ sub addDir {
                      'VALUE' => 'None'
                     },
                     {
-                     'KEY'   => 'Order',
-                     'VALUE' => 'allow,deny'
-                    },
-                    {
-                     'KEY'   => 'Allow',
-                     'VALUE' => 'from all'
+                     'KEY'   => 'Require',
+                     'VALUE' => 'all granted'
                     }
                   ]
     };

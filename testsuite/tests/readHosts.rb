@@ -36,12 +36,7 @@ module Yast
                         "OVERHEAD" => "",
                         "VALUE"    => "None"
                       },
-                      {
-                        "KEY"      => "Order",
-                        "OVERHEAD" => "",
-                        "VALUE"    => "allow,deny"
-                      },
-                      { "KEY" => "Allow", "VALUE" => "from all" }
+                      { "KEY" => "Require", "VALUE" => "all granted" }
                     ]
                   },
                   {
@@ -57,8 +52,7 @@ module Yast
                     "VALUE"        => [
                       { "KEY" => "Options", "VALUE" => "Indexes MultiViews" },
                       { "KEY" => "AllowOverride", "VALUE" => "None" },
-                      { "KEY" => "Order", "VALUE" => "allow,deny" },
-                      { "KEY" => "Allow", "VALUE" => "from all" }
+                      { "KEY" => "Require", "VALUE" => "all granted" }
                     ]
                   },
                   {
@@ -74,8 +68,7 @@ module Yast
                     "VALUE"        => [
                       { "KEY" => "AllowOverride", "VALUE" => "None" },
                       { "KEY" => "Options", "VALUE" => "+ExecCGI -Includes" },
-                      { "KEY" => "Order", "VALUE" => "allow,deny" },
-                      { "KEY" => "Allow", "VALUE" => "from all" }
+                      { "KEY" => "Require", "VALUE" => "all granted" }
                     ]
                   },
                   {
@@ -116,8 +109,7 @@ module Yast
                     "VALUE"        => [
                       { "KEY" => "Options", "VALUE" => "None" },
                       { "KEY" => "AllowOverride", "VALUE" => "None" },
-                      { "KEY" => "Order", "VALUE" => "allow,deny" },
-                      { "KEY" => "Allow", "VALUE" => "from all" }
+                      { "KEY" => "Require", "VALUE" => "all granted" }
                     ]
                   },
                   { "KEY" => "NameVirtualHost", "VALUE" => "10.20.1.28" },

@@ -1675,8 +1675,7 @@ module Yast
           "SECTIONPARAM" => documentroot,
           "VALUE"        => [
             { "KEY" => "AllowOverride", "VALUE" => "None" },
-            { "KEY" => "Order", "VALUE" => "allow,deny" },
-            { "KEY" => "Allow", "VALUE" => "from all" }
+            { "KEY" => "Require", "VALUE" => "all granted" }
           ],
           "OVERHEAD"     => ""
         }
@@ -2093,8 +2092,7 @@ module Yast
             "VALUE"        => [
               { "KEY" => "AllowOverride", "VALUE" => "None" },
               { "KEY" => "Options", "VALUE" => "+ExecCGI -Includes" },
-              { "KEY" => "Order", "VALUE" => "allow,deny" },
-              { "KEY" => "Allow", "VALUE" => "from all" }
+              { "KEY" => "Require", "VALUE" => "all granted" }
             ],
             "OVERHEAD"     => ""
           }
