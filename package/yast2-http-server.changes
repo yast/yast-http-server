@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Oct  3 08:37:15 UTC 2014 - ancor@suse.com
+
+- Dropped the usage of deprecated directives Order, Allow and Deny
+  in favor of mod_authz_host.
+- 3.1.5
+
+-------------------------------------------------------------------
 Tue Sep 16 09:14:59 CEST 2014 - schubi@suse.de
 
 - AutoYaST: Using HostIP which is given in the host name
