@@ -247,7 +247,7 @@ without installing the package."), "apache2" ) );
          {
           term content = `VBox(
                 `Label(msg),
-                `Left(`CheckBox(`id(`disable), _("Do not show this message anymore"))),
+                `Left(`CheckBox(`id(`disable), Message::DoNotShowMessageAgain ())),
                 `ButtonBox (
                     `PushButton(`id(`ok), `opt (`okButton), Label::ContinueButton()),
                     `PushButton(`id(`cancel), `opt (`cancelButton), Label::CancelButton())
