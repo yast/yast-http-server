@@ -237,11 +237,11 @@ without installing the package."), "apache2" ) );
     if (size (new_files) > 0)
     {
         // Continue/Cancel question, %1 is a file name
-        string msg = _("File %1 has been created manually.
+        string msg = _("File %1 has been created manually.\n
 YaST might lose this file");
         if (size (new_files) > 1)
-            // Continue/Cancel question, %1 is a coma separated list of file names
-            msg = _("Files %1 have been created manually.
+            // Continue/Cancel question, %1 is a comna separated list of file names
+            msg = _("Files %1 have been created manually.\n
 YaST might lose these files");
         msg = sformat (msg, mergestring (new_files, ", "));
         string popup_file = "/filechecks_non_verbose";
@@ -264,8 +264,10 @@ YaST might lose these files");
            SCR::Write ( .target.string, Directory::vardir + popup_file, "");
            }
           UI::CloseDialog();
-          if (ret==`ok)return true;
-                else return false;
+          if (ret==`ok)
+            return true;
+          else
+            return false;
          }
                 else return true;
     }
