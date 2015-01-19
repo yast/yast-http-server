@@ -264,10 +264,7 @@ YaST might lose these files");
            SCR::Write ( .target.string, Directory::vardir + popup_file, "");
            }
           UI::CloseDialog();
-          if (ret==`ok)
-            return true;
-          else
-            return false;
+          return ret==`ok;
          }
                 else return true;
     }
