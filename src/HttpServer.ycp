@@ -239,7 +239,7 @@ without installing the package."), "apache2" ) );
         // Continue/Cancel question, %1 is a file name
         string msg = _("File %1 has been created manually.\nYaST might lose this file");
         if (size (new_files) > 1)
-            // Continue/Cancel question, %1 is a comna separated list of file names
+            // Continue/Cancel question, %1 is a comma separated list of file names
             msg = _("Files %1 have been created manually.\nYaST might lose these files");
         msg = sformat (msg, mergestring (new_files, ", "));
         string popup_file = "/filechecks_non_verbose";
