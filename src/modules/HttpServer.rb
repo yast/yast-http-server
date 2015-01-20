@@ -34,6 +34,7 @@ module Yast
       Yast.import "Confirm"
       Yast.import "SuSEFirewallServices"
       Yast.import "FileChanges"
+      Yast.import "Label"
 
       # Abort function
       # return boolean return true if abort
@@ -69,6 +70,22 @@ module Yast
         "/etc/apache2/listen.conf",
         "/etc/apache2/vhosts.d/yast2_vhosts.conf"
       ]
+    end
+
+    def DynamicFilesToCheck
+      dynamic_files_to_check = Convert.convert(
+        SCR.Read(path(".target.dir"), "/etc/apache2/vhosts.d"),
+        :from => "any",
+        :to   => "list <string>"
+      )
+      dynamic_files_to_check = Builtins.filter(dynamic_files_to_check) do |file|
+        !Builtins.contains(["vhost.template", "vhost-ssl.template"], file)
+      end
+      dynamic_files_to_check = Builtins.maplist(dynamic_files_to_check) do |file|
+        Ops.add("/etc/apache2/vhosts.d/", file)
+      end
+      Builtins.y2milestone("dynamic files: %1", dynamic_files_to_check)
+      deep_copy(dynamic_files_to_check)
     end
 
     # Data was modified?
@@ -282,7 +299,81 @@ module Yast
       YaST::HTTPDData.ReadModules
       YaST::HTTPDData.ReadService
 
-      return false if !FileChanges.CheckFiles(@files_to_check)
+
+      dynamic_files_to_check = DynamicFilesToCheck()
+      if !FileChanges.CheckFiles(
+          Convert.convert(
+            Builtins.merge(@files_to_check, dynamic_files_to_check),
+            :from => "list",
+            :to   => "list <string>"
+          )
+        )
+        return false
+      end
+
+      # FIXME: following functionality should be generic in FileChanges
+
+      file_checksums = {}
+      if Ops.greater_than(
+          Convert.to_integer(
+            SCR.Read(path(".target.size"), "/var/lib/YaST2/file_checksums.ycp")
+          ),
+          0
+        )
+        file_checksums = Convert.convert(
+          SCR.Read(path(".target.ycp"), "/var/lib/YaST2/file_checksums.ycp"),
+          :from => "any",
+          :to   => "map <string, string>"
+        )
+        file_checksums = {} if file_checksums == nil
+      end
+
+      new_files = Builtins.filter(dynamic_files_to_check) do |file|
+        !Builtins.haskey(file_checksums, file)
+      end
+
+      if Ops.greater_than(Builtins.size(new_files), 0)
+        # Continue/Cancel question, %1 is a file name
+        msg = _("File %1 has been created manually.\nYaST might lose this file")
+        if Ops.greater_than(Builtins.size(new_files), 1)
+          # Continue/Cancel question, %1 is a comma separated list of file names
+          msg = _(
+            "Files %1 have been created manually.\nYaST might lose these files"
+          )
+        end
+        msg = Builtins.sformat(msg, Builtins.mergestring(new_files, ", "))
+        popup_file = "/filechecks_non_verbose"
+        if {} ==
+            SCR.Read(
+              path(".target.stat"),
+              Ops.add(Directory.vardir, popup_file)
+            )
+          content = VBox(
+            Label(msg),
+            Left(CheckBox(Id(:disable), Message.DoNotShowMessageAgain())),
+            ButtonBox(
+              PushButton(Id(:ok), Opt(:okButton), Label.ContinueButton()),
+              PushButton(Id(:cancel), Opt(:cancelButton), Label.CancelButton())
+            )
+          )
+          UI.OpenDialog(content)
+          UI.SetFocus(:ok)
+          ret = UI.UserInput
+          Builtins.y2milestone("ret = %1", ret)
+          if ret == :ok && Convert.to_boolean(UI.QueryWidget(:disable, :Value))
+            Builtins.y2milestone("Disabled checksum popups")
+            SCR.Write(
+              path(".target.string"),
+              Ops.add(Directory.vardir, popup_file),
+              ""
+            )
+          end
+          UI.CloseDialog
+          return ret == :ok
+        else
+          return true
+        end
+      end
 
       # check the modules RPMs
       modules = YaST::HTTPDData.GetModuleList
@@ -482,7 +573,8 @@ module Yast
       #	map<string, any> test = (map<string, any>)SCR::Execute(.target.bash_output, "apache2ctl conftest");
       #y2internal("test %1", test);
 
-      Builtins.foreach(@files_to_check) do |file|
+
+      Builtins.foreach(Builtins.merge(@files_to_check, DynamicFilesToCheck())) do |file|
         FileChanges.StoreFileCheckSum(file)
       end
       # translators: progress finished
