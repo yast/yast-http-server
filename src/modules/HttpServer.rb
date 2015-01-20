@@ -13,6 +13,9 @@ require "yast"
 
 module Yast
   class HttpServerClass < Module
+
+    include Yast::Logger
+
     def main
       Yast.import "UI"
       textdomain "http-server"
@@ -72,20 +75,15 @@ module Yast
       ]
     end
 
-    def DynamicFilesToCheck
-      dynamic_files_to_check = Convert.convert(
-        SCR.Read(path(".target.dir"), "/etc/apache2/vhosts.d"),
-        :from => "any",
-        :to   => "list <string>"
-      )
-      dynamic_files_to_check = Builtins.filter(dynamic_files_to_check) do |file|
-        !Builtins.contains(["vhost.template", "vhost-ssl.template"], file)
-      end
-      dynamic_files_to_check = Builtins.maplist(dynamic_files_to_check) do |file|
-        Ops.add("/etc/apache2/vhosts.d/", file)
-      end
-      Builtins.y2milestone("dynamic files: %1", dynamic_files_to_check)
-      deep_copy(dynamic_files_to_check)
+    IGNORED_FILES = ["vhost.template", "vhost-ssl.template"]
+    APACHE_VHOSTS_DIR = "/etc/apache2/vhosts.d"
+
+    def dynamic_files_to_check
+      files = SCR.Read(path(".target.dir"), APACHE_VHOSTS_DIR)
+      files.reject! { |f| IGNORED_FILES.include?(f) }
+      files.map! { |f| File.join(APACHE_VHOSTS_DIR, f) }
+      log.info "dynamic files: #{files}"
+      files
     end
 
     # Data was modified?
@@ -300,14 +298,7 @@ module Yast
       YaST::HTTPDData.ReadService
 
 
-      dynamic_files_to_check = DynamicFilesToCheck()
-      if !FileChanges.CheckFiles(
-          Convert.convert(
-            Builtins.merge(@files_to_check, dynamic_files_to_check),
-            :from => "list",
-            :to   => "list <string>"
-          )
-        )
+      if !FileChanges.CheckFiles(@files_to_check + dynamic_files_to_check())
         return false
       end
 
@@ -325,12 +316,10 @@ module Yast
           :from => "any",
           :to   => "map <string, string>"
         )
-        file_checksums = {} if file_checksums == nil
+        file_checksums ||= {}
       end
 
-      new_files = Builtins.filter(dynamic_files_to_check) do |file|
-        !Builtins.haskey(file_checksums, file)
-      end
+      new_files = dynamic_files_to_check() - file_checksums.keys
 
       if Ops.greater_than(Builtins.size(new_files), 0)
         # Continue/Cancel question, %1 is a file name
@@ -573,8 +562,7 @@ module Yast
       #	map<string, any> test = (map<string, any>)SCR::Execute(.target.bash_output, "apache2ctl conftest");
       #y2internal("test %1", test);
 
-
-      Builtins.foreach(Builtins.merge(@files_to_check, DynamicFilesToCheck())) do |file|
+      (@files_to_check + DynamicFilesToCheck()).each do |file|
         FileChanges.StoreFileCheckSum(file)
       end
       # translators: progress finished
