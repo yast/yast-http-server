@@ -305,17 +305,9 @@ module Yast
       # FIXME: following functionality should be generic in FileChanges
 
       file_checksums = {}
-      if Ops.greater_than(
-          Convert.to_integer(
-            SCR.Read(path(".target.size"), "/var/lib/YaST2/file_checksums.ycp")
-          ),
-          0
-        )
-        file_checksums = Convert.convert(
-          SCR.Read(path(".target.ycp"), "/var/lib/YaST2/file_checksums.ycp"),
-          :from => "any",
-          :to   => "map <string, string>"
-        )
+
+      if SCR.Read(path(".target.size"), FileChanges.data) > 0
+        file_checksums = SCR.Read(path(".target.ycp"), FileChanges.data)
         file_checksums ||= {}
       end
 
@@ -332,11 +324,8 @@ module Yast
         end
         msg = Builtins.sformat(msg, Builtins.mergestring(new_files, ", "))
         popup_file = "/filechecks_non_verbose"
-        if {} ==
-            SCR.Read(
-              path(".target.stat"),
-              Ops.add(Directory.vardir, popup_file)
-            )
+        popup_file_path = File.join(Directory.vardir, popup_file)
+        if !FileUtils.Exists(popup_file_path)
           content = VBox(
             Label(msg),
             Left(CheckBox(Id(:disable), Message.DoNotShowMessageAgain())),
@@ -349,11 +338,11 @@ module Yast
           UI.SetFocus(:ok)
           ret = UI.UserInput
           Builtins.y2milestone("ret = %1", ret)
-          if ret == :ok && Convert.to_boolean(UI.QueryWidget(:disable, :Value))
+          if ret == :ok && UI.QueryWidget(:disable, :Value)
             Builtins.y2milestone("Disabled checksum popups")
             SCR.Write(
               path(".target.string"),
-              Ops.add(Directory.vardir, popup_file),
+              popup_file_path,
               ""
             )
           end
