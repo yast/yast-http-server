@@ -77,6 +77,7 @@ module Yast
 
     IGNORED_FILES = ["vhost.template", "vhost-ssl.template"]
     APACHE_VHOSTS_DIR = "/etc/apache2/vhosts.d"
+    CHECKSUMS_FILE = "/var/lib/YaST2/file_checksums.ycp"
 
     def dynamic_files_to_check
       files = SCR.Read(path(".target.dir"), APACHE_VHOSTS_DIR)
@@ -306,23 +307,23 @@ module Yast
 
       file_checksums = {}
 
-      if SCR.Read(path(".target.size"), FileChanges.data) > 0
-        file_checksums = SCR.Read(path(".target.ycp"), FileChanges.data)
+      if SCR.Read(path(".target.size"), CHECKSUMS_FILE) > 0
+        file_checksums = SCR.Read(path(".target.ycp"), CHECKSUMS_FILE)
         file_checksums ||= {}
       end
 
       new_files = dynamic_files_to_check() - file_checksums.keys
 
-      if Ops.greater_than(Builtins.size(new_files), 0)
-        # Continue/Cancel question, %1 is a file name
-        msg = _("File %1 has been created manually.\nYaST might lose this file")
-        if Ops.greater_than(Builtins.size(new_files), 1)
-          # Continue/Cancel question, %1 is a comma separated list of file names
+      if new_files.size > 0
+        # Continue/Cancel question, %s is a file name
+        msg = _("File %s has been created manually.\nYaST might lose this file")
+        if new_files.size > 1
+          # Continue/Cancel question, %s is a comma separated list of file names
           msg = _(
-            "Files %1 have been created manually.\nYaST might lose these files"
+            "Files %s have been created manually.\nYaST might lose these files"
           )
         end
-        msg = Builtins.sformat(msg, Builtins.mergestring(new_files, ", "))
+        msg = msg % new_files.join(", ")
         popup_file = "/filechecks_non_verbose"
         popup_file_path = File.join(Directory.vardir, popup_file)
         if !FileUtils.Exists(popup_file_path)
