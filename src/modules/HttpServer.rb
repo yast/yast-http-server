@@ -13,6 +13,9 @@ require "yast"
 
 module Yast
   class HttpServerClass < Module
+
+    include Yast::Logger
+
     def main
       Yast.import "UI"
       textdomain "http-server"
@@ -34,6 +37,7 @@ module Yast
       Yast.import "Confirm"
       Yast.import "SuSEFirewallServices"
       Yast.import "FileChanges"
+      Yast.import "Label"
 
       # Abort function
       # return boolean return true if abort
@@ -69,6 +73,18 @@ module Yast
         "/etc/apache2/listen.conf",
         "/etc/apache2/vhosts.d/yast2_vhosts.conf"
       ]
+    end
+
+    IGNORED_FILES = ["vhost.template", "vhost-ssl.template"]
+    APACHE_VHOSTS_DIR = "/etc/apache2/vhosts.d"
+    CHECKSUMS_FILE = "/var/lib/YaST2/file_checksums.ycp"
+
+    def dynamic_files_to_check
+      files = SCR.Read(path(".target.dir"), APACHE_VHOSTS_DIR)
+      files.reject! { |f| IGNORED_FILES.include?(f) }
+      files.map! { |f| File.join(APACHE_VHOSTS_DIR, f) }
+      log.info "dynamic files: #{files}"
+      files
     end
 
     # Data was modified?
@@ -282,7 +298,61 @@ module Yast
       YaST::HTTPDData.ReadModules
       YaST::HTTPDData.ReadService
 
-      return false if !FileChanges.CheckFiles(@files_to_check)
+
+      if !FileChanges.CheckFiles(@files_to_check + dynamic_files_to_check())
+        return false
+      end
+
+      # FIXME: following functionality should be generic in FileChanges
+
+      file_checksums = {}
+
+      if SCR.Read(path(".target.size"), CHECKSUMS_FILE) > 0
+        file_checksums = SCR.Read(path(".target.ycp"), CHECKSUMS_FILE)
+        file_checksums ||= {}
+      end
+
+      new_files = dynamic_files_to_check() - file_checksums.keys
+
+      if new_files.size > 0
+        # Continue/Cancel question, %s is a file name
+        msg = _("File %s has been created manually.\nYaST might lose this file")
+        if new_files.size > 1
+          # Continue/Cancel question, %s is a comma separated list of file names
+          msg = _(
+            "Files %s have been created manually.\nYaST might lose these files"
+          )
+        end
+        msg = msg % new_files.join(", ")
+        popup_file = "/filechecks_non_verbose"
+        popup_file_path = File.join(Directory.vardir, popup_file)
+        if !FileUtils.Exists(popup_file_path)
+          content = VBox(
+            Label(msg),
+            Left(CheckBox(Id(:disable), Message.DoNotShowMessageAgain())),
+            ButtonBox(
+              PushButton(Id(:ok), Opt(:okButton), Label.ContinueButton()),
+              PushButton(Id(:cancel), Opt(:cancelButton), Label.CancelButton())
+            )
+          )
+          UI.OpenDialog(content)
+          UI.SetFocus(:ok)
+          ret = UI.UserInput
+          Builtins.y2milestone("ret = %1", ret)
+          if ret == :ok && UI.QueryWidget(:disable, :Value)
+            Builtins.y2milestone("Disabled checksum popups")
+            SCR.Write(
+              path(".target.string"),
+              popup_file_path,
+              ""
+            )
+          end
+          UI.CloseDialog
+          return ret == :ok
+        else
+          return true
+        end
+      end
 
       # check the modules RPMs
       modules = YaST::HTTPDData.GetModuleList
@@ -482,7 +552,7 @@ module Yast
       #	map<string, any> test = (map<string, any>)SCR::Execute(.target.bash_output, "apache2ctl conftest");
       #y2internal("test %1", test);
 
-      Builtins.foreach(@files_to_check) do |file|
+      (@files_to_check + DynamicFilesToCheck()).each do |file|
         FileChanges.StoreFileCheckSum(file)
       end
       # translators: progress finished
