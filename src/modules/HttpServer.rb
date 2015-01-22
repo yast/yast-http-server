@@ -13,6 +13,9 @@ require "yast"
 
 module Yast
   class HttpServerClass < Module
+
+    include Yast::Logger
+
     def main
       Yast.import "UI"
       textdomain "http-server"
@@ -34,6 +37,7 @@ module Yast
       Yast.import "Confirm"
       Yast.import "SuSEFirewallServices"
       Yast.import "FileChanges"
+      Yast.import "Label"
 
       # Abort function
       # return boolean return true if abort
@@ -69,6 +73,17 @@ module Yast
         "/etc/apache2/listen.conf",
         "/etc/apache2/vhosts.d/yast2_vhosts.conf"
       ]
+    end
+
+    IGNORED_FILES = ["vhost.template", "vhost-ssl.template"]
+    APACHE_VHOSTS_DIR = "/etc/apache2/vhosts.d"
+
+    def dynamic_files_to_check
+      files = SCR.Read(path(".target.dir"), APACHE_VHOSTS_DIR)
+      files.reject! { |f| IGNORED_FILES.include?(f) }
+      files.map! { |f| File.join(APACHE_VHOSTS_DIR, f) }
+      log.info "dynamic files: #{files}"
+      files
     end
 
     # Data was modified?
@@ -282,7 +297,13 @@ module Yast
       YaST::HTTPDData.ReadModules
       YaST::HTTPDData.ReadService
 
-      return false if !FileChanges.CheckFiles(@files_to_check)
+      if !FileChanges.CheckFiles(@files_to_check + dynamic_files_to_check())
+        return false
+      end
+
+      if !FileChanges.CheckNewCreatedFiles(dynamic_files_to_check())
+        return false
+      end
 
       # check the modules RPMs
       modules = YaST::HTTPDData.GetModuleList
@@ -482,7 +503,7 @@ module Yast
       #	map<string, any> test = (map<string, any>)SCR::Execute(.target.bash_output, "apache2ctl conftest");
       #y2internal("test %1", test);
 
-      Builtins.foreach(@files_to_check) do |file|
+      (@files_to_check + dynamic_files_to_check()).each do |file|
         FileChanges.StoreFileCheckSum(file)
       end
       # translators: progress finished
