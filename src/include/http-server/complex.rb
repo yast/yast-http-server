@@ -48,7 +48,7 @@ module Yast
         "boolean ()"
       )
       ret = HttpServer.Write
-      ret ? :next : :abort
+      ret ? :next : :back
     end
 
     # Abort dialog ask user for abort application
