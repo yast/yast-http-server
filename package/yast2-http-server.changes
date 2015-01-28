@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Jan 28 13:46:18 UTC 2015 - jsrain@suse.cz
+
+- do not stop reading settings when new configuration file got
+  confirmed by user (bsc#770331)
+- 2.17.17
+
+-------------------------------------------------------------------
 Mon Jan 19 10:14:58 UTC 2015 - jsrain@suse.cz
 
 - check for manually created files in order to prevent data loss

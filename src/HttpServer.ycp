@@ -262,9 +262,11 @@ without installing the package."), "apache2" ) );
            SCR::Write ( .target.string, Directory::vardir + popup_file, "");
            }
           UI::CloseDialog();
-          return ret==`ok;
+	  if (ret != `ok)
+          {
+            return false;
+          }
          }
-                else return true;
     }
 
 
