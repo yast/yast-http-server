@@ -348,9 +348,7 @@ module Yast
             )
           end
           UI.CloseDialog
-          return ret == :ok
-        else
-          return true
+          return false unless ret == :ok
         end
       end
 
