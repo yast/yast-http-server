@@ -5,6 +5,14 @@ Wed Jan 28 13:46:18 UTC 2015 - jsrain@suse.cz
   confirmed by user (bsc#770331)
 
 -------------------------------------------------------------------
+Tue Jan 27 13:34:34 UTC 2015 - lslezak@suse.cz
+
+- check package installation errors (e.g. the PHP package is
+  included in the Web and Scripting SLE12 module which is optional
+  and might not be available), do not fail silently (bnc#913906)
+- 3.1.5
+
+-------------------------------------------------------------------
 Tue Jan 20 12:41:59 UTC 2015 - jsrain@suse.cz
 
 - check for manually created files in order to prevent data loss

@@ -483,7 +483,7 @@ module Yast
       rpms = YaPI::HTTPD.GetModulePackages
 
       # install required RPMs for modules
-      Package.InstallAllMsg(
+      installed = Package.InstallAllMsg(
         rpms,
         _(
           "The enabled modules require\n" +
@@ -492,6 +492,11 @@ module Yast
             "Install them now?\n"
         )
       )
+
+      if !installed
+        Report.Error(Message.FailedToInstallPackages)
+        return false
+      end
 
       # write httpd.conf
 
