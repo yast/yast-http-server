@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jan 28 13:46:18 UTC 2015 - jsrain@suse.cz
+
+- do not stop reading settings when new configuration file got
+  confirmed by user (bsc#770331)
+
+-------------------------------------------------------------------
 Tue Jan 27 13:34:34 UTC 2015 - lslezak@suse.cz
 
 - check package installation errors (e.g. the PHP package is
