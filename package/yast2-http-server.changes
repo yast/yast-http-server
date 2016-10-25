@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Oct 25 15:16:37 UTC 2016 - cwh@suse.com
+
+- Added 'Options' option for Directory-sections (bsc#707836)
+- 3.2.0
+
+-------------------------------------------------------------------
 Mon Jun  6 07:51:25 UTC 2016 - igonzalezsosa@suse.com
 
 - Stop generating autodocs (fate#320356)

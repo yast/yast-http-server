@@ -118,7 +118,8 @@ textdomain "http-server";
                     position  => 70,
                     directives=> [ { option => "ScriptLog", 		"context" => [ "Server", "Virtual" ] },
 				   { option => "ScriptLogBuffer", 	"context" => [ "Server", "Virtual" ] },
-				   { option => "ScriptLogLength", 	"context" => [ "Server", "Virtual" ] }
+				   { option => "ScriptLogLength", 	"context" => [ "Server", "Virtual" ] },
+				   { option => "Options",		"context" => [ "Directory" ] }
 				]
     },
     'dir' => {
