@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Oct 26 10:56:40 UTC 2016 - cwh@suse.com
+
+- Adding mod_socache_shmcb if SSL is enabled. (bsc#854570)
+- 3.2.1
+
+-------------------------------------------------------------------
 Tue Oct 25 15:16:37 UTC 2016 - cwh@suse.com
 
 - Added 'Options' option for Directory-sections (bsc#707836)
