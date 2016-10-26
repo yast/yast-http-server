@@ -2108,6 +2108,7 @@ module Yast
         if Ops.greater_than(Builtins.size(cert_file), 0) &&
             Ops.greater_than(Builtins.size(key_file), 0)
           YaST::HTTPDData.ModifyModuleList(["ssl"], true)
+          YaST::HTTPDData.ModifyModuleList(["socache_shmcb"], true)
           ssl_values = {
             "KEY"          => "_SECTION",
             "SECTIONNAME"  => "IfDefine",
