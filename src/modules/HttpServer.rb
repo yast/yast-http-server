@@ -856,7 +856,7 @@ module Yast
   private
 
     def backup_vhost_config
-      files = FileChanges.new_created_files(dynamic_files_to_check)
+      files = FileChanges.created_files(dynamic_files_to_check)
       return if files.empty?
 
       backup_dir = File.join(APACHE_VHOSTS_DIR, "YaSTsave")
