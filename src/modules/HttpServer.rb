@@ -304,6 +304,7 @@ module Yast
       if !FileChanges.CheckNewCreatedFiles(dynamic_files_to_check())
         return false
       end
+      backup_vhost_config
 
       # check the modules RPMs
       modules = YaST::HTTPDData.GetModuleList
@@ -851,6 +852,20 @@ module Yast
     publish :function => :Export, :type => "map ()"
     publish :function => :Summary, :type => "list ()"
     publish :function => :AutoPackages, :type => "map ()"
+
+  private
+
+    def backup_vhost_config
+      files = FileChanges.new_created_files(dynamic_files_to_check)
+      return if files.empty?
+
+      backup_dir = File.join(APACHE_VHOSTS_DIR, "YaSTsave")
+      SCR.Execute(path(".target.bash"), "mkdir #{backup_dir}")
+
+      files.each do |file|
+        SCR.Execute(path(".target.bash"), "cp -a #{file} #{backup_dir}")
+      end
+    end
   end
 
   HttpServer = HttpServerClass.new
