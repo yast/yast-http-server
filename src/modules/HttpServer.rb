@@ -73,6 +73,8 @@ module Yast
         "/etc/apache2/listen.conf",
         "/etc/apache2/vhosts.d/yast2_vhosts.conf"
       ]
+
+      @vhost_files_to_backup = []
     end
 
     IGNORED_FILES = ["vhost.template", "vhost-ssl.template"]
@@ -304,7 +306,7 @@ module Yast
       if !FileChanges.CheckNewCreatedFiles(dynamic_files_to_check())
         return false
       end
-      backup_vhost_config
+      @vhost_files_to_backup = FileChanges.created_files(dynamic_files_to_check)
 
       # check the modules RPMs
       modules = YaST::HTTPDData.GetModuleList
@@ -450,6 +452,7 @@ module Yast
       # write httpd.conf
 
       # write hosts
+      backup_vhost_config
       YaST::HTTPDData.WriteHosts
       Progress.NextStage
       Yast.import "SuSEFirewall"
@@ -856,13 +859,12 @@ module Yast
   private
 
     def backup_vhost_config
-      files = FileChanges.created_files(dynamic_files_to_check)
-      return if files.empty?
+      return if @vhost_files_to_backup.empty?
 
       backup_dir = File.join(APACHE_VHOSTS_DIR, "YaSTsave")
       SCR.Execute(path(".target.bash"), "mkdir #{backup_dir}")
 
-      files.each do |file|
+      @vhost_files_to_backup.each do |file|
         SCR.Execute(path(".target.bash"), "cp -a #{file} #{backup_dir}")
       end
     end
