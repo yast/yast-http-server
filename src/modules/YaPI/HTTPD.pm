@@ -85,13 +85,13 @@ CreateListen($fromPort,$toPort,$address,$doFirewall)
 
   $fromPort and $toPort are the listen ports. They can be the same.
   $address is the bind address and can be an empty string for 'all'
-  $doFirewall is a boolean to write the listen data to the SuSEFirewall2
+  $doFirewall is a boolean to write the listen data to firewalld
 
 DeleteListen($fromPort,$toPort,$address,$doFirewall)
 
   $fromPort and $toPort are the listen ports. They can be the same.
   $address is the bind address and can be an empty string for 'all'
-  $doFirewall is a boolean to delete the listen data from the SuSEFirewall2
+  $doFirewall is a boolean to delete the listen data from firewalld
 
 $curListen = GetCurrentListen()
 
@@ -306,7 +306,7 @@ use Data::Dumper;
 @YaPI::HTTPD::ISA = qw( YaPI YaST::httpdUtils YaST::HTTPDData );
 YaST::YCP::Import ("SCR");
 YaST::YCP::Import ("Service");
-YaST::YCP::Import ("SuSEFirewall");
+YaST::YCP::Import ("FirewalldWrapper");
 textdomain "http-server";
 
 #######################################################
@@ -1236,8 +1236,8 @@ with this function you can configure the addresses and ports
 the webserver is listening on. $fromPort and $toPort can have
 the same value. $listen must be a network interface of the
 host but can be an empty string for 'all' interfaces.
-The $doFirewall boolean indicates if the SuSEFirewall2 shall
-be configured for the settings.
+The $doFirewall boolean indicates if 'firewalld' shall be
+configured for the settings.
 
 EXAMPLE
 
@@ -1272,12 +1272,12 @@ y2warning("SCR::WRITE listentries", Dumper(\@listenEntries), "new entry ", Dumpe
     if( $doFirewall ) {
         my $ip2device = $self->ip2device();
         my $if = exists($newEntry{ADDRESS})?$ip2device->{$newEntry{ADDRESS}}:'all';
-        SuSEFirewall->Read();
-        unless( SuSEFirewall->AddService( $newEntry{PORT}, "TCP", $if ) ) {
+        FirewalldWrapper->read();
+        unless( FirewalldWrapper->add_port( $newEntry{PORT}, "TCP", $if ) ) {
             return $self->SetError( code    => 'SET_FW_FAILED',
                                     summary => __('writing the firewall rules failed') );
         } else {
-            SuSEFirewall->Write();
+            FirewalldWrapper->write();
         }
     }
     return 1;
@@ -1291,8 +1291,8 @@ the webserver is listening on. $fromPort and $toPort can have
 the same value. $listen must be a network interface of the
 host but can be an empty string for 'all' interfaces.
 If the listen parameter can't be found, undef is returned.
-The $doFirewall boolean indicates if the SuSEFirewall2 shall
-be configured for the settings.
+The $doFirewall boolean indicates if firewalld shall be
+configured for the settings.
 
 EXAMPLE
 
@@ -1330,9 +1330,9 @@ sub DeleteListen {
         my $ip2device = $self->ip2device();
         my $if = $ip?$ip2device->{$ip}:'all';
         my $port = ($fromPort eq $toPort)?($fromPort):("$fromPort-$toPort");
-        SuSEFirewall->Read();
-        SuSEFirewall->RemoveService( $port, "TCP", $if );
-        SuSEFirewall->Write();
+        FirewalldWrapper->read();
+        FirewallWrapper->remove_port( $port, "TCP", $if );
+        FirewalldWrapper->write();
     }
     return 1;
 }

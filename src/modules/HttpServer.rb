@@ -10,6 +10,7 @@
 # Representation of the configuration of http-server.
 # Input and output routines.
 require "yast"
+require "y2firewall/firewalld"
 
 module Yast
   class HttpServerClass < Module
@@ -33,9 +34,7 @@ module Yast
       Yast.import "Popup"
       Yast.import "DnsServerAPI"
       Yast.import "NetworkService"
-      Yast.import "SuSEFirewall"
       Yast.import "Confirm"
-      Yast.import "SuSEFirewallServices"
       Yast.import "FileChanges"
       Yast.import "Label"
 
@@ -79,6 +78,10 @@ module Yast
 
     IGNORED_FILES = ["vhost.template", "vhost-ssl.template"]
     APACHE_VHOSTS_DIR = "/etc/apache2/vhosts.d"
+
+    def firewalld
+      Y2Firewall::Firewalld.instance
+    end
 
     def dynamic_files_to_check
       files = SCR.Read(path(".target.dir"), APACHE_VHOSTS_DIR)
@@ -261,7 +264,7 @@ module Yast
       end
 
       old_progress = Progress.set(false) #off();
-      SuSEFirewall.Read
+      firewalld.read
       if Package.Installed("bind")
         if Ops.greater_than(
             Builtins.size(
@@ -455,7 +458,6 @@ module Yast
       backup_vhost_config
       YaST::HTTPDData.WriteHosts
       Progress.NextStage
-      Yast.import "SuSEFirewall"
       old_progress = Progress.set(false) # off();
 
       # always adapt firewall
@@ -470,12 +472,15 @@ module Yast
       Builtins.foreach(YaST::HTTPDData.GetCurrentListen) do |row|
         ports = Builtins.add(ports, Ops.get_string(row, "PORT", ""))
       end
-      SuSEFirewallServices.SetNeededPortsAndProtocols(
-        "service:apache2",
-        { "tcp_ports" => ports, "udp_ports" => [] }
-      )
 
-      SuSEFirewall.Write
+      begin
+        Y2Firewall::Firewalld::Service.modify_ports(name: "apache2", tcp_ports: ports)
+        firewalld.write
+      rescue Y2Firewall::Firewalld::Service::NotFound
+        log.info("The apache2 service is not defined in firewalld")
+      end
+
+
       DnsServerAPI.Write if @configured_dns
       Progress.set(old_progress)
       YaST::HTTPDData.WriteModuleList

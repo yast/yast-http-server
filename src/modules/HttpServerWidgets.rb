@@ -30,7 +30,6 @@ module Yast
       Yast.import "HttpServer"
       Yast.import "YaST::HTTPDData"
       Yast.import "Confirm"
-      Yast.import "SuSEFirewall"
       Yast.import "CWMServiceStart"
       Yast.import "CWMFirewallInterfaces"
       Yast.import "Punycode"
@@ -370,12 +369,15 @@ module Yast
           ),
           "handle_events" => ["enabled", "disabled"],
           "opt"           => [:notify],
-          "help"          => Ops.get_string(@HELPS, "server_enable", "")
+          "help"          => @HELPS["server_enable"]
         },
         "firewall_adapt"    => CWMFirewallInterfaces.CreateOpenFirewallWidget(
           {
-            "services"        => ["service:apache2", "service:apache2-ssl"],
-            "help"            => Ops.get_string(@HELPS, "firewall_adapt", ""),
+            # Firewalld already defines the http and https services. This
+            # module modifies the service adding custom ports, taking that in
+            # account we will continue using apache2 and apache2-ssl.
+            "services"        => ["apache2", "apache2-ssl"],
+            "help"            => @HELPS["firewall_adapt"],
             "display_details" => true
           }
         ),

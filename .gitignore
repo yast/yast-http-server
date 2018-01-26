@@ -22,3 +22,6 @@ Makefile.am.common
 .dep
 *.ybc
 *.ami
+/.yardoc
+/doc
+testsuite/raw.tmp.err.*
