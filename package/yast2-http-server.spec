@@ -30,7 +30,7 @@ BuildRequires:  yast2-devtools >= 3.1.10
 BuildRequires:  yast2 >= 4.0.36
 Requires:	yast2-network yast2-perl-bindings libzio
 # SuSEFirewall2 replaced by firewalld yast2.rpm (fate#323460)
-Requires:       yast2 >= 4.0.38
+Requires:       yast2 >= 4.0.39
 
 BuildArchitectures:	noarch
 
