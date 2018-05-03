@@ -339,10 +339,25 @@ module Yast
 
       @dns_zone = ""
 
+      # *************************************** log popups **************************
 
 
-      # Map of widgets for CWM
-      @widgets = {
+      # ************************************ default host table ********************
+
+      @option_counter = 0
+      @deleted_options = []
+
+      # these are for future use:
+
+      # error message - the entered ip address is not found
+      @__nonconfigured_ipaddress = _(
+        "The IP address is not configured\non this machine."
+      )
+    end
+
+    # Map of widgets for CWM
+    def widgets
+      @widgets ||= {
         "server_enable"     => {
           "widget"        => :radio_buttons,
           # translator: server enable/disable radio button group
@@ -790,21 +805,6 @@ module Yast
           "help"          => Ops.get_string(@HELPS, "summary_text", "")
         }
       }
-
-      # *************************************** log popups **************************
-
-
-      # ************************************ default host table ********************
-
-      @option_counter = 0
-      @deleted_options = []
-
-      # these are for future use:
-
-      # error message - the entered ip address is not found
-      @__nonconfigured_ipaddress = _(
-        "The IP address is not configured\non this machine."
-      )
     end
 
     # Validate certificate
@@ -3654,7 +3654,7 @@ module Yast
     publish :function => :initVhostDetails, :type => "void (string)"
     publish :function => :handleVhostDetails, :type => "symbol (string, map)"
     publish :function => :storeVhostDetails, :type => "void (string, map)"
-    publish :variable => :widgets, :type => "map <string, map <string, any>>"
+    publish :function => :widgets, :type => "map <string, map <string, any>>"
     publish :function => :listen2item, :type => "term (map <string, any>, integer)"
   end
 
