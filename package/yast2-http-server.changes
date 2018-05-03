@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Thu May  3 07:34:15 UTC 2018 - knut.anderssen@suse.com
+
+- Do not cache the widgets definition until it is really needed to
+  avoid showing an out of date firewall description (the apache
+  package provides the firewalld service definition and relods the
+  firewall after it is installed) (bsc#1083492)
+- 4.0.1
+
+-------------------------------------------------------------------
 Tue Jan 23 07:28:19 UTC 2018 - knut.anderssen@suse.com
 
 - Replace SuSEFirewall2 by firewalld. (fate#323460)
