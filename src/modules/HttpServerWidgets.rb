@@ -3651,7 +3651,7 @@ module Yast
     publish :function => :initVhostDetails, :type => "void (string)"
     publish :function => :handleVhostDetails, :type => "symbol (string, map)"
     publish :function => :storeVhostDetails, :type => "void (string, map)"
-    publish :function => :widgets, :type => "map <string, map <string, any>>"
+    publish :function => :widgets, :type => "map (string, map <string, any>)"
     publish :function => :listen2item, :type => "term (map <string, any>, integer)"
   end
 
