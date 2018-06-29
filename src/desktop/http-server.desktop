@@ -15,6 +15,7 @@ X-SuSE-YaST-SortKey=
 X-SuSE-YaST-AutoInstResource=http-server
 X-SuSE-YaST-AutoInstClonable=true
 X-SuSE-YaST-AutoInstSchema=http-server.rnc
+X-SuSE-YaST-Keywords=http,network,internet,apache,web,www
 
 Icon=yast-http-server
 Exec=xdg-su -c "/sbin/yast2 http-server"
