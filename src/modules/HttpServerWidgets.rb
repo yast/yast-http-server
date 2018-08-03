@@ -3501,15 +3501,10 @@ module Yast
       end
     end
     def initScriptModules(key)
-      enable_php5 = false
-      enable_perl = false
-      enable_python = false
-      #	boolean enable_ruby=false;
       modules = YaST::HTTPDData.GetModuleList
-      enable_php5 = true if Builtins.contains(modules, "php5")
-      enable_perl = true if Builtins.contains(modules, "perl")
-      enable_python = true if Builtins.contains(modules, "python")
-      #	if (contains(modules, "ruby")) enable_ruby = true;
+      enable_php = Builtins.contains(modules, "php#{YaST::HTTPDData.PhpVersion}")
+      enable_perl = Builtins.contains(modules, "perl")
+      enable_python = Builtins.contains(modules, "python")
 
       UI.ReplaceWidget(
         Id(:scr_mod_replace),
@@ -3519,9 +3514,9 @@ module Yast
             VSpacing(3), #translators: checkbox - support for php script language
             Left(
               CheckBox(
-                Id(:scr_mod_php5),
-                _("Enable &PHP5 Scripting"),
-                enable_php5
+                Id(:scr_mod_php),
+                _("Enable &PHP Scripting"),
+                enable_php
               )
             ),
             VSpacing(1), #translators: checkbox - support for perl script language
