@@ -411,65 +411,52 @@ module Yast
     end
 
     # Write all http-server settings
+    #
     # @return true on success
     def Write
-      # HttpServer read dialog caption
+      # HttpServer write dialog caption
       caption = _("Saving HTTP Server Configuration")
 
-      steps = 3
+      stages = [
+        # translators: progress stage 1/2
+        _("Write the Apache2 settings"),
+        # translators: progress stage 2/2
+        _("Save the Apache2 service status")
+      ]
+      steps = [
+        # translators: progress step 1/3
+        _("Writing the settings..."),
+        # translators: progress step 2/3
+        _("Saving the Apache2 service status..."),
+        # translators: progress step 3/3, finished
+        _("Finished")
+      ]
 
-      # We do not set help text here, because it was set outside
-      Progress.New(
-        caption,
-        " ",
-        steps,
-        [
-          # translators: progress stage 1/3
-          _("Write the Apache2 settings"),
-          YaST::HTTPDData.GetService ?
-            # translators: progress stage 2/3
-            _("Enable Apache2 service") :
-            # translators: progress stage 3/3
-            _("Disable Apache2 service")
-        ],
-        [
-          # translators: progress step 1/3
-          _("Writing the settings..."),
-          YaST::HTTPDData.GetService ?
-            # translators: progress step 2/3
-            _("Enabling Apache2 service...") :
-            # translators: progress step 3/3
-            _("Disabling Apache2 service..."),
-          # translators: progress finished
-          _("Finished")
-        ],
-        ""
-      )
+      Progress.New(caption, " ", steps.count, stages, steps, "")
 
-      # write Apache2 settings
-
+      # Write Apache2 settings
       rpms = YaPI::HTTPD.GetModulePackages
 
-      # install required RPMs for modules
+      # Install required RPMs for modules
       Package.InstallAllMsg(
         rpms,
         _(
           "The enabled modules require\n" +
-            "installation of some of these additional packages:\n" +
-            "%1\n" +
-            "Install them now?\n"
+          "installation of some of these additional packages:\n" +
+          "%1\n" +
+          "Install them now?\n"
         )
       )
 
-      # write httpd.conf
-
-      # write hosts
+      # Write httpd.conf
+      # Write hosts
       backup_vhost_config
+
       YaST::HTTPDData.WriteHosts
       Progress.NextStage
       old_progress = Progress.set(false) # off();
 
-      # always adapt firewall
+      # Always adapt firewall
       if YaST::HTTPDData.WriteListen(false) == nil
         # FIXME: show popup
 
