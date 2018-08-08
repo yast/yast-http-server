@@ -10,6 +10,7 @@
 # Representation of the configuration of http-server.
 # Input and output routines.
 require "yast"
+require "yast2/system_service"
 require "y2firewall/firewalld"
 
 module Yast
@@ -37,6 +38,7 @@ module Yast
       Yast.import "Confirm"
       Yast.import "FileChanges"
       Yast.import "Label"
+      Yast.import "Mode"
 
       # Abort function
       # return boolean return true if abort
@@ -78,6 +80,13 @@ module Yast
 
     IGNORED_FILES = ["vhost.template", "vhost-ssl.template"]
     APACHE_VHOSTS_DIR = "/etc/apache2/vhosts.d"
+
+    # Returns the apache2 service
+    #
+    # @return [Yast2::SystemService]
+    def service
+      @service ||= Yast2::SystemService.find("apache2")
+    end
 
     def firewalld
       Y2Firewall::Firewalld.instance
@@ -480,34 +489,17 @@ module Yast
         log.info("The apache2 service is not defined in firewalld")
       end
 
-
       DnsServerAPI.Write if @configured_dns
       Progress.set(old_progress)
       YaST::HTTPDData.WriteModuleList
-      # in autoyast, quit here
-      # Wrong, service still has to be enabled...
-      # if( write_only ) return true;
-
 
       Progress.NextStage
 
-      if !YaST::HTTPDData.WriteService(@write_only)
+      if !save_status
         # translators: error message
-        Report.Error(Message.CannotAdjustService("apache2"))
+        Report.Error(Message.CannotAdjustService(service.name))
       end
 
-      if YaST::HTTPDData.GetService
-        # this will reload the configuration and start httpd
-        if !Service.Restart("apache2")
-          # translators: error message
-          Report.Error(Message.CannotAdjustService("apache2"))
-        end
-      else
-        if !Service.Stop("apache2")
-          # translators: error message
-          Report.Error(Message.CannotAdjustService("apache2"))
-        end
-      end
       # configuration test
       #	map<string, any> test = (map<string, any>)SCR::Execute(.target.bash_output, "apache2ctl conftest");
       #y2internal("test %1", test);
@@ -522,6 +514,21 @@ module Yast
       true
     end
 
+    # Saves service status (start mode and starts/stops the service)
+    #
+    # @note For AutoYaST and for command line actions, it uses the old way for
+    # backward compatibility, see {Yast::HTTPDData#WriteService}. When the
+    # service is configured by using the UI, it directly saves the service, see
+    # {Yast2::SystemService#save}.
+    #
+    # @return [Boolean] true if service status is saved; false otherwise.
+    def save_status
+      if Mode.auto || Mode.commandline
+        Yast::HTTPDData.WriteService(@write_only)
+      else
+        service.save
+      end
+    end
 
     # For module name find description map in known_modules
     # @param [Array<Hash{String => Object>}] known_modules list< map<string,any> > known modules
