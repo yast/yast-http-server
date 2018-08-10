@@ -34,19 +34,16 @@ module Yast
             HStretch(),
             HSpacing(1),
             VBox(
-              "server_enable", #,
-              #			    `VSpacing(1)
-              #		            `VSpacing (1),
+              "service_widget",
               "LISTEN",
-              #			    `VSpacing (1),
               "firewall_adapt",
-              #		            `VSpacing (1),
               "logs"
             ),
             #			`HSpacing (1),
             HStretch()
           ),
           "widget_names" => [
+            "service_widget",
             "server_enable",
             "LISTEN",
             "firewall_adapt",

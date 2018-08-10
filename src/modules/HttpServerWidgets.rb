@@ -9,9 +9,11 @@
 #
 # $Id$
 require "yast"
+require "cwm/service_widget"
 
 module Yast
   class HttpServerWidgetsClass < Module
+
     def main
       Yast.import "UI"
 
@@ -23,14 +25,12 @@ module Yast
       Yast.import "Label"
       Yast.import "Popup"
       Yast.import "Report"
-      Yast.import "Service"
       Yast.import "String"
       Yast.import "LogView"
       Yast.import "TablePopup"
       Yast.import "HttpServer"
       Yast.import "YaST::HTTPDData"
       Yast.import "Confirm"
-      Yast.import "CWMServiceStart"
       Yast.import "CWMFirewallInterfaces"
       Yast.import "Punycode"
       Yast.import "Package"
@@ -355,34 +355,7 @@ module Yast
     # Map of widgets for CWM
     def widgets
       @widgets ||= {
-        "server_enable"     => {
-          "widget"        => :radio_buttons,
-          # translator: server enable/disable radio button group
-          "label"         => _(
-            "HTTP &Service"
-          ),
-          "items"         => [
-            # translators: service status radio button label
-            ["disabled", _("Disabled")],
-            # translators: service status radio button label
-            ["enabled", _("Enabled")]
-          ],
-          "init"          => fun_ref(
-            method(:initServiceStatus),
-            "void (string)"
-          ),
-          "handle"        => fun_ref(
-            method(:handleServiceStatus),
-            "symbol (string, map)"
-          ),
-          "store"         => fun_ref(
-            method(:storeServiceStatus),
-            "void (string, map)"
-          ),
-          "handle_events" => ["enabled", "disabled"],
-          "opt"           => [:notify],
-          "help"          => @HELPS["server_enable"]
-        },
+        "service_widget"    => service_widget.cwm_definition,
         "firewall_adapt"    => CWMFirewallInterfaces.CreateOpenFirewallWidget(
           {
             # Firewalld already defines the http and https services. This
@@ -596,26 +569,7 @@ module Yast
           ),
           "help"              => Ops.get_string(@HELPS, "listen_interfaces", "")
         },
-        "booting"           => CWMServiceStart.CreateAutoStartWidget(
-          {
-            "get_service_auto_start" => fun_ref(
-              method(:getServiceAutoStart),
-              "boolean ()"
-            ),
-            "set_service_auto_start" => fun_ref(
-              method(:setServiceAutoStart),
-              "void (boolean)"
-            ),
-            #translators: radiobutton - to start Apache2 service automatically
-            "start_auto_button"      => _(
-              "Start Apache2 Server When Booting"
-            ),
-            #translators: radiobutton - to don't start Apache2 service
-            "start_manual_button"    => _(
-              "Start Apache2 Server Manually"
-            )
-          }
-        ),
+        "booting"           => service_widget.cwm_definition,
         "expert_conf"       => {
           "widget" => :push_button,
           #translators: button to enter expert configuration
@@ -802,6 +756,13 @@ module Yast
           "help"          => Ops.get_string(@HELPS, "summary_text", "")
         }
       }
+    end
+
+    # Rerturns a service widget
+    #
+    # @return [::CWM::ServiceWidget]
+    def service_widget
+      @service_widget ||= ::CWM::ServiceWidget.new(HttpServer.service)
     end
 
     # Validate certificate
@@ -3363,6 +3324,7 @@ module Yast
 
     # ************************************ server status ***********************
 
+    # @deprecated Service status is now managed by Yast2::ServiceWidget
     # Initialize function of a widget
     # @param [String] key any widget key of widget that is processed
     def initServiceStatus(key)
@@ -3375,6 +3337,7 @@ module Yast
       nil
     end
 
+    # @deprecated Service status is now managed by Yast2::ServiceWidget
     # Store function of a widget
     # @param [String] key any widget key of widget that is processed
     # @param [Hash] event map event that occured
@@ -3387,6 +3350,8 @@ module Yast
 
       nil
     end
+
+    # @deprecated Service status is now managed by Yast2::ServiceWidget
     # Handling service status
     # @param [String] key string
     # @param [Hash] event map

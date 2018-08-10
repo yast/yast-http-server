@@ -10,6 +10,7 @@
 # Representation of the configuration of http-server.
 # Input and output routines.
 require "yast"
+require "yast2/system_service"
 require "y2firewall/firewalld"
 
 module Yast
@@ -37,6 +38,7 @@ module Yast
       Yast.import "Confirm"
       Yast.import "FileChanges"
       Yast.import "Label"
+      Yast.import "Mode"
 
       # Abort function
       # return boolean return true if abort
@@ -78,6 +80,13 @@ module Yast
 
     IGNORED_FILES = ["vhost.template", "vhost-ssl.template"]
     APACHE_VHOSTS_DIR = "/etc/apache2/vhosts.d"
+
+    # Returns the apache2 service
+    #
+    # @return [Yast2::SystemService]
+    def service
+      @service ||= Yast2::SystemService.find("apache2")
+    end
 
     def firewalld
       Y2Firewall::Firewalld.instance
@@ -402,65 +411,52 @@ module Yast
     end
 
     # Write all http-server settings
+    #
     # @return true on success
     def Write
-      # HttpServer read dialog caption
+      # HttpServer write dialog caption
       caption = _("Saving HTTP Server Configuration")
 
-      steps = 3
+      stages = [
+        # translators: progress stage 1/2
+        _("Write the Apache2 settings"),
+        # translators: progress stage 2/2
+        _("Save the Apache2 service status")
+      ]
+      steps = [
+        # translators: progress step 1/3
+        _("Writing the settings..."),
+        # translators: progress step 2/3
+        _("Saving the Apache2 service status..."),
+        # translators: progress step 3/3, finished
+        _("Finished")
+      ]
 
-      # We do not set help text here, because it was set outside
-      Progress.New(
-        caption,
-        " ",
-        steps,
-        [
-          # translators: progress stage 1/3
-          _("Write the Apache2 settings"),
-          YaST::HTTPDData.GetService ?
-            # translators: progress stage 2/3
-            _("Enable Apache2 service") :
-            # translators: progress stage 3/3
-            _("Disable Apache2 service")
-        ],
-        [
-          # translators: progress step 1/3
-          _("Writing the settings..."),
-          YaST::HTTPDData.GetService ?
-            # translators: progress step 2/3
-            _("Enabling Apache2 service...") :
-            # translators: progress step 3/3
-            _("Disabling Apache2 service..."),
-          # translators: progress finished
-          _("Finished")
-        ],
-        ""
-      )
+      Progress.New(caption, " ", steps.count, stages, steps, "")
 
-      # write Apache2 settings
-
+      # Write Apache2 settings
       rpms = YaPI::HTTPD.GetModulePackages
 
-      # install required RPMs for modules
+      # Install required RPMs for modules
       Package.InstallAllMsg(
         rpms,
         _(
           "The enabled modules require\n" +
-            "installation of some of these additional packages:\n" +
-            "%1\n" +
-            "Install them now?\n"
+          "installation of some of these additional packages:\n" +
+          "%1\n" +
+          "Install them now?\n"
         )
       )
 
-      # write httpd.conf
-
-      # write hosts
+      # Write httpd.conf
+      # Write hosts
       backup_vhost_config
+
       YaST::HTTPDData.WriteHosts
       Progress.NextStage
       old_progress = Progress.set(false) # off();
 
-      # always adapt firewall
+      # Always adapt firewall
       if YaST::HTTPDData.WriteListen(false) == nil
         # FIXME: show popup
 
@@ -480,34 +476,17 @@ module Yast
         log.info("The apache2 service is not defined in firewalld")
       end
 
-
       DnsServerAPI.Write if @configured_dns
       Progress.set(old_progress)
       YaST::HTTPDData.WriteModuleList
-      # in autoyast, quit here
-      # Wrong, service still has to be enabled...
-      # if( write_only ) return true;
-
 
       Progress.NextStage
 
-      if !YaST::HTTPDData.WriteService(@write_only)
+      if !save_status
         # translators: error message
-        Report.Error(Message.CannotAdjustService("apache2"))
+        Report.Error(Message.CannotAdjustService(service.name))
       end
 
-      if YaST::HTTPDData.GetService
-        # this will reload the configuration and start httpd
-        if !Service.Restart("apache2")
-          # translators: error message
-          Report.Error(Message.CannotAdjustService("apache2"))
-        end
-      else
-        if !Service.Stop("apache2")
-          # translators: error message
-          Report.Error(Message.CannotAdjustService("apache2"))
-        end
-      end
       # configuration test
       #	map<string, any> test = (map<string, any>)SCR::Execute(.target.bash_output, "apache2ctl conftest");
       #y2internal("test %1", test);
@@ -522,6 +501,21 @@ module Yast
       true
     end
 
+    # Saves service status (start mode and starts/stops the service)
+    #
+    # @note For AutoYaST and for command line actions, it uses the old way for
+    # backward compatibility, see {Yast::HTTPDData#WriteService}. When the
+    # service is configured by using the UI, it directly saves the service, see
+    # {Yast2::SystemService#save}.
+    #
+    # @return [Boolean] true if service status is saved; false otherwise.
+    def save_status
+      if Mode.auto || Mode.commandline
+        Yast::HTTPDData.WriteService(@write_only)
+      else
+        service.save
+      end
+    end
 
     # For module name find description map in known_modules
     # @param [Array<Hash{String => Object>}] known_modules list< map<string,any> > known modules

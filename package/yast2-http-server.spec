@@ -17,7 +17,7 @@
 
 
 Name:           yast2-http-server
-Version:        4.0.3
+Version:        4.1.0
 Release:        0
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -27,10 +27,11 @@ Group:          System/YaST
 License:        GPL-2.0
 BuildRequires:	yast2-network docbook-xsl-stylesheets doxygen libxslt perl-XML-Writer popt-devel sgml-skel update-desktop-files yast2-packagemanager-devel yast2-perl-bindings yast2-testsuite libzio
 BuildRequires:  yast2-devtools >= 3.1.10
-BuildRequires:  yast2 >= 4.0.36
+# Yast2::ServiceWidget
+BuildRequires:  yast2 >= 4.1.0
 Requires:	yast2-network yast2-perl-bindings libzio
-# SuSEFirewall2 replaced by firewalld yast2.rpm (fate#323460)
-Requires:       yast2 >= 4.0.39
+# Yast2::ServiceWidget
+Requires:       yast2 >= 4.1.0
 
 BuildArchitectures:	noarch
 
