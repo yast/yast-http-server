@@ -7,6 +7,7 @@ module Yast
     def main
       Yast.include self, "testsuite.rb"
 
+      Yast.import "YaPI::HTTPD"
       Yast.import "YaST::HTTPDData"
 
       TEST(lambda do

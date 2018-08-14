@@ -145,8 +145,8 @@ module Yast
         { :abort => fun_ref(method(:ReallyAbort), "boolean ()") }
       )
       if ret == :next
-        enable_php5 = Convert.to_boolean(
-          UI.QueryWidget(Id(:scr_mod_php5), :Value)
+        enable_php = Convert.to_boolean(
+          UI.QueryWidget(Id(:scr_mod_php), :Value)
         )
         enable_perl = Convert.to_boolean(
           UI.QueryWidget(Id(:scr_mod_perl), :Value)
@@ -157,7 +157,7 @@ module Yast
         #        boolean enable_ruby=(boolean) UI::QueryWidget( `id(`scr_mod_ruby), `Value );
 
         Builtins.y2milestone("Saving script modules")
-        Builtins.y2milestone("PHP5 support %1", enable_php5)
+        Builtins.y2milestone("PHP support %1", enable_php)
         Builtins.y2milestone("Perl support %1", enable_perl)
         Builtins.y2milestone("Python support %1", enable_python)
         #	y2milestone("Ruby support %1", enable_ruby);
@@ -169,9 +169,9 @@ module Yast
           )
         end
         # add selected modules to that list
-        YaST::HTTPDData.ModifyModuleList(["php5"], enable_php5)
+        YaST::HTTPDData.ModifyModuleList(["php#{YaST::HTTPDData.PhpVersion}"], enable_php)
         YaST::HTTPDData.ModifyModuleList(["perl"], enable_perl)
-        YaST::HTTPDData.ModifyModuleList(["python"], enable_python)
+        YaST::HTTPDData.ModifyModuleList(["wsgi-python3"], enable_python)
         #        YaST::HTTPDData::ModifyModuleList ([ "ruby" ], enable_ruby);
 
         HttpServer.modified = true
