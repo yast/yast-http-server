@@ -3502,9 +3502,9 @@ module Yast
     end
     def initScriptModules(key)
       modules = YaST::HTTPDData.GetModuleList
-      enable_php = Builtins.contains(modules, "php#{YaST::HTTPDData.PhpVersion}")
-      enable_perl = Builtins.contains(modules, "perl")
-      enable_python = Builtins.contains(modules, "python")
+      enable_php = modules.include?("php#{YaST::HTTPDData.PhpVersion}")
+      enable_perl = modules.include?("perl")
+      enable_python = modules.include?("wsgi-python3")
 
       UI.ReplaceWidget(
         Id(:scr_mod_replace),

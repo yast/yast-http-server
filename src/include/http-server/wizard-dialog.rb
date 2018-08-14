@@ -171,7 +171,7 @@ module Yast
         # add selected modules to that list
         YaST::HTTPDData.ModifyModuleList(["php#{YaST::HTTPDData.PhpVersion}"], enable_php)
         YaST::HTTPDData.ModifyModuleList(["perl"], enable_perl)
-        YaST::HTTPDData.ModifyModuleList(["python"], enable_python)
+        YaST::HTTPDData.ModifyModuleList(["wsgi-python3"], enable_python)
         #        YaST::HTTPDData::ModifyModuleList ([ "ruby" ], enable_ruby);
 
         HttpServer.modified = true

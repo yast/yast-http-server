@@ -719,15 +719,15 @@ textdomain "http-server";
                     default   => 0,
                     position  => 500
     },
-    'python' => {
+    'wsgi-python3' => {
                     summary   => __("Provides support for Python dynamically generated pages"),
-                    packages  => ["apache2-mod_python"],
+                    packages  => ["apache2-mod_wsgi-python3"],
                     default   => 0,
                     position  => 510
     },
     'apparmor' => {
                     summary   => __("Provides support for AppArmor subprocess confinement within apache"),
-                    packages  => ["mod-apparmor"],
+                    packages  => ["apache2-mod_apparmor"],
                     default   => 0,
                     position  => 530
      },
