@@ -10,8 +10,8 @@ module Yast
       @READ = { "http_server" => { "listen" => ["80", "127.0.0.1:99"] } }
       TESTSUITE_INIT([@READ, {}, {}], nil)
 
-      Yast.import "YaST::HTTPDData"
       Yast.import "YaPI::HTTPD"
+      Yast.import "YaST::HTTPDData"
 
 
       TEST(lambda { YaST::HTTPDData.ReadListen }, [@READ, {}, {}], nil)

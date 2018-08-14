@@ -190,8 +190,8 @@ module Yast
 
       TESTSUITE_INIT([@READ, {}, {}], nil)
 
-      Yast.import "YaST::HTTPDData"
       Yast.import "YaPI::HTTPD"
+      Yast.import "YaST::HTTPDData"
 
 
       TEST(lambda { YaST::HTTPDData.ReadHosts }, [@READ, {}, {}], nil)
