@@ -1,5 +1,6 @@
 package YaPI::HTTPDModules;
 use YaPI;
+use YaST::HTTPDData;
 textdomain "http-server";
 %modules = (
 # (without_leading mod_) module name = {
@@ -706,9 +707,9 @@ textdomain "http-server";
                                    { option =>"VirtualScriptAliasIP",     "context" => [ "Server", "Virtual", "Directory" ] }
 				]
     },
-    'php5' => {
-                    summary   => __("Provides support for PHP5 dynamically generated pages"),
-                    packages  => ["apache2-mod_php5"],
+    'php' . YaST::HTTPDData->PhpVersion() => {
+                    summary   => __("Provides support for PHP dynamically generated pages"),
+                    packages  => ["apache2-mod_php" . YaST::HTTPDData->PhpVersion()],
                     default   => 0,
                     position  => 490
     },
@@ -718,15 +719,15 @@ textdomain "http-server";
                     default   => 0,
                     position  => 500
     },
-    'python' => {
+    'wsgi-python3' => {
                     summary   => __("Provides support for Python dynamically generated pages"),
-                    packages  => ["apache2-mod_python"],
+                    packages  => ["apache2-mod_wsgi-python3"],
                     default   => 0,
                     position  => 510
     },
     'apparmor' => {
                     summary   => __("Provides support for AppArmor subprocess confinement within apache"),
-                    packages  => ["mod-apparmor"],
+                    packages  => ["apache2-mod_apparmor"],
                     default   => 0,
                     position  => 530
      },
