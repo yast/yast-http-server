@@ -65,3 +65,4 @@ configuration.
 %{yast_scrconfdir}/*
 %{yast_agentdir}/*
 %doc %{yast_docdir}
+%license COPYING

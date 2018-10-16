@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Oct 16 16:15:53 CEST 2018 - schubi@suse.de
+
+- Added license file to spec.
+
+-------------------------------------------------------------------
 Mon Aug 20 13:55:03 CEST 2018 - schubi@suse.de
 
 - Switched license in spec file from SPDX2 to SPDX3 format.
