@@ -17,7 +17,7 @@
 
 
 Name:           yast2-http-server
-Version:        4.1.1
+Version:        4.1.2
 Release:        0
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -65,4 +65,5 @@ configuration.
 %{yast_scrconfdir}/*
 %{yast_agentdir}/*
 %doc %{yast_docdir}
+%{_datadir}/icons/*
 %license COPYING
