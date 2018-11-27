@@ -65,5 +65,5 @@ configuration.
 %{yast_scrconfdir}/*
 %{yast_agentdir}/*
 %doc %{yast_docdir}
-%{_datadir}/icons/*
+%{yast_icondir}
 %license COPYING
