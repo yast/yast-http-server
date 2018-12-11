@@ -904,7 +904,6 @@ EXAMPLE
 BEGIN { $TYPEINFO{GetModuleList} = ["function", [ "list", "string" ] ]; }
 sub GetModuleList {
     my $self = shift;
-#    my $data = SCR->Read('.sysconfig.apache2.APACHE_MODULES'); # FIXME: Error handling
     my $data = SCR->Execute('.target.bash_output', 'a2enmod -l')->{'stdout'}; # FIXME: Error handling
 
     $data =~ s/mod_//g;

@@ -12,6 +12,8 @@
 require "yast"
 require "yast2/system_service"
 require "y2firewall/firewalld"
+require "shellwords"
+require "fileutils"
 
 module Yast
   class HttpServerClass < Module
@@ -123,7 +125,7 @@ module Yast
       if w_mode == true
         SCR.Execute(
           path(".target.bash"),
-          Builtins.sformat("rm %1%2", Directory.vardir, "/http_server")
+          "/usr/bin/rm #{File.join(Directory.vardir, "/http_server").shellescape}"
         )
         Builtins.y2milestone("Set wizard mode on")
       else
@@ -245,7 +247,7 @@ module Yast
       if SCR.Read(path(".target.lstat"), "/etc/sysconfig/apache2") == {}
         if SCR.Execute(
             path(".target.bash"),
-            "cp /var/adm/fillup-templates/sysconfig.apache2 /etc/sysconfig/apache2"
+            "/usr/bin/cp /var/adm/fillup-templates/sysconfig.apache2 /etc/sysconfig/apache2"
           ) != 0
           # translators:: error message
           Report.Error(Message.CannotWriteSettingsTo("/etc/sysconfig/apache2"))
@@ -360,34 +362,24 @@ module Yast
       end
       # add DHCP ones, if we can find out the current IP
       devs = NetworkInterfaces.Locate("BOOTPROTO", "dhcp")
-      Builtins.foreach(devs) do |dev|
-        output = Convert.to_map(
-          SCR.Execute(
-            path(".target.bash_output"),
-            Ops.add("/sbin/ifconfig ", dev),
-            { "LC_MESSAGES" => "C" }
-          )
+      devs.each do |dev|
+        output = SCR.Execute(
+          path(".target.bash_output"),
+          "/usr/sbin/ip addr show #{dev.shellescape}",
+          { "LC_MESSAGES" => "C" }
         )
         if Ops.get_integer(output, "exit", -1) == 0
           # lookup the correct line first
-          line = Builtins.splitstring(
-            Ops.get_string(output, "stdout", ""),
-            "\n"
-          )
-          addr = nil
-          Builtins.foreach(line) do |ln|
-            if Builtins.regexpmatch(ln, "^[ \t]*inet addr:")
-              addr = Builtins.regexpsub(
-                ln,
-                "^[ \t]*inet addr:([0-9\\.]+)[ \t]*",
-                "\\1"
-              )
-              Builtins.y2milestone("Found addr: %1", addr)
-              raise Break
-            end
-          end
+          lines = Ops.get_string(output, "stdout", "").lines
+          lines.grep(/^\s*inet [0-9.]/)
+          line = lines.first
+          next unless line
 
-          Ops.set(@ip2device, addr, dev) if addr != nil && addr != ""
+          # line looks like
+          #    inet 192.168.0.107/24 brd 192.168.0.255 scope global noprefixroute dynamic eth0
+          addr = line[/^\s*inet\s*([0-9.]+)/, 1]
+          Builtins.y2milestone("Found addr: %1", addr)
+          Ops.set(@ip2device, addr, dev)
         end
       end
 
@@ -486,10 +478,6 @@ module Yast
         # translators: error message
         Report.Error(Message.CannotAdjustService(service.name))
       end
-
-      # configuration test
-      #	map<string, any> test = (map<string, any>)SCR::Execute(.target.bash_output, "apache2ctl conftest");
-      #y2internal("test %1", test);
 
       (@files_to_check + dynamic_files_to_check()).each do |file|
         FileChanges.StoreFileCheckSum(file)
@@ -861,10 +849,10 @@ module Yast
       return if @vhost_files_to_backup.empty?
 
       backup_dir = File.join(APACHE_VHOSTS_DIR, "YaSTsave")
-      SCR.Execute(path(".target.bash"), "mkdir #{backup_dir}")
+      ::FileUtils.mkdir_p(backup_dir)
 
       @vhost_files_to_backup.each do |file|
-        SCR.Execute(path(".target.bash"), "cp -a #{file} #{backup_dir}")
+        SCR.Execute(path(".target.bash"), "/usr/bin/cp -a #{file.shellescape} #{backup_dir.shellescape}")
       end
     end
   end
