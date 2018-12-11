@@ -11,6 +11,8 @@
 require "yast"
 require "cwm/service_widget"
 
+require "shellwords"
+
 module Yast
   class HttpServerWidgetsClass < Module
 
@@ -997,7 +999,7 @@ module Yast
 
     # Reload server
     def ReloadServer
-      SCR.Execute(path(".target.bash"), "rcapache2 reload")
+      SCR.Execute(path(".target.bash"), "/usr/sbin/rcapache2 reload")
 
       nil
     end
@@ -1990,7 +1992,7 @@ module Yast
             if cert_file != nil &&
                 SCR.Execute(
                   path(".target.bash"),
-                  Builtins.sformat("openssl x509 -in %1", cert_file)
+                  Builtins.sformat("/usr/bin/openssl x509 -in %1", cert_file.shellescape)
                 ) == 0
               UI.ChangeWidget(:certfile, :Value, cert_file)
             else
@@ -2004,11 +2006,10 @@ module Yast
               "*.key *.pem",
               _("Choose Certificate Key File")
             )
-            #   boolean keyfile = (SCR::Execute(.target.bash, sformat("openssl rsa -in %1", cert_file))==0)?true:false;
             if key_file != nil &&
                 SCR.Execute(
                   path(".target.bash"),
-                  Builtins.sformat("openssl rsa -in %1", key_file)
+                  Builtins.sformat("/usr/bin/openssl rsa -in %1", key_file.shellescape)
                 ) == 0
               UI.ChangeWidget(:keyfile, :Value, key_file)
             else
@@ -3149,16 +3150,12 @@ module Yast
         # list of all installed modules
         all_modules = Builtins.splitstring(
           Ops.get_string(
-            Convert.convert(
-              SCR.Execute(
-                path(".target.bash_output"),
-                Builtins.sformat(
-                  "ls %1|grep \".so$\"|cut -d. -f1|cut -d_ -f2-",
-                  module_dirs
-                )
-              ),
-              :from => "any",
-              :to   => "map <string, any>"
+            SCR.Execute(
+              path(".target.bash_output"),
+              Builtins.sformat(
+                "ls %1|grep \".so$\"|cut -d. -f1|cut -d_ -f2-",
+                module_dirs # do not shellescape as it is multiple files, see above. No shell injection possible.
+              )
             ),
             "stdout",
             ""

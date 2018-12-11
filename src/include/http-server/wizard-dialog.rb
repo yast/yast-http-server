@@ -221,9 +221,7 @@ module Yast
         )
       )
 
-      hostname = Convert.to_map(
-        SCR.Execute(path(".target.bash_output"), "/bin/hostname")
-      )
+      hostname = SCR.Execute(path(".target.bash_output"), "/usr/bin/hostname")
       Builtins.y2milestone(
         "Hostname : %1",
         Ops.get_string(hostname, "stdout", "")
