@@ -741,10 +741,31 @@ textdomain "http-server";
     'authz_svn' => {
                     summary   => __("Provides support for subversion"),
                     packages  => ["subversion-server"],
-		    requires  => "dav_svn", 
+		    requires  => "dav_svn",
                     default   => 0,
                     position  => 550
+     },
+    'session' => {
+	             summary => __("Session support"),
+        	     packages => [],
+	             default => 0,
+        	     position => 600
+     },
+     'session_cookie' => {
+	             summary => __("Cookie based session support"),
+        	     packages => [],
+	             requires => "session",
+        	     default => 0,
+	             position => 610
+     },
+     'session_dbd' => {
+        	     summary => __("DBD/SQL based session support"),
+	             packages => [],
+        	     requires => "session",
+	             default => 0,
+        	     position => 620
      }
+
 );
 %selection = (
     TestSel => {
