@@ -764,7 +764,6 @@ textdomain "http-server";
 	             default => 0,
         	     position => 620
      }
-
 );
 %selection = (
     TestSel => {
