@@ -29,6 +29,7 @@ module Yast
       Yast.import "TablePopup"
       Yast.import "HttpServer"
       Yast.import "YaST::HTTPDData"
+      Yast.import "YaST::HTTPDPhpModule"
       Yast.import "Confirm"
       Yast.import "CWMServiceStart"
       Yast.import "CWMFirewallInterfaces"
@@ -3502,7 +3503,7 @@ module Yast
     end
     def initScriptModules(key)
       modules = YaST::HTTPDData.GetModuleList
-      enable_php = modules.include?("php#{YaST::HTTPDData.PhpVersion}")
+      enable_php = modules.include?("php#{YaST::HTTPDPhpModule.Version}")
       enable_perl = modules.include?("perl")
       enable_python = modules.include?("wsgi-python3")
 
