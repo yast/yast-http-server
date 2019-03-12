@@ -23,12 +23,6 @@ sub SetError {
     return YaPI::HTTPD->SetError( @_ );
 }
 
-# Define globally the current PHP version
-BEGIN { $TYPEINFO{PhpVersion} = ["function", "string" ]; }
-sub PhpVersion {
-    return "7";
-}
-
 BEGIN { $TYPEINFO{Error} = ["function", [ "map", "string", "string" ] ]; }
 sub Error {
     return YaPI::HTTPD->Error();
