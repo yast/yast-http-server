@@ -12,6 +12,7 @@ module1_DATA = \
 module2dir = @moduledir@/YaST
 module2_DATA = \
   modules/YaST/HTTPDData.pm \
+  modules/YaST/HTTPDPhpModule.pm \
   modules/YaST/httpdUtils.pm
 
 client_DATA = \

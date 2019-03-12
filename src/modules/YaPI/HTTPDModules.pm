@@ -1,13 +1,14 @@
 package YaPI::HTTPDModules;
 use YaPI;
-use YaST::HTTPDData;
+use YaST::HTTPDPhpModule;
+
 textdomain "http-server";
 %modules = (
 # (without_leading mod_) module name = {
 #	summary   => __("Translatable text with module description - will be shown in YaST table"),
 #	packages  => [ list of rpm packages needed for particular module ],
 #	default	  => 0 or 1 if this module should be enabled by default
-#       postition => order in /etc/sysconfig/apache2 (lowest numbew, ... , higher number)   
+#       postition => order in /etc/sysconfig/apache2 (lowest numbew, ... , higher number)
 #	requires  => required modulename (this is used in YaST dialog validation)
 # }
     'authz_host' => {
@@ -707,9 +708,9 @@ textdomain "http-server";
                                    { option =>"VirtualScriptAliasIP",     "context" => [ "Server", "Virtual", "Directory" ] }
 				]
     },
-    'php' . YaST::HTTPDData->PhpVersion() => {
+    'php' . YaST::HTTPDPhpModule->Version() => {
                     summary   => __("Provides support for PHP dynamically generated pages"),
-                    packages  => ["apache2-mod_php" . YaST::HTTPDData->PhpVersion()],
+                    packages  => ["apache2-mod_php" . YaST::HTTPDPhpModule->Version()],
                     default   => 0,
                     position  => 490
     },
@@ -741,10 +742,31 @@ textdomain "http-server";
     'authz_svn' => {
                     summary   => __("Provides support for subversion"),
                     packages  => ["subversion-server"],
-		    requires  => "dav_svn", 
+		    requires  => "dav_svn",
                     default   => 0,
                     position  => 550
+     },
+    'session' => {
+	             summary => __("Session support"),
+        	     packages => [],
+	             default => 0,
+        	     position => 600
+     },
+     'session_cookie' => {
+	             summary => __("Cookie based session support"),
+        	     packages => [],
+	             requires => "session",
+        	     default => 0,
+	             position => 610
+     },
+     'session_dbd' => {
+        	     summary => __("DBD/SQL based session support"),
+	             packages => [],
+        	     requires => "session",
+	             default => 0,
+        	     position => 620
      }
+
 );
 %selection = (
     TestSel => {
