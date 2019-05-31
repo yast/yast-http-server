@@ -39,7 +39,7 @@ schemafiles_DATA = \
   autoyast-rnc/http-server.rnc
 
 desktop_DATA = \
-  desktop/http-server.desktop
+  desktop/org.openSUSE.YaST.HTTPServer.desktop
 
 symbolicdir = @icondir@/hicolor/symbolic/apps
 symbolic_DATA = \
