@@ -12,58 +12,70 @@
 # license that conforms to the Open Source Definition (Version 1.9)
 # published by the Open Source Initiative.
 
-# Please submit bugfixes or comments via http://bugs.opensuse.org/
+# Please submit bugfixes or comments via https://bugs.opensuse.org/
 #
 
 
 Name:           yast2-http-server
 Version:        4.1.4
 Release:        0
-
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Source0:        %{name}-%{version}.tar.bz2
-
+Summary:        YaST2 - HTTP Server Configuration
 Group:          System/YaST
 License:        GPL-2.0-only
-BuildRequires:	yast2-network docbook-xsl-stylesheets doxygen libxslt perl-XML-Writer popt-devel sgml-skel update-desktop-files yast2-packagemanager-devel yast2-perl-bindings yast2-testsuite libzio
+Url:            https://github.com/yast/yast-http-server
+
+Source0:        %{name}-%{version}.tar.bz2
+
+BuildRequires:  yast2-network
+BuildRequires:  docbook-xsl-stylesheets
+BuildRequires:  doxygen
+BuildRequires:  libxslt
+BuildRequires:  perl-XML-Writer
+BuildRequires:  popt-devel
+BuildRequires:  sgml-skel
+BuildRequires:  update-desktop-files
+BuildRequires:  yast2-packagemanager-devel
+BuildRequires:  yast2-perl-bindings
+BuildRequires:  yast2-testsuite libzio
 BuildRequires:  yast2-devtools >= 3.1.10
+
 # Yast2::ServiceWidget
 BuildRequires:  yast2 >= 4.1.0
-Requires:	yast2-network yast2-perl-bindings libzio
+Requires:       yast2-network
+Requires:       yast2-perl-bindings
+Requires:       libzio
 # Yast2::ServiceWidget
 Requires:       yast2 >= 4.1.0
-
-BuildArchitectures:	noarch
-
 Requires:       yast2-ruby-bindings >= 1.0.0
 
-Summary:	YaST2 - HTTP Server Configuration
+BuildArch:      noarch
 
 %description
 This package contains the YaST2 component for HTTP server (Apache2)
 configuration.
 
 %prep
-%setup -n %{name}-%{version}
+%setup -q
 
 %build
 %yast_build
 
 %install
 %yast_install
+%yast_metainfo
 
 
 %files
-%defattr(-,root,root)
-%dir %{yast_yncludedir}/http-server
-%{yast_schemadir}/autoyast/rnc/http-server.rnc
-%{yast_yncludedir}/http-server/*
-%{yast_clientdir}/http-server.rb
-%{yast_clientdir}/http-server_*.rb
-%{yast_moduledir}/*
-%{yast_desktopdir}/http-server.desktop
-%{yast_scrconfdir}/*
-%{yast_agentdir}/*
+%{yast_schemadir}
+%{yast_yncludedir}
+%{yast_clientdir}
+%{yast_moduledir}
+%{yast_desktopdir}
+%{yast_metainfodir}
+%{yast_scrconfdir}
+%{yast_agentdir}
 %doc %{yast_docdir}
 %{yast_icondir}
 %license COPYING
+
+%changelog
