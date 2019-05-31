@@ -20,6 +20,7 @@ X-SuSE-YaST-Keywords=http,network,internet,apache,web,www
 Icon=yast-http-server
 Exec=xdg-su -c "/sbin/yast2 http-server"
 
-Name=HTTP Server
-GenericName=Configure an Apache 2 server
+Name=YaST HTTP Server
+GenericName=HTTP Server
+Comment=Configure an Apache 2 server
 StartupNotify=true
