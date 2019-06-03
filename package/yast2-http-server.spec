@@ -37,7 +37,7 @@ BuildRequires:  update-desktop-files
 BuildRequires:  yast2-packagemanager-devel
 BuildRequires:  yast2-perl-bindings
 BuildRequires:  yast2-testsuite libzio
-BuildRequires:  yast2-devtools >= 3.1.10
+BuildRequires:  yast2-devtools >= 4.2.2
 
 # Yast2::ServiceWidget
 BuildRequires:  yast2 >= 4.1.0
