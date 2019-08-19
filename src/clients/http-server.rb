@@ -26,6 +26,7 @@ module Yast
       Yast.import "Hostname"
       Yast.import "HttpServerWidgets"
       Yast.import "HttpServer"
+      Yast.import "HTTPDData"
 
       Yast.include self, "http-server/wizards.rb"
 
