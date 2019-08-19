@@ -180,7 +180,7 @@ module Yast
       }
 
       Wizard.CreateDialog
-      Wizard.SetDesktopTitleAndIcon("http-server")
+      Wizard.SetDesktopTitleAndIcon("org.opensuse.yast.HTTPServer")
 
       w_mode = HttpServer.isWizardMode
       Ops.set(sequence, ["read", :next], "wizard") if w_mode
@@ -202,7 +202,7 @@ module Yast
       contents = Label(_("Initializing ..."))
 
       Wizard.CreateDialog
-      Wizard.SetDesktopTitleAndIcon("http-server")
+      Wizard.SetDesktopTitleAndIcon("org.opensuse.yast.HTTPServer")
       Wizard.SetContentsButtons(
         caption,
         contents,
