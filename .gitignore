@@ -10,11 +10,15 @@ config.status
 config.sub
 configure
 configure.ac
+/coverage/
 depcomp
 install-sh
 missing
 mkinstalldirs
 stamp-h
+/test-driver
+test/*.log
+test/*.trs
 http-server.pot
 autom4te.cache
 Makefile.am.common
