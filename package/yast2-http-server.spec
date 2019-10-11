@@ -38,6 +38,7 @@ BuildRequires:  yast2-packagemanager-devel
 BuildRequires:  yast2-perl-bindings
 BuildRequires:  yast2-testsuite libzio
 BuildRequires:  yast2-devtools >= 4.2.2
+BuildRequires:  rubygem(%rb_default_ruby_abi:rspec)
 
 # Yast2::ServiceWidget
 BuildRequires:  yast2 >= 4.1.0
@@ -68,6 +69,7 @@ configuration.
 %files
 %{yast_schemadir}
 %{yast_yncludedir}
+%{yast_libdir}
 %{yast_clientdir}
 %{yast_moduledir}
 %{yast_desktopdir}
