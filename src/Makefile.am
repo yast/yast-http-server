@@ -28,6 +28,10 @@ ynclude_DATA = \
   include/http-server/routines.rb \
   include/http-server/helps.rb
 
+ylibclientdir = @ylibdir@/http-server/clients
+ylibclient_DATA = \
+  lib/http-server/clients/main.rb
+
 scrconf_DATA = \
   scrconf/cfg_http_server.scr
 
@@ -48,6 +52,6 @@ scalabledir = @icondir@/hicolor/scalable/apps
 scalable_DATA = \
   icons/hicolor/scalable/apps/yast-http-server.svg
 
-EXTRA_DIST = $(module_DATA) $(module1_DATA) $(module2_DATA) $(client_DATA) $(ynclude_DATA) $(scrconf_DATA) $(agent_SCRIPTS) $(schemafiles_DATA) $(desktop_DATA) $(symbolic_DATA) $(scalable_DATA)
+EXTRA_DIST = $(module_DATA) $(module1_DATA) $(module2_DATA) $(client_DATA) $(ynclude_DATA) $(scrconf_DATA) $(agent_SCRIPTS) $(schemafiles_DATA) $(desktop_DATA) $(symbolic_DATA) $(scalable_DATA) $(ylibclient_DATA)
 
 include $(top_srcdir)/Makefile.am.common
