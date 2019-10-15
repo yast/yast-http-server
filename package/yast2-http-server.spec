@@ -17,7 +17,7 @@
 
 
 Name:           yast2-http-server
-Version:        4.2.2
+Version:        4.2.3
 Release:        0
 Summary:        YaST2 - HTTP Server Configuration
 Group:          System/YaST
