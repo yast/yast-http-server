@@ -1000,7 +1000,7 @@ module Yast
 
     # Reload server
     def ReloadServer
-      SCR.Execute(path(".target.bash"), "/bin/systemctl reload apache2")
+      SCR.Execute(path(".target.bash"), "/usr/bin/systemctl reload apache2")
 
       nil
     end
