@@ -783,7 +783,7 @@ if( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
     # already exists check
     foreach my $hostHash ( @{$vhost_files->{'yast2_vhosts.conf'}} ) {
         if( exists($hostHash->{HOSTID}) and $hostHash->{HOSTID} eq $hostid ) {
-            return $self->SetError( summary => __('hostid already exists'), code => "CHECK_PARAM_FAILED" );
+            return $self->SetError( summary => __('Host ID already exists'), code => "CHECK_PARAM_FAILED" );
         }
     }
 
@@ -843,7 +843,7 @@ sub DeleteHost {
             $found = 1;
         }
     }
-    return $self->SetError( summary => __('hostid not found'), code => "CHECK_PARAM_FAILED" ) unless( $found );
+    return $self->SetError( summary => __('Host ID not found'), code => "CHECK_PARAM_FAILED" ) unless( $found );
     if( @newList ) {
         $vhost_files->{$filename} = \@newList;
     } else {
