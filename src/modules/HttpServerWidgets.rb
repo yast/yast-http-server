@@ -926,7 +926,7 @@ module Yast
       if Builtins.size(servername) == 0
         if hostid == "main"
           Report.Warning(
-            _("When no Server name is defined, hostname will be used instead.")
+            _("When no server name is defined, the hostname will be used instead.")
           )
           return true
         else
