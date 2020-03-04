@@ -765,7 +765,9 @@ module Yast
     #
     # @return [::CWM::ServiceWidget]
     def service_widget
-      @service_widget ||= ::CWM::ServiceWidget.new(HttpServer.service)
+      @service_widget = ::CWM::ServiceWidget.new(HttpServer.service)
+      @service_widget.default_action = :restart if HttpServer.service&.running?
+      @service_widget
     end
 
     # Validate certificate
