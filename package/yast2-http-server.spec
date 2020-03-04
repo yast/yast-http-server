@@ -36,7 +36,7 @@ BuildRequires:  sgml-skel
 BuildRequires:  update-desktop-files
 BuildRequires:  yast2-packagemanager-devel
 BuildRequires:  yast2-perl-bindings
-BuildRequires:  yast2-testsuite libzio
+BuildRequires:  libzio
 BuildRequires:  yast2-devtools >= 4.2.2
 BuildRequires:  rubygem(%rb_default_ruby_abi:rspec)
 
