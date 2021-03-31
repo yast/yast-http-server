@@ -11,7 +11,7 @@ on:
 jobs:
   Checks:
     runs-on: ubuntu-latest
-    container: registry.opensuse.org/yast/head/containers/yast-ruby:latest
+    container: registry.opensuse.org/yast/sle-15/sp3/containers/yast-ruby:latest
 
     steps:
 
