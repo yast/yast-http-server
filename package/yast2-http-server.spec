@@ -1,7 +1,7 @@
 #
 # spec file for package yast2-http-server
 #
-# Copyright (c) 2013 SUSE LINUX Products GmbH, Nuernberg, Germany.
+# Copyright (c) 2021 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -17,40 +17,35 @@
 
 
 Name:           yast2-http-server
-Version:        4.4.0
+Version:        4.4.1
 Release:        0
 Summary:        YaST2 - HTTP Server Configuration
-Group:          System/YaST
 License:        GPL-2.0-only
-Url:            https://github.com/yast/yast-http-server
-
+Group:          System/YaST
+URL:            https://github.com/yast/yast-http-server
 Source0:        %{name}-%{version}.tar.bz2
-
-BuildRequires:  yast2-network
 BuildRequires:  docbook-xsl-stylesheets
 BuildRequires:  doxygen
 BuildRequires:  libxslt
+BuildRequires:  libzio
 BuildRequires:  perl-XML-Writer
 BuildRequires:  popt-devel
 BuildRequires:  sgml-skel
 BuildRequires:  update-desktop-files
-BuildRequires:  yast2-packagemanager-devel
-BuildRequires:  yast2-perl-bindings
-BuildRequires:  libzio
-BuildRequires:  yast2-devtools >= 4.2.2
-BuildRequires:  rubygem(%rb_default_ruby_abi:rspec)
-
 # Yast2::ServiceWidget
 BuildRequires:  yast2 >= 4.1.0
-Requires:       yast2-network
-Requires:       yast2-perl-bindings
+BuildRequires:  yast2-devtools >= 4.4.0
+BuildRequires:  yast2-network
+BuildRequires:  yast2-packagemanager-devel
+BuildRequires:  yast2-perl-bindings
+BuildRequires:  rubygem(%rb_default_ruby_abi:rspec)
 Requires:       libzio
 # Yast2::ServiceWidget
 Requires:       yast2 >= 4.1.0
+Requires:       yast2-network
+Requires:       yast2-perl-bindings
 Requires:       yast2-ruby-bindings >= 1.0.0
-
 Supplements:    autoyast(http-server)
-
 BuildArch:      noarch
 
 %description
@@ -67,8 +62,8 @@ configuration.
 %yast_install
 %yast_metainfo
 
-
 %files
+%license COPYING
 %{yast_schemadir}
 %{yast_yncludedir}
 %{yast_libdir}
@@ -78,8 +73,6 @@ configuration.
 %{yast_metainfodir}
 %{yast_scrconfdir}
 %{yast_agentdir}
-%doc %{yast_docdir}
 %{yast_icondir}
-%license COPYING
 
 %changelog
