@@ -11,7 +11,9 @@ on:
 jobs:
   Checks:
     runs-on: ubuntu-latest
-    container: registry.opensuse.org/yast/head/containers/yast-ruby:latest
+    container:
+      image: registry.opensuse.org/yast/head/containers/yast-ruby:latest
+      options: --privileged
 
     steps:
 
