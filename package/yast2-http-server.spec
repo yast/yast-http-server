@@ -17,7 +17,7 @@
 
 
 Name:           yast2-http-server
-Version:        4.4.1
+Version:        4.5.0
 Release:        0
 Summary:        YaST2 - HTTP Server Configuration
 License:        GPL-2.0-only
