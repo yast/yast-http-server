@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed Jul 27 09:43:03 UTC 2022 - Michal Filka <mfilka@suse.com>
+
+- bsc#1200016
+  - find out php version dynamically to avoid hardcoded version
+- 4.4.2
+
+-------------------------------------------------------------------
 Tue Apr 20 18:14:05 UTC 2021 - Dirk Müller <dmueller@suse.com>
 
 - stop packaging docdir, it only contained the license which
