@@ -10,18 +10,17 @@ our %TYPEINFO;
 BEGIN { $TYPEINFO{Version} = ["function", "string" ]; }
 sub Version {
     # when function returns an array, we get reference to it
-    $l = Package->by_pattern("php[0-9]");
+    $l = Package->by_pattern("php[0-9]{1,2}");
 
     return "" if(!$l);
 
-    # there can be multiple versions of php
-    @{$l} = sort @{$l};
+    # there can be multiple versions of php and
+    # package name is php<version>. We're interested in <version> only
+    # Take highest available version
+    @s = map { int($_ =~ s/php([0-9]{1,2})$/$1/r) } @{$l};
+    @s = sort {$a <=> $b} @s;
 
-    # package name is php<version> and we're interested in <version> only
-    # we also take highest available version
-    $l->[-1] =~ s/php([0-9]{1,2})$/$1/;
-
-    return $l->[-1];
+    return $s[-1];
 }
 
 1;
