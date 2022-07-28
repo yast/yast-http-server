@@ -109,8 +109,8 @@ jobs:
     - name: Git Checkout
       uses: actions/checkout@v2
 
-    - name: Perl Syntax
-      run: yast-ci-ruby -o perl_syntax
+    # - name: Perl Syntax
+    #   run: yast-ci-ruby -o perl_syntax
 
     - name: POT Check
       run: rake check:pot
