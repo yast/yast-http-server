@@ -12,7 +12,7 @@ sub Version {
     # when function returns an array, we get reference to it
     $l = Package->by_pattern("php[0-9]{1,2}");
 
-    return "" if(!$l);
+    return if(!$l);
 
     # there can be multiple versions of php and
     # package name is php<version>. We're interested in <version> only

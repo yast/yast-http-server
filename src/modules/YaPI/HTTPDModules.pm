@@ -3,6 +3,8 @@ use YaPI;
 use YaST::HTTPDPhpModule;
 
 textdomain "http-server";
+
+$php_version = YaST::HTTPDPhpModule->Version();
 %modules = (
 # (without_leading mod_) module name = {
 #	summary   => __("Translatable text with module description - will be shown in YaST table"),
@@ -708,12 +710,6 @@ textdomain "http-server";
                                    { option =>"VirtualScriptAliasIP",     "context" => [ "Server", "Virtual", "Directory" ] }
 				]
     },
-    'php' . YaST::HTTPDPhpModule->Version() => {
-                    summary   => __("Provides support for PHP dynamically generated pages"),
-                    packages  => ["apache2-mod_php" . YaST::HTTPDPhpModule->Version()],
-                    default   => 0,
-                    position  => 490
-    },
     'perl' => {
                     summary   => __("Provides support for Perl dynamically generated pages"),
                     packages  => ["apache2-mod_perl"],
@@ -768,6 +764,19 @@ textdomain "http-server";
      }
 
 );
+
+if($php_version)
+{
+  %modules = ( %modules,
+    'php' . $php_version => {
+                    summary   => __("Provides support for PHP dynamically generated pages"),
+                    packages  => ["apache2-mod_php" . YaST::HTTPDPhpModule->Version()],
+                    default   => 0,
+                    position  => 490
+    }
+  );
+}
+
 %selection = (
     TestSel => {
                 summary => 'A test selection',
