@@ -226,8 +226,6 @@ module Yast
         return false
       end
 
-
-
       Progress.NextStep
 
 
