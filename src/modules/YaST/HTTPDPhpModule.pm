@@ -2,7 +2,7 @@ package YaST::HTTPDPhpModule;
 
 use YaST::YCP;
 
-YaST::YCP::Import "Package";
+YaST::YCP::Import "HttpServerPackages";
 
 our %TYPEINFO;
 
@@ -10,7 +10,7 @@ our %TYPEINFO;
 BEGIN { $TYPEINFO{Version} = ["function", "string" ]; }
 sub Version {
     # when function returns an array, we get reference to it
-    $l = Package->by_pattern("php[0-9]{1,2}");
+    $l = HttpServerPackages->by_pattern("php[0-9]{1,2}");
 
     return if(!$l);
 
