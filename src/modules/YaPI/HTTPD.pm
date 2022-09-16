@@ -747,8 +747,8 @@ sub CreateHost {
         # VirtualByName and SSL get dropped/replaced
         if( $key->{KEY} eq 'VirtualByName' ) {
             $VirtualByName = $key->{VALUE};
-        } 
-if( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
+        }
+        if( $key->{KEY} =~ /ServerTokens|TimeOut|ExtendedStatus/ ) {
             # illegal keys in vhost
             return $self->SetError( summary => sprintf(__("Illegal key in virtual host '%s'."), $key->{KEY}),
                                     code    => "CHECK_PARAM_FAILED" );
@@ -1026,8 +1026,6 @@ sub ModifyModuleList {
     foreach my $module (@newList){
     	SCR->Execute('.target.bash', "a2enmod $module");
     }
-#    SCR->Write('.sysconfig.apache2.APACHE_MODULES', join(' ',@newList));
-#    SCR->Write('.sysconfig.apache2', undef);
     return 1;
 }
 
@@ -1063,67 +1061,6 @@ sub GetKnownModuleSelections {
     }
     return \@ret;
 }
-
-=item *
-C<$selList = GetModuleSelectionsList()>
-
-this function returns a reference to an array that
-contains strings with the names of the active module
-selections.
-
-EXAMPLE
-
- my $selList = GetModuleSelectionsList();
- print "active selections: ".join(',', @$selList)."\n";
-
-=cut
-
-#BEGIN { $TYPEINFO{GetModuleSelectionsList} = ["function", ["list","string"] ]; }
-#sub GetModuleSelectionsList {
-#    my $self = shift;
-#    return (SCR->Read('.http_server.moduleselection'))[0];
-#}
-
-=item *
-C<ModifyModuleSelectionList($selList, $status)>
-
-this function modifies the module selection list.
-You can turn on and off module selections with the
-boolean $status.
-Changing the selections will directly influence the
-module list.
-
-EXAMPLE
-
- ModifyModuleSelectionList( ['perl-scripting', 'debug'],1  );
- ModifyModuleSelectionList( ['php4-scripting'], 0 );
-
-=cut
-
-#BEGIN { $TYPEINFO{ModifyModuleSelectionList} = ["function", "boolean", ["list","string"], "boolean" ]; }
-#sub ModifyModuleSelectionList {
-#    my $self = shift;
-#    my $newSelection = shift;
-#    my $enable = shift;
-#    my %uniq = ();
-
-#    @uniq{@{$self->GetModuleSelectionsList()}} = ();
-#    if( $enable ) {
-#        @uniq{@$newSelection} = ();
-#        foreach my $ns ( @$newSelection ) {
-#            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 1 );
-#            $self->ModifyModuleList( [], 1 );
-#        }
-#    } else {
-#        delete(@uniq{@$newSelection});
-#        foreach my $ns ( @$newSelection ) {
-#            $self->ModifyModuleList( $HTTPModules::selection{$ns}->{modules}, 0 );
-#            $self->ModifyModuleList( [], 1 );
-#        }
-#    }
-
-#    SCR->Write('.http_server.moduleselection', [keys(%uniq)]);
-#}
 
 #######################################################
 # apache2 modules API end
@@ -1444,7 +1381,6 @@ EXAMPLE
 BEGIN { $TYPEINFO{GetModulePackages} = ["function", ["list", "string"] ]; }
 sub GetModulePackages {
     my $self = shift;
-#    my $mods = $self->GetModuleList();
     my $mods = YaST::HTTPDData->GetModuleList();
     my %uniq;
     my %modules = YaPI::HTTPDModules::ServerModules();
