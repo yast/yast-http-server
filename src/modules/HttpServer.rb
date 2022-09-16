@@ -181,6 +181,7 @@ module Yast
       return false if !NetworkService.ConfirmNetworkManager
       Progress.NextStep
 
+      init_packager
 
       # check rpms
       required = deep_copy(@required_packages)
@@ -842,6 +843,14 @@ module Yast
     publish :function => :AutoPackages, :type => "map ()"
 
   private
+
+    # Makes sure the package database is initialized.
+    def init_packager
+      Pkg.TargetInitialize(Installation.destdir)
+      Pkg.TargetLoad
+      Pkg.SourceRestore
+      Pkg.SourceLoad
+    end
 
     def backup_vhost_config
       return if @vhost_files_to_backup.empty?
