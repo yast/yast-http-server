@@ -10,7 +10,7 @@ our %TYPEINFO;
 BEGIN { $TYPEINFO{Version} = ["function", "string" ]; }
 sub Version {
     # when function returns an array, we get reference to it
-    $l = HttpServerPackages->by_pattern("php[0-9]{1,2}");
+    $l = HttpServerPackages->by_provides_regexp("php[0-9]{1,2}");
 
     return if(!$l);
 
