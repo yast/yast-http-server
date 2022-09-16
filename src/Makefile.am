@@ -2,7 +2,8 @@
 
 module_DATA = \
   modules/HttpServer.rb \
-  modules/HttpServerWidgets.rb
+  modules/HttpServerWidgets.rb \
+  modules/HttpServerPackages.rb
 
 module1dir = @moduledir@/YaPI
 module1_DATA = \
