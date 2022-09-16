@@ -780,7 +780,7 @@ sub ServerModules {
         %modules = ( %modules,
             'php' . $php_version => {
                     summary   => __("Provides support for PHP dynamically generated pages"),
-                    packages  => ["apache2-mod_php" . YaST::HTTPDPhpModule->Version()],
+                    packages  => ["apache2-mod_php" . $php_version],
                     default   => 0,
                     position  => 490
             }
