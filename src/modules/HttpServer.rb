@@ -41,6 +41,7 @@ module Yast
       Yast.import "FileChanges"
       Yast.import "Label"
       Yast.import "Mode"
+      Yast.import "PackageSystem"
 
       # Abort function
       # return boolean return true if abort
@@ -846,10 +847,8 @@ module Yast
 
     # Makes sure the package database is initialized.
     def init_packager
-      Pkg.TargetInitialize(Installation.destdir)
-      Pkg.TargetLoad
-      Pkg.SourceRestore
-      Pkg.SourceLoad
+      PackageSystem.EnsureTargetInit
+      PackageSystem.EnsureSourceInit
     end
 
     def backup_vhost_config
