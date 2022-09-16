@@ -4,7 +4,6 @@ use YaST::HTTPDPhpModule;
 
 textdomain "http-server";
 
-$php_version = YaST::HTTPDPhpModule->Version();
 %modules = (
 # (without_leading mod_) module name = {
 #	summary   => __("Translatable text with module description - will be shown in YaST table"),
@@ -765,18 +764,6 @@ $php_version = YaST::HTTPDPhpModule->Version();
 
 );
 
-if($php_version)
-{
-  %modules = ( %modules,
-    'php' . $php_version => {
-                    summary   => __("Provides support for PHP dynamically generated pages"),
-                    packages  => ["apache2-mod_php" . YaST::HTTPDPhpModule->Version()],
-                    default   => 0,
-                    position  => 490
-    }
-  );
-}
-
 %selection = (
     TestSel => {
                 summary => 'A test selection',
@@ -784,3 +771,19 @@ if($php_version)
                 default => 0
     }
 );
+
+BEGIN { $TYPEINFO{ServerModules} = ["function", ["map","string","any"] ]; }
+sub ServerModules {
+    $php_version = YaST::HTTPDPhpModule->Version();
+    if($php_version)
+    {
+        %modules = ( %modules,
+            'php' . $php_version => {
+                    summary   => __("Provides support for PHP dynamically generated pages"),
+                    packages  => ["apache2-mod_php" . YaST::HTTPDPhpModule->Version()],
+                    default   => 0,
+                    position  => 490
+            }
+        );
+     }
+}
