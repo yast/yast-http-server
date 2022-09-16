@@ -955,8 +955,9 @@ BEGIN { $TYPEINFO{GetKnownModules} = ["function", [ "list", ["map","string","any
 sub GetKnownModules {
     my $self = shift;
     my @ret = ();
-    foreach my $mod ( keys(%YaPI::HTTPDModules::modules) ) {
-        push( @ret, { name => $mod, %{$YaPI::HTTPDModules::modules{$mod}} } );
+    my %modules = YaPI::HTTPDModules::ServerModules();
+    foreach my $mod ( keys(%modules) ) {
+        push( @ret, { name => $mod, %{$modules{$mod}} } );
         @ret = sort( { $a->{position} <=> $b->{position} } @ret );
     }
     return \@ret;
@@ -984,6 +985,7 @@ sub ModifyModuleList {
     my $self = shift;
     my $newModules = shift;
     my $enable = shift;
+    my %modules = YaPI::HTTPDModules::ServerModules();
 
     my @newList = ();
     if( not $enable ) {
@@ -1001,8 +1003,8 @@ sub ModifyModuleList {
             push( @oldList, $mod );
         }
         @newList = sort( {
-                         my $aa = (exists($YaPI::HTTPDModules::modules{$a}))?($YaPI::HTTPDModules::modules{$a}->{position}):(10000000);
-                         my $bb = (exists($YaPI::HTTPDModules::modules{$b}))?($YaPI::HTTPDModules::modules{$b}->{position}):(10000000);
+                         my $aa = (exists($modules{$a}))?($modules{$a}->{position}):(10000000);
+                         my $bb = (exists($modules{$b}))?($modules{$b}->{position}):(10000000);
                          $aa <=> $bb;
                         } @oldList );
     }
@@ -1012,7 +1014,7 @@ sub ModifyModuleList {
    my @known=();
    my @unknown=();
    foreach my $module (@newList){
-    if (grep (/^$module$/, (keys %YaPI::HTTPDModules::modules))){
+    if (grep (/^$module$/, (keys %modules))){
      push(@known, $module);
     } else {
          push(@unknown, $module);
@@ -1445,9 +1447,10 @@ sub GetModulePackages {
 #    my $mods = $self->GetModuleList();
     my $mods = YaST::HTTPDData->GetModuleList();
     my %uniq;
+    my %modules = YaPI::HTTPDModules::ServerModules();
     foreach my $mod ( @$mods ) {
-    if ( exists($YaPI::HTTPDModules::modules{$mod}) ) {
-        @uniq{@{$YaPI::HTTPDModules::modules{$mod}->{packages}}} = ();
+    if ( exists($modules{$mod}) ) {
+        @uniq{@{$modules{$mod}->{packages}}} = ();
 	}
     }
     return [ keys(%uniq) ];
