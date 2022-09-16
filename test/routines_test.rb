@@ -7,11 +7,11 @@ describe "Yast::HttpServerRoutinesInclude" do
   before(:each) do
     # deep in HttpServer module is buried code which builds list of modules
     # and it uses Package module to query available packages
-    Yast.import "Package"
+    Yast.import "HttpServerPackages"
     Yast.import "HttpServer"
 
-    allow(Yast::Package)
-      .to receive(:by_pattern)
+    allow(Yast::HttpServerPackages)
+      .to receive(:by_provides_regexp)
       .and_return(["php8"])
   end
 
