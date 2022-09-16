@@ -3,9 +3,18 @@
 require_relative "test_helper"
 require "yast"
 
-Yast.import "HttpServer"
+describe "Yast::HttpServerRoutinesInclude" do
+  before(:each) do
+    # deep in HttpServer module is buried code which builds list of modules
+    # and it uses Package module to query available packages
+    Yast.import "HttpServerPackages"
+    Yast.import "HttpServer"
 
-describe Yast::HttpServerRoutinesInclude do
+    allow(Yast::HttpServerPackages)
+      .to receive(:by_provides_regexp)
+      .and_return(["php8"])
+  end
+
   # it is included in http server module
   subject { Yast::HttpServer }
 

@@ -41,6 +41,7 @@ module Yast
       Yast.import "FileChanges"
       Yast.import "Label"
       Yast.import "Mode"
+      Yast.import "PackageSystem"
 
       # Abort function
       # return boolean return true if abort
@@ -181,6 +182,7 @@ module Yast
       return false if !NetworkService.ConfirmNetworkManager
       Progress.NextStep
 
+      init_packager
 
       # check rpms
       required = deep_copy(@required_packages)
@@ -225,8 +227,6 @@ module Yast
 
         return false
       end
-
-
 
       Progress.NextStep
 
@@ -844,6 +844,12 @@ module Yast
     publish :function => :AutoPackages, :type => "map ()"
 
   private
+
+    # Makes sure the package database is initialized.
+    def init_packager
+      PackageSystem.EnsureTargetInit
+      PackageSystem.EnsureSourceInit
+    end
 
     def backup_vhost_config
       return if @vhost_files_to_backup.empty?
