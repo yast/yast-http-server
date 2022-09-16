@@ -37,8 +37,6 @@ module Yast
     def by_pattern(pattern)
       raise ArgumentError, "Missing search pattern" if pattern.nil? || pattern.empty?
 
-      init_packager
-
       # NOTE: - Resolvable.find takes POSIX regexp, later select uses Ruby regexp
       # - Resolvable.find supports regexps only for dependencies, so we need to
       # filter result according to package name
@@ -50,14 +48,6 @@ module Yast
 
     publish function: :by_pattern, type: "list <string> (string)"
 
-  private
-    # Makes sure the package database is initialized.
-    def init_packager
-      Pkg.TargetInitialize(Installation.destdir)
-      Pkg.TargetLoad
-      Pkg.SourceRestore
-      Pkg.SourceLoad
-    end
   end
 
   HttpServerPackages = HttpServerPackagesClass.new
