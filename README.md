@@ -1,9 +1,10 @@
-# YaST - The HTTP Server Configuration Module #
+Obsoleted Repository
+====================
 
-[![Workflow Status](https://github.com/yast/yast-http-server/workflows/CI/badge.svg?branch=master)](
-https://github.com/yast/yast-http-server/actions?query=branch%3Amaster)
-[![Package Status](https://github.com/yast/yast-http-server/workflows/Available_Packages/badge.svg?branch=master)](
-https://github.com/yast/yast-http-server/actions?query=branch%3Amaster)
-[![Jenkins Status](https://ci.opensuse.org/buildStatus/icon?job=yast-yast-http-server-master)](
-https://ci.opensuse.org/view/Yast/job/yast-yast-http-server-master/)
-[![Coverage Status](https://img.shields.io/coveralls/yast/yast-http-server.svg)](https://coveralls.io/r/yast/yast-http-server?branch=master)
+**The HTTP server module is no longer supported.**
+
+
+GIT
+---
+
+If you want to see the last state check the SLE15 branches for the last maintained state.
