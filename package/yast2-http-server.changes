@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Jan 25 09:32:07 UTC 2024 - Michal Filka <mfilka@suse.com>
+
+- bsc#1218943
+  - followup of previous fix - fixed internal issue which caused
+    Server modules not to be displayed at all.
+  - 4.5.2 
+
+-------------------------------------------------------------------
 Wed Jul 27 09:43:03 UTC 2022 - Michal Filka <mfilka@suse.com>
 
 - bsc#1200016
