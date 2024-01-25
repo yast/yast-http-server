@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Jan 25 09:32:07 UTC 2024 - Michal Filka <mfilka@suse.com>
+
+- bsc#1218943
+  - followup of previous fix - fixed internal issue which caused
+    Server modules not to be displayed at all.
+  - 4.6.1
+
+-------------------------------------------------------------------
 Fri Sep 01 19:57:03 UTC 2023 - Josef Reidinger <jreidinger@suse.com>
 
 - Branch package for SP6 (bsc#1208913)
