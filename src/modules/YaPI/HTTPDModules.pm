@@ -786,4 +786,6 @@ sub ServerModules {
             }
         );
      }
+
+     return %modules;
 }
